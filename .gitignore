@@ -1,0 +1,6 @@
+*.o
+*.a
+webserv
+*.DS_Store*
+.vscode
+objs
