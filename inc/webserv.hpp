@@ -6,6 +6,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <cstdlib>
+#include <errno.h>
+#include <stdio.h>
+
 
 
 

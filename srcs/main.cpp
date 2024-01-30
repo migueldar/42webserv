@@ -1,4 +1,5 @@
 #include "webserv.hpp"
+#include <sys/poll.h>
 #include <unistd.h>
 
 int main(int argc, char **argv) {
@@ -21,16 +22,21 @@ int main(int argc, char **argv) {
 
 	listen(fd, 10);
 
-	int client_fd;
-	char *buffer = (char *) calloc(0x1000, 1);
-	while (1) {
-		std::cout << "hello" << std::endl;
-		client_fd = accept(fd, (struct sockaddr*) &s, &addrlen);
+	int client1_fd, client2_fd;
+	//char *buffer = (char *) calloc(0x1000, 1);
+	
+	client1_fd = accept(fd, (struct sockaddr*) &s, &addrlen);
+	client2_fd = accept(fd, (struct sockaddr*) &s, &addrlen);
 
-		while (read(client_fd, buffer, 1) > 0) {
-			write(client_fd, "t", 1);
-			std::cout << buffer;
-		}
+	struct pollfd fds[2];
+
+	fds[0].fd = client1_fd;
+	fds[1].fd = client2_fd;
+
+	int status;
+	while (1) {
+		status = poll(fds, 2, -1);
+		std::cout << status << std::endl;
 	}
 
 	perror(NULL);

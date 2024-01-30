@@ -5,3 +5,10 @@ setsockopt: establece opciones del socket
 bind:       bindea el socket con un address, un puerto y una familia
 listen:     escucha para conexiones
 accept:     acepta una conexion de un cliente y crea un socket por el que el cliente escribe
+
+
+
+poll: fds[]:
+        fd 
+        events = eventos a mirar
+        revents = eventos que han sido observados
