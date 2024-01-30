@@ -1,0 +1,32 @@
+Limita los métodos HTTP aceptados para la ruta:
+limit_except GET POST {
+    deny all;
+}
+
+Realiza una redirección HTTP:
+return 301 /new-url;
+
+Define un directorio o archivo desde donde se buscará el archivo:
+alias /tmp/www;
+
+Activa o desactiva la lista de directorios:
+autoindex on;  # Activar la lista de directorios
+autoindex off;  # Desactivar la lista de directorios
+
+Establece un archivo predeterminado para responder si la solicitud es para un directorio:
+index index.html;
+
+Ejecuta CGI basado en ciertas extensiones de archivos (por ejemplo, .php):
+fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+include fastcgi_params;
+
+Haz que funcione con los métodos POST y GET:
+limit_except POST GET {
+    deny all;
+}
+
+Permite que la ruta acepte archivos cargados y configura dónde deben guardarse:
+client_max_body_size 10M;
+proxy_pass http://backend/upload;
+
