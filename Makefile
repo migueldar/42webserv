@@ -1,5 +1,5 @@
 NAME := webserv
-SRCS := srcs/main.cpp
+SRCS := srcs/sockets/server.cpp
 OBJS := $(SRCS:srcs/%.cpp=objs/%.o)
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98
@@ -13,6 +13,7 @@ $(NAME): $(OBJS)
 
 objs:
 	@mkdir	objs \
+			objs/sockets \
 
 objs/%.o: srcs/%.cpp | objs
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -27,5 +28,8 @@ re: fclean all
 sanitize:: CXXFLAGS += -fsanitize=address -g3
 sanitize:: LDFLAGS += -fsanitize=address
 sanitize:: re
+
+client: test/cli/client.o
+	$(CXX) $(LDFLAGS) test/cli/client.o -o client
 
 .PHONY: all clean fclean re sanitize
