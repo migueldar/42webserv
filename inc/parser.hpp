@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <vector>
+#include <cstdint>
+#include <limits>
 
 #define METHODS_NUM 3
 
@@ -22,7 +24,7 @@ class parserLocations{
     std::string redirectionUrl = "";
 
     //MANAGES ESPECIFIC RULES FOR METHODS
-    uint8_t methods[METHODS_NUM];
+    bool methods[METHODS_NUM];
 
     //OFF predeterminado
     bool autoindex;
@@ -31,7 +33,7 @@ class parserLocations{
 
 
 class parserServer {
-
+    //PARSE MAX BODYSIZE
     uint32_t maxBodySize;
 
     // FULL 4 bytes AUTOASIGNABLE
@@ -52,11 +54,13 @@ class parserServer {
 };
 
 class parserFile{
-
+    //Auto increment counter
     uint32_t numfile; 
 
+    //Vector of priorities ids
     std::vector<uint32_t> prioIdServ;
-
+    
+    //Server vector
     std::vector<parserServer> serverDefinitinos;
 };
 
