@@ -18,7 +18,7 @@ class parserLocations{
     std::string  root;
 
     //NOT DEFAULT NEEDED
-    std::string indexPath;
+    std::string defaultPath;
 
     // NO DEFAULT NEEDED 
     std::string redirectionUrl = "";
