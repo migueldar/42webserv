@@ -6,6 +6,8 @@ CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98
 LDFLAGS = -std=c++98
 RM = /bin/rm -rf
 
+ARG = /test/nginxTesting/conf/ngix0.conf
+
 all: $(NAME)
 
 $(NAME): $(OBJS)
@@ -22,6 +24,9 @@ clean:
 fclean: clean
 	$(RM) $(NAME)
 re: fclean all
+
+exe:
+	./$(NAME) $(ARG)
 
 #check sanitize#
 sanitize:: CXXFLAGS += -fsanitize=address -g3
