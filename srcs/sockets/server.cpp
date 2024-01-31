@@ -1,8 +1,10 @@
 #include "webserv.hpp"
 #include <sys/poll.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
 #include <stdlib.h>
+#include <cstring>
 
 struct pollfd *vector_to_ptr(std::vector<int> v, int fd_listen) {
 	struct pollfd *ret = (struct pollfd *) calloc(v.size() + 2, sizeof(struct pollfd));
@@ -43,6 +45,7 @@ int main() {
 		if (poll_fd[0].revents & POLLIN) {
 			aux_fd = accept(poll_fd[0].fd, (struct sockaddr*) &s, &addrlen);
 			vector_poll_fd.push_back(aux_fd);
+			send(aux_fd, "200\n\n", 5, 0); 
 		}
 		for (int i = 1; i < (int) vector_poll_fd.size() + 1; i++) {
 			if (poll_fd[i].revents & POLLIN) {
@@ -50,8 +53,12 @@ int main() {
 				std::cout << i <<  ": " << read_buff << std::endl << std::endl;
 				memset(read_buff, 0, 0x1000);
 			}
-			if (poll_fd[i].revents & POLLHUP)
+			if (poll_fd[i].revents & POLLHUP) {
 				std::cout << i << " CIAO" << std::endl;
+				close(vector_poll_fd[i]);
+				vector_poll_fd.erase(vector_poll_fd.begin() + i);
+			}
 		}
+		usleep(100000);
 	}
 }
