@@ -42,7 +42,7 @@ class parserServer {
     // MUST HAVE DEFAULT    
     std::string serverName;
 
-    // RANGES [0, 65535]
+    // RANGES [0, std::numeric_limits<uint16_t>::max()]
     uint16_t port;
 
     //Key:Status | Value:Route_to_html
