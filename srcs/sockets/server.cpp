@@ -45,9 +45,10 @@ int main() {
 		if (poll_fd[0].revents & POLLIN) {
 			aux_fd = accept(poll_fd[0].fd, (struct sockaddr*) &s, &addrlen);
 			vector_poll_fd.push_back(aux_fd);
-			send(aux_fd, 	"HTTP/1.1 200 OK\r\n\
+			send(aux_fd, "HTTP/1.1 200 OK\r\n\
 Content-Length: 0\r\n\
-\r\n", 39, 0);
+Connection: keep-alive\r\n\
+\r\n", 63, 0);
 		}
 		for (int i = 1; i < (int) vector_poll_fd.size() + 1; i++) {
 			if (poll_fd[i].revents & POLLIN) {

@@ -3,16 +3,17 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include <cstdint>
 #include <limits>
 
 #define METHODS_NUM 3
 
 enum methodsEnum{
-    GET = 0;
-    POST;
-    DELETE;
-}
+    GET,
+    POST,
+    DELETE
+};
 
 class parserLocations{
     std::string  root;
