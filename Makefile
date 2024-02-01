@@ -1,12 +1,17 @@
 NAME := webserv
-SRCS := srcs/main.cpp
+SRCS := srcs/main.cpp \
+		srcs/parser/CDParserFile.cpp \
+		srcs/parser/CDParserLocation.cpp \
+		srcs/parser/CDParserServer.cpp \
+		srcs/parser/parserUtils.cpp \
+		
 OBJS := $(SRCS:srcs/%.cpp=objs/%.o)
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98
 LDFLAGS = -std=c++98
 RM = /bin/rm -rf
 
-ARG = /test/nginxTesting/conf/ngix0.conf
+ARG = "/test/nginxTesting/conf/ngix0.conf"
 
 all: $(NAME)
 
@@ -15,6 +20,7 @@ $(NAME): $(OBJS)
 
 objs:
 	@mkdir	objs \
+			objs/parser \
 
 objs/%.o: srcs/%.cpp | objs
 	$(CXX) $(CXXFLAGS) -c $< -o $@

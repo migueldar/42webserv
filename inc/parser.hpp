@@ -6,8 +6,9 @@
 #include <map>
 #include <cstdint>
 #include <limits>
+#include <fstream>
 
-#define DEFAULT_CONFIG_FILE 
+#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/nginx0.conf"
 #define METHODS_NUM 3
 
 enum methodsEnum{
@@ -16,9 +17,23 @@ enum methodsEnum{
     DELETE
 };
 
-class parserLocations {
-public:
+enum ConfigType {
+    SERVER_NAME,
+    LOCATION,
+    REDIRECT,
+    ERROR_PAGE,
+    PORT,
+    ROOT,
+    INDEX,
+    METHODS,
+    BRACE_CLOSE,
+    UNKNOWN
+};
 
+
+//src/paser/CDLocation.cpp
+class Location {
+public:
     //ATRIBUTES------------------------------------------------------------------·#
     //NOT NEEDED DEFAULT
     std::string root;
@@ -32,12 +47,12 @@ public:
     bool autoindex;
 
     //METHODS--------------------------------------------------------------------·#
-    parserLocations();
+    Location();
 };
 
-class parserServer {
+//src/paser/CDServer.cpp
+class Server {
     public:
-
         //ATRIBUTES------------------------------------------------------------------·#
         //PARSE MAX BODYSIZE
         uint32_t maxBodySize;
@@ -47,46 +62,53 @@ class parserServer {
         std::string serverName;
         // RANGES [0, std::numeric_limits<uint16_t>::max()]
         uint16_t port;
-        //Key:Status | Value:Route_to_html
-        std::map<uint16_t, std::string> parserErrPages;
-        // Key:LocationPath | Value:classLocation 
-        std::map<std::string, parserLocations> routes;
-
 
         //METHODS--------------------------------------------------------------------·#
-        parserServer(uint16_t serverID);
+        Server(uint16_t serverID);
 
         void addErrorPage(uint16_t statusCode, const std::string& htmlRoute);
 
-        void addLocation(const std::string& path, const parserLocations& location);
+        void addLocation(const std::string& path, const Location& location);
+    
+    private:
+        //ATRIBUTES------------------------------------------------------------------·#
+        //Key:Status | Value:Route_to_html
+        std::map<uint16_t, std::string> ErrPages;
+        // Key:LocationPath | Value:classLocation 
+        std::map<std::string, Location> routes;
 };
 
-class parserFile {
+//src/paser/CDParserFile.cpp
+class ParserFile {
     public:
-        FILE *configFile;
+        //FILE TO MANAGE
+        std::ifstream configParserFile;
 
         //ATRIBUTES------------------------------------------------------------------·#
         //Auto increment counter
-        uint32_t numfile;
+        uint32_t numParserFile;
+
+        //METHODS--------------------------------------------------------------------·#
+        ParserFile(std::string routeToParserFile);
+        ~ParserFile(void);
+
+        void addPriorityId(uint32_t priorityId);
+
+        void addServerDefinition(Server newServer);
+        
+        int32_t fillServer(void);
+        
+        void parseFile(void);
+    private:
+        //ATRIBUTES------------------------------------------------------------------·#
         //Vector of priorities ids
         std::vector<uint32_t> prioIdServ;
         //Server vector
-        std::vector<parserServer> serverDefinitions;
+        std::vector<Server> serverDefinitions;
 
-
-        //METHODS--------------------------------------------------------------------·#
-        parserFile(std::string routeToFile);
-
-        void addPriorityId(uint32_t priorityId);
 };
 
-
+//UTILS
+std::vector<std::string> splitString(const std::string& input, char delimiter);
 
 #endif
-
-enum methodsEnum {
-    GET,
-    POST,
-    DELETE
-};
-
