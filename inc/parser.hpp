@@ -92,9 +92,13 @@ class ParserFile {
         ParserFile(std::string routeToParserFile);
         ~ParserFile(void);
 
+        void serValuesConfigTypeMap(void);
+
         void addPriorityId(uint32_t priorityId);
 
         void addServerDefinition(Server newServer);
+
+        ConfigType stringToConfigType(const std::string& str);
         
         int32_t fillServer(void);
         
@@ -106,6 +110,7 @@ class ParserFile {
         //Server vector
         std::vector<Server> serverDefinitions;
 
+        std::map<std::string, ConfigType> configTypeMap;
 };
 
 //UTILS
