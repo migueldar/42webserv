@@ -1,11 +1,11 @@
 
 #include "webserv.hpp"
 
-Server::Server(uint16_t serverID): maxBodySize(std::numeric_limits<uint32_t>::max()), serverID(0), port(0) {
-    (void)serverID;
+Server::Server(unsigned long serverID): maxBodySize(std::numeric_limits<unsigned long>::max()), serverID(serverID), port(0) {
+    serverName = "serverN:" + toString(serverID); 
 }
 
-void Server::addErrorPage(uint16_t statusCode, const std::string& htmlRoute) {
+void Server::addErrorPage(int statusCode, const std::string& htmlRoute) {
     ErrPages[statusCode] = htmlRoute;
 }
 

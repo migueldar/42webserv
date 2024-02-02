@@ -21,3 +21,15 @@ std::vector<std::string> splitString(const std::string& input, char delimiter) {
 
     return tokens;
 }
+
+
+unsigned long stringToUnsignedLong(const std::string& str) {
+    std::istringstream stream(str);
+    unsigned long result = 0;
+
+    if (!(stream >> result) || !stream.eof()) {
+        throw std::invalid_argument("Error en la conversión de cadena a unsigned long");
+    }
+
+    return result;
+}

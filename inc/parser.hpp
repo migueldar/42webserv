@@ -4,8 +4,9 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <cstdint>
+#include <cstddef>
 #include <limits>
+#include <sstream>
 #include <fstream>
 
 #define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/nginx0.conf"
@@ -55,25 +56,25 @@ class Server {
     public:
         //ATRIBUTES------------------------------------------------------------------·#
         //PARSE MAX BODYSIZE
-        uint32_t maxBodySize;
+        unsigned long maxBodySize;
         // FULL 4 bytes AUTOASIGNABLE
-        uint32_t serverID;
+        unsigned long serverID;
         // MUST HAVE DEFAULT
         std::string serverName;
-        // RANGES [0, std::numeric_limits<uint16_t>::max()]
-        uint16_t port;
+        // RANGES [0, std::numeric_limits<unsigned int>::max()]
+        unsigned int port;
 
         //METHODS--------------------------------------------------------------------·#
-        Server(uint16_t serverID);
+        Server(unsigned long serverID);
 
-        void addErrorPage(uint16_t statusCode, const std::string& htmlRoute);
+        void addErrorPage(int statusCode, const std::string& htmlRoute);
 
         void addLocation(const std::string& path, const Location& location);
     
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Key:Status | Value:Route_to_html
-        std::map<uint16_t, std::string> ErrPages;
+        std::map<int, std::string> ErrPages;
         // Key:LocationPath | Value:classLocation 
         std::map<std::string, Location> routes;
 };
@@ -86,34 +87,37 @@ class ParserFile {
 
         //ATRIBUTES------------------------------------------------------------------·#
         //Auto increment counter
-        uint32_t numParserFile;
+        unsigned long numParserFile;
 
         //METHODS--------------------------------------------------------------------·#
         ParserFile(std::string routeToParserFile);
         ~ParserFile(void);
 
-        void serValuesConfigTypeMap(void);
-
-        void addPriorityId(uint32_t priorityId);
+        void addPriorityId(unsigned long priorityId);
 
         void addServerDefinition(Server newServer);
 
-        ConfigType stringToConfigType(const std::string& str);
-        
-        int32_t fillServer(void);
+        long fillServer(std::map<std::string, ConfigType> &configTypeMap);
         
         void parseFile(void);
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Vector of priorities ids
-        std::vector<uint32_t> prioIdServ;
+        std::map<std::string, unsigned long> prioIdServ;
         //Server vector
         std::vector<Server> serverDefinitions;
-
-        std::map<std::string, ConfigType> configTypeMap;
+        
 };
 
 //UTILS
 std::vector<std::string> splitString(const std::string& input, char delimiter);
+unsigned long stringToUnsignedLong(const std::string& str);
+
+template <typename T>
+std::string toString(T value) {
+    std::ostringstream os;
+    os << value;
+    return os.str();
+}
 
 #endif

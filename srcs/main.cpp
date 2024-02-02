@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
 		ParserFile mainObj(configRoute);
 	}
 	catch(std::exception &e){
-		e.what();
+		std::cout << e.what() << std::endl;
 	}
 
 	return 0;
