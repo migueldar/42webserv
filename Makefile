@@ -1,5 +1,11 @@
 NAME := webserv
-SRCS := srcs/sockets/server.cpp
+SRCS := srcs/mymain.cpp \
+		srcs/Location2.cpp \
+		srcs/Server2.cpp \
+		srcs/Connection.cpp \
+		srcs/Listener.cpp \
+		srcs/PollHandler.cpp 
+
 OBJS := $(SRCS:srcs/%.cpp=objs/%.o)
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98
@@ -28,6 +34,9 @@ re: fclean all
 sanitize:: CXXFLAGS += -fsanitize=address -g3
 sanitize:: LDFLAGS += -fsanitize=address
 sanitize:: re
+
+noflag:: CXXFLAGS = -I inc -std=c++98
+noflag:: re
 
 client: test/cli/client.o
 	$(CXX) $(LDFLAGS) test/cli/client.o -o client
