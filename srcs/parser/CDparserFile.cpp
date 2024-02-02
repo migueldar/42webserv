@@ -1,12 +1,50 @@
 #include "webserv.hpp"
 
-ParserFile::ParserFile(std::string routeToParserFile): configParserFile(routeToParserFile == "" ? DEFAULT_CONFIG_ParserFile : routeToParserFile.c_str()), numParserFile(0)  {
+ParserFile::ParserFile(std::string routeToParserFile): configParserFile(routeToParserFile == "" ? DEFAULT_CONFIG_ParserFile : routeToParserFile.c_str()) {
     if (!configParserFile.is_open()) {
         throw std::runtime_error("Error: ParserFile couldn't be opened: " + routeToParserFile);
     }
 
     parseFile();
+
+    for(std::map<unsigned long, std::vector<Server> >::iterator it = serverDefinitions.begin(); it != serverDefinitions.end(); ++it)
+        printServersByPort(it->first);
 }
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+void ParserFile::printServersByPort(unsigned long targetPort) {
+    std::map<unsigned long, std::vector<Server> >::iterator serverIter = serverDefinitions.find(targetPort);
+
+    if (serverIter != serverDefinitions.end()) {
+        std::cout << "Servers for port " << targetPort << ":" << std::endl;
+
+        std::vector<Server>& servers = serverIter->second;
+        std::vector<Server>::iterator serverVecIter = servers.begin();
+        while (serverVecIter != servers.end()) {
+            const Server& server = *serverVecIter;
+
+            std::cout << "  Server Name: " << server.serverName << std::endl;
+            // std::map<std::string, Location>::const_iterator locationIter = server.routes.begin();
+            // while (locationIter != server.routes.end()) {
+            //     const std::string& path = locationIter->first;
+            //     const Location& location = locationIter->second;
+
+            //     std::cout << "    Location Path: " << path << std::endl;
+
+            //     ++locationIter;
+            // }
+
+            ++serverVecIter;
+        }
+    } else {
+        std::cout << "No servers found for port " << targetPort << std::endl;
+    }
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,7 +90,7 @@ void ParserFile::parseFile() {
         }
     
         if (*it == "server" && *(++it) == "{" && ++it == wordLines.end()){
-            std::cout << "Found server:" << toString(numParserFile) << std::endl;
+            std::cout << "Found server" << std::endl;
             ++brace += fillServer(configTypeMap);
         }
         else{
@@ -85,12 +123,13 @@ static void serValuesConfigTypeMap(std::map<std::string, ConfigType> &configType
 long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
     long brace = 0;
     bool flag = 0;
+    unsigned int port;
     std::string line;
     std::vector<std::string> wordLines;
     std::vector<std::string>::iterator it;
 
     serValuesConfigTypeMap(configTypeMap);
-    Server tmp(numParserFile++);
+    Server tmp;
 
     while (std::getline(configParserFile, line)) {
         wordLines = splitString(line, ' ');
@@ -116,19 +155,15 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
                 }
                 else
                     throw std::runtime_error("Error: bad config server_name:" + *(--wordLines.end()));
-
                 break;
 
             //(port)
             case PORT:
                 configTypeMap["port"] = UNKNOWN;
                 if(wordLines.size() == 2){
-                    tmp.port = parsePort(wordLines[1]);
-
-                    if(prioIdServ[wordLines[1]] == 0)
-                        prioIdServ[wordLines[1]] = tmp.port;
+                        port = parsePort(wordLines[1]);
                     
-                    std::cout << "PORT FOUND:" << toString(tmp.port) << std::endl;
+                    std::cout << "PORT FOUND:" << toString(port) << std::endl;
                 }
                 else
                     throw std::runtime_error("Error: bad config port:" + *(--wordLines.end()));
@@ -176,7 +211,8 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
                         throw std::runtime_error("Error: bad config, missing port");
                     }
 
-                    serverDefinitions.push_back(tmp);
+                    serverDefinitions[port].insert(serverDefinitions[port].begin(), tmp);
+
 
                     return (--brace);
                 }

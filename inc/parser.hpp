@@ -9,7 +9,7 @@
 #include <sstream>
 #include <fstream>
 
-#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/nginx0.conf"
+#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/nginx2.conf"
 #define METHODS_NUM 3
 
 enum methodsEnum{
@@ -58,14 +58,10 @@ class Server {
         //PARSE MAX BODYSIZE
         unsigned long maxBodySize;
         // FULL 4 bytes AUTOASIGNABLE
-        unsigned long serverID;
-        // MUST HAVE DEFAULT
-        std::string serverName;
-        // RANGES [0, std::numeric_limits<unsigned int>::max()]
-        unsigned int port;
+        std::string serverName;        
 
         //METHODS--------------------------------------------------------------------·#
-        Server(unsigned long serverID);
+        Server();
 
         void addErrorPage(int statusCode, const std::string& htmlRoute);
 
@@ -86,26 +82,22 @@ class ParserFile {
         std::ifstream configParserFile;
 
         //ATRIBUTES------------------------------------------------------------------·#
-        //Auto increment counter
-        unsigned long numParserFile;
 
         //METHODS--------------------------------------------------------------------·#
         ParserFile(std::string routeToParserFile);
         ~ParserFile(void);
-
-        void addPriorityId(unsigned long priorityId);
 
         void addServerDefinition(Server newServer);
 
         long fillServer(std::map<std::string, ConfigType> &configTypeMap);
         
         void parseFile(void);
+
+        void printServersByPort(unsigned long targetPort);
     private:
         //ATRIBUTES------------------------------------------------------------------·#
-        //Vector of priorities ids
-        std::map<std::string, unsigned long> prioIdServ;
         //Server vector
-        std::vector<Server> serverDefinitions;
+        std::map<unsigned long, std::vector<Server> > serverDefinitions;
         
 };
 

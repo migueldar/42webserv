@@ -1,8 +1,9 @@
 
 #include "webserv.hpp"
 
-Server::Server(unsigned long serverID): maxBodySize(std::numeric_limits<unsigned long>::max()), serverID(serverID), port(0) {
-    serverName = "serverN:" + toString(serverID); 
+Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()){
+    static unsigned long idCount = 0;
+    serverName = "serverN:" + toString(idCount++); 
 }
 
 void Server::addErrorPage(int statusCode, const std::string& htmlRoute) {
