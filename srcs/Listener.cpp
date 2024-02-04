@@ -7,20 +7,27 @@ Listener::Listener(int port, std::vector<Server>& servers): port(port), servers(
 	sockaddr.sin_addr.s_addr = INADDR_ANY;
 	sockaddr.sin_port = htons(port);
 	bind(sock, (struct sockaddr*) &sockaddr, sizeof(struct sockaddr));
-
-	events = POLLIN;
 }
 
-//NO ESTA NI DE COÑA COMPLETO
-Listener::Listener(Listener const& other): servers(other.servers) {} 
+Listener::Listener(Listener const& other): port(other.port), sock(other.sock), servers(other.servers), sockaddr(other.sockaddr) {} 
 
 Listener::~Listener() {}
 
-void Listener::listenMode() {
+void Listener::listenMode() const {
 	listen(sock, 0x7fffffff);
 }
 
-void Listener::handleEvent(short revents) {
-	std::cout << "hola from listener" << std::endl;
+const Connection Listener::handleEvent(short revents) const {
+	std::cout << "Handling listener event" << std::endl;
 	(void) revents;
+
+	struct sockaddr_in* addr = new struct sockaddr_in;
+	socklen_t *len = new socklen_t;
+
+	int new_socket = accept(sock, (struct sockaddr*) addr, len);
+
+	if (new_socket == -1)
+		perror(NULL);
+
+	return Connection(new_socket, servers);
 }

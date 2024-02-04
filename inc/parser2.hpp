@@ -58,6 +58,7 @@ class Server {
 		Server(std::vector<std::string>& s, std::vector<Location>& l);
 		const Location& getLocation(std::string locationName) const;
 
+
 	private:
 		//Key:Status | Value:Route_to_html
 		std::map<uint16_t, std::string> parserErrPages;

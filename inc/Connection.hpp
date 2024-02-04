@@ -5,12 +5,14 @@
 
 class Connection {
 	public:
-		int		socket;
-		Server&	server;
-		short	events;
+		int						sock;
+		std::vector<Server>&	servers;
 
-		Connection(int socket, Server& serv);
+		Connection(int socket, std::vector<Server>&	servers);
+		Connection(const Connection& other);
 		~Connection();
+		bool operator==(const Connection& other);
+		int handleEvent(short revents) const;
 
 	private:
 
