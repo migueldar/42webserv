@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <sstream>
@@ -69,6 +70,10 @@ class Server {
         void addLocation(const std::string& path, const Location& location);
 
         long getNumRoutes();
+
+        const std::map<std::string, Location> getLocations(void) const;
+
+        std::vector<std::string> getKeysRoutes() const;
     
     private:
         //ATRIBUTES------------------------------------------------------------------·#
@@ -95,8 +100,9 @@ class ParserFile {
         void fillServers();
         
         void printServersByPort(unsigned long targetPort);
+    
+        std::vector<std::string> getRoutesKeysByPort(unsigned long port) const; 
 
-        
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Server vector
