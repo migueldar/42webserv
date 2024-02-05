@@ -72,6 +72,8 @@ unsigned long parsePort(std::string portString){
     return port;
 }
 
+//Location ParserFile::parseLocation(){}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ParserFile::parseFile() {
@@ -124,6 +126,7 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
     long brace = 0;
     bool flag = 0;
     unsigned int port;
+    Location location;
     std::string line;
     std::vector<std::string> wordLines;
     std::vector<std::string>::iterator it;
@@ -171,7 +174,14 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
 
             //(location)    
             case LOCATION:
-                std::cout << "LOCATION FOUND" << std::endl;
+                configTypeMap["location"] = UNKNOWN;
+                if(wordLines.size() == 3){
+                    //location = parseLocation()
+                    //tmp.addLocation(wordLines[1],);
+                    std::cout << "LOCATION FOUND" << std::endl;
+                }
+                else
+                    throw std::runtime_error("Error: bad config location:" + *(--wordLines.end()));
                 break;
 
             //(redirect)    
@@ -209,6 +219,9 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
 
                     if(configTypeMap["port"] != UNKNOWN){
                         throw std::runtime_error("Error: bad config, missing port");
+                    }
+                    if(configTypeMap["location"] == LOCATION){
+                        throw std::runtime_error("Error: bad config, missing location");
                     }
 
                     serverDefinitions[port].insert(serverDefinitions[port].begin(), tmp);

@@ -3,6 +3,7 @@
 
 Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()){
     static unsigned long idCount = 0;
+    Location initLocation;
     serverName = "serverN:" + toString(idCount++); 
 }
 
