@@ -5,7 +5,7 @@ ParserFile::ParserFile(std::string routeToParserFile): configParserFile(routeToP
         throw std::runtime_error("Error: ParserFile couldn't be opened: " + routeToParserFile);
     }
 
-    parseFile();
+    fillServers();
 
     for(std::map<unsigned long, std::vector<Server> >::iterator it = serverDefinitions.begin(); it != serverDefinitions.end(); ++it)
         printServersByPort(it->first);
@@ -76,34 +76,6 @@ unsigned long parsePort(std::string portString){
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ParserFile::parseFile() {
-    std::string line;
-    std::vector<std::string> wordLines;
-    std::vector<std::string>::iterator it;
-    std::map<std::string, ConfigType> configTypeMap;
-    long brace = 0;
-
-    while (std::getline(configParserFile, line)) {
-        wordLines = splitString(line, ' ');
-        it = wordLines.begin();
-
-        if (wordLines.empty() || (*it)[0] == '#'){
-            continue;
-        }
-    
-        if (*it == "server" && *(++it) == "{" && ++it == wordLines.end()){
-            std::cout << "Found server" << std::endl;
-            ++brace += fillServer(configTypeMap);
-        }
-        else{
-            throw std::runtime_error("Error: bad config");
-        }
-    }
-
-    if (brace != 0)
-        throw std::runtime_error("Error: Open braket");
-}
-
 
 static ConfigType stringToConfigType(const std::string& str, const std::map<std::string, ConfigType> &configTypeMap) {
     std::map<std::string, ConfigType>::const_iterator it = configTypeMap.find(str);
@@ -111,6 +83,7 @@ static ConfigType stringToConfigType(const std::string& str, const std::map<std:
 }
 
 static void serValuesConfigTypeMap(std::map<std::string, ConfigType> &configTypeMap){
+    configTypeMap["server"] = SERVER;
     configTypeMap["server_name"] = SERVER_NAME;
     configTypeMap["location"] = LOCATION;
     configTypeMap["redirect"] = REDIRECT;
@@ -122,17 +95,19 @@ static void serValuesConfigTypeMap(std::map<std::string, ConfigType> &configType
     configTypeMap["}"] = BRACE_CLOSE;
 }
 
-long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
+void ParserFile::fillServers() {
     long brace = 0;
     bool flag = 0;
     unsigned int port;
     Location location;
+    std::string routeKey;
     std::string line;
+    std::map<std::string, ConfigType> configTypeMap;
     std::vector<std::string> wordLines;
     std::vector<std::string>::iterator it;
+    Server tmp;
 
     serValuesConfigTypeMap(configTypeMap);
-    Server tmp;
 
     while (std::getline(configParserFile, line)) {
         wordLines = splitString(line, ' ');
@@ -145,6 +120,17 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
         ConfigType configType = stringToConfigType(*it, configTypeMap);
 
         switch (configType) {
+            case SERVER:
+                if(wordLines.size() == 2 && wordLines[1] == "{"){
+                    serValuesConfigTypeMap(configTypeMap);
+                    tmp = Server();
+                    ++brace;
+                    std::cout << "SERVER FOUND"<< std::endl;
+                }
+                else
+                    throw std::runtime_error("Error: bad config server:" + *(--wordLines.end()));
+                break;
+
             //(server_name)
             case SERVER_NAME:
                 configTypeMap["server_name"] = UNKNOWN;
@@ -164,7 +150,7 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
             case PORT:
                 configTypeMap["port"] = UNKNOWN;
                 if(wordLines.size() == 2){
-                        port = parsePort(wordLines[1]);
+                    port = parsePort(wordLines[1]);
                     
                     std::cout << "PORT FOUND:" << toString(port) << std::endl;
                 }
@@ -174,11 +160,11 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
 
             //(location)    
             case LOCATION:
-                configTypeMap["location"] = UNKNOWN;
-                if(wordLines.size() == 3){
-                    //location = parseLocation()
-                    //tmp.addLocation(wordLines[1],);
-                    std::cout << "LOCATION FOUND" << std::endl;
+                if(wordLines.size() == 3 && wordLines[2] == "{"){
+                    location = Location();
+                    routeKey = wordLines[1];
+                    std::cout << "LOCATION FOUND: key:" << routeKey << std::endl;
+                    ++brace;
                 }
                 else
                     throw std::runtime_error("Error: bad config location:" + *(--wordLines.end()));
@@ -216,18 +202,21 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
             //(})   
             case BRACE_CLOSE:
                 if (++it == wordLines.end()){
+                    --brace;
+                    if(brace == 0){
+                        if(configTypeMap["port"] != UNKNOWN){
+                            throw std::runtime_error("Error: bad config, missing port");
+                        }
+                        if(tmp.getNumRoutes() == 0){
+                            throw std::runtime_error("Error: bad config, missing location");
+                        }
 
-                    if(configTypeMap["port"] != UNKNOWN){
-                        throw std::runtime_error("Error: bad config, missing port");
+                        serverDefinitions[port].insert(serverDefinitions[port].begin(), tmp);
                     }
-                    if(configTypeMap["location"] == LOCATION){
-                        throw std::runtime_error("Error: bad config, missing location");
+                    if(brace == 1){
+                        
+                        tmp.addLocation(routeKey, location);
                     }
-
-                    serverDefinitions[port].insert(serverDefinitions[port].begin(), tmp);
-
-
-                    return (--brace);
                 }
                 else
                     flag = 1;
@@ -236,10 +225,12 @@ long ParserFile::fillServer(std::map<std::string, ConfigType> &configTypeMap) {
                 flag = 1;
             break;
         }
+        if(brace == 0 && configType != BRACE_CLOSE){
+            throw std::runtime_error("Error: bad config: " + *it);
+        }
         if (flag == 1)
             throw std::runtime_error("Error: bad config: " + *it);
     }
-    return (brace);
 }
 
 

@@ -19,6 +19,7 @@ enum methodsEnum{
 };
 
 enum ConfigType {
+    SERVER,
     SERVER_NAME,
     LOCATION,
     REDIRECT,
@@ -66,6 +67,8 @@ class Server {
         void addErrorPage(int statusCode, const std::string& htmlRoute);
 
         void addLocation(const std::string& path, const Location& location);
+
+        long getNumRoutes();
     
     private:
         //ATRIBUTES------------------------------------------------------------------·#
@@ -89,11 +92,11 @@ class ParserFile {
 
         void addServerDefinition(Server newServer);
 
-        long fillServer(std::map<std::string, ConfigType> &configTypeMap);
+        void fillServers();
         
-        void parseFile(void);
-
         void printServersByPort(unsigned long targetPort);
+
+        
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Server vector
