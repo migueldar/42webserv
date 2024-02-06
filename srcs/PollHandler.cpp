@@ -1,7 +1,4 @@
-#include "PollHandler.hpp"
-#include "Listener.hpp"
-#include <vector>
-#include <unistd.h>
+#include "webserv.hpp"
 
 PollHandler::PollHandler(): fds(NULL) {}
 

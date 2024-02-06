@@ -1,10 +1,4 @@
 #include "webserv.hpp"
-#include <sys/poll.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <cstring>
-#include <csignal>
 
 Server buildSampleServer() {
 	Location a("/Users/mde-arpe/CURSUS/webserv/html/miau");

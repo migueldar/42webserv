@@ -1,5 +1,4 @@
 #include "webserv.hpp"
-#include <sys/poll.h>
 
 Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers) {}
 

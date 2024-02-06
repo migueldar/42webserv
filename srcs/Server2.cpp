@@ -6,6 +6,7 @@ Server::Server(std::vector<std::string>& s, std::vector<Location>& l) {
 	}
 }
 
+//handle route doesnt exist
 const Location& Server::getLocation(std::string locationName) const {
 	return (routes.at(locationName));
 }
