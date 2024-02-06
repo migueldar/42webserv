@@ -10,7 +10,7 @@
 #include <sstream>
 #include <fstream>
 
-#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/nginx2.conf"
+#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/1.conf"
 #define METHODS_NUM 3
 
 enum methodsEnum{
@@ -29,6 +29,7 @@ enum ConfigType {
     ROOT,
     INDEX,
     METHODS,
+    AUTO_INDEX,
     BRACE_CLOSE,
     UNKNOWN
 };
@@ -65,20 +66,28 @@ class Server {
         //METHODS--------------------------------------------------------------------·#
         Server();
 
-        void addErrorPage(int statusCode, const std::string& htmlRoute);
+        void addErrorPage(const std::string& statusCode, const std::string& htmlRoute);
 
         void addLocation(const std::string& path, const Location& location);
 
         long getNumRoutes();
 
         const std::map<std::string, Location> getLocations(void) const;
+        
+        std::string getPageStatus(const std::string& statusCode) const;
 
         std::vector<std::string> getKeysRoutes() const;
+
+        const std::map<std::string, Location>& getRoutes() const;
+
+        const std::map<std::string, std::string>& getErrPages() const;
+
+        bool existsLocationByRoute(const std::string& path) const;
     
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Key:Status | Value:Route_to_html
-        std::map<int, std::string> ErrPages;
+        std::map<std::string, std::string> ErrPages;
         // Key:LocationPath | Value:classLocation 
         std::map<std::string, Location> routes;
 };

@@ -7,7 +7,17 @@ Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()){
     serverName = "serverN:" + toString(idCount++); 
 }
 
-void Server::addErrorPage(int statusCode, const std::string& htmlRoute) {
+std::string Server::getPageStatus(const std::string& statusCode) const {
+    std::map<std::string, std::string>::const_iterator it = ErrPages.find(statusCode);
+
+    if (it != ErrPages.end()) {
+        return it->second;
+    } else {
+        return std::string();  
+    }
+}
+
+void Server::addErrorPage(const std::string& statusCode, const std::string& htmlRoute) {
     ErrPages[statusCode] = htmlRoute;
 }
 
@@ -34,4 +44,21 @@ std::vector<std::string> Server::getKeysRoutes() const {
     return exitRoutes;
 }
 
+bool Server::existsLocationByRoute(const std::string& path) const {
+    static const Location emptyLocation; 
 
+    std::map<std::string, Location>::const_iterator locationIter = routes.find(path);
+    if (locationIter != routes.end()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+const std::map<std::string, Location>& Server::getRoutes() const {
+    return routes;
+}
+
+const std::map<std::string, std::string>& Server::getErrPages() const {
+    return ErrPages;
+}
