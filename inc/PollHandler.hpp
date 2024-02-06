@@ -4,6 +4,9 @@
 #include "Connection.hpp"
 #include "Listener.hpp"
 #include <poll.h>
+#include <algorithm>
+#include <vector>
+#include <list>
 
 class PollHandler {
 
@@ -18,7 +21,7 @@ class PollHandler {
 		void addListener(Listener& l);
 		void listenMode();
 		void addConnection(Connection &c);
-		void removeConnection(const Connection &c);
+		void removeConnection(Connection &c);
 		void addToFds(int fd, fdType type);
 		void removeFromFds(int fd);
 		int pollMode();
@@ -28,7 +31,7 @@ class PollHandler {
 		//this c ptr is needed for the poll function, it will have the elements from the two vectors in the same order
 		struct pollfd*			fds;
 		std::vector<Listener>	listeners;
-		std::vector<Connection>	connections;
+		std::list<Connection>	connections;
 };
 
 #endif

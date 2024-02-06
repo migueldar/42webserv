@@ -12,3 +12,7 @@ poll: fds[]:
         fd 
         events = eventos a mirar
         revents = eventos que han sido observados
+
+
+to see open socks linux:
+        netstat -t | grep localhost ; netstat -tl

@@ -21,13 +21,10 @@ const Connection Listener::handleEvent(short revents) const {
 	std::cout << "Handling listener event" << std::endl;
 	(void) revents;
 
-	struct sockaddr_in* addr = new struct sockaddr_in;
-	socklen_t *len = new socklen_t;
-
-	int new_socket = accept(sock, (struct sockaddr*) addr, len);
+	int new_socket = accept(sock, NULL, NULL);
 
 	if (new_socket == -1)
-		perror(NULL);
+		perror("accept");
 
 	return Connection(new_socket, servers);
 }

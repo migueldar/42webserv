@@ -11,8 +11,8 @@ class Connection {
 		Connection(int socket, std::vector<Server>&	servers);
 		Connection(const Connection& other);
 		~Connection();
-		bool operator==(const Connection& other);
-		int handleEvent(short revents) const;
+		bool operator==(const Connection& other) const;
+		int handleEvent(struct pollfd& pollfd) const;
 
 	private:
 

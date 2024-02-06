@@ -1,4 +1,7 @@
 #include "PollHandler.hpp"
+#include "Listener.hpp"
+#include <vector>
+#include <unistd.h>
 
 PollHandler::PollHandler(): fds(NULL) {}
 
@@ -21,36 +24,11 @@ void PollHandler::addConnection(Connection &c) {
 	connections.push_back(c);
 }
 
-void PollHandler::removeConnection(const Connection &c) {
+void PollHandler::removeConnection(Connection &c) {
+	close(c.sock);
 	removeFromFds(c.sock);
 	connections.erase(std::find(connections.begin(), connections.end(), c));
 }
-
-// void PollHandler::addToFds(int fd, fdType type) {
-// 	struct pollfd aux;
-// 	aux.fd = fd;
-// 	if (type == LISTENER)
-// 		aux.events = POLLIN;
-// 	else
-// 		aux.events = POLLIN | POLLOUT;
-
-// 	size_t prev_size = listeners.size() + connections.size();
-// 	struct pollfd* aux_ptr = new struct pollfd[prev_size + 1];
-// 	int i = 0;
-// 	while (i < prev_size && fds[i].events == POLLIN) {
-// 		aux_ptr[i] = fds[i];
-// 		i++;
-// 	}
-// 	aux_ptr[i] = aux;
-// 	i++;
-// 	while (i < prev_size + 1) {
-// 		aux_ptr[i] = fds[i - 1];
-// 		i++;
-// 	}
-
-// 	delete[] fds;
-// 	fds = aux_ptr;
-// }
 
 void PollHandler::addToFds(int fd, fdType type) {
 	struct pollfd aux;
@@ -95,7 +73,7 @@ int PollHandler::pollMode() {
 	std::cout << "Checking listeners" << std::endl;
 	for (std::vector<Listener>::const_iterator it = listeners.begin(); it != listeners.end(); it++) {
 		if (fds[i].revents) {
-			Connection c(it->handleEvent(fds[i].events));
+			Connection c(it->handleEvent(fds[i].revents));
 			addConnection(c);
 		}
 		i++;
@@ -103,16 +81,18 @@ int PollHandler::pollMode() {
 
 	//check connections
 	std::cout << "Checking connections" << std::endl;
-	int remove;
-	for (std::vector<Connection>::const_iterator it = connections.begin(); it != connections.end(); it++) {
-		std::cout << "caracol" << std::endl;
-		if (fds[i].revents) {
-			remove = it->handleEvent(fds[i].revents);
-			if (remove)
-				removeConnection(*it);
-		}
+	std::vector<Connection> toRemove;
+	for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++) {
+		if (fds[i].revents)
+			if (it->handleEvent(fds[i]))
+				toRemove.push_back(*it);
 		i++;
 	}
+
+
+	for (std::vector<Connection>::iterator it = toRemove.begin(); it != toRemove.end(); it++)
+		removeConnection(*it);
+
 
 	return 1;
 }
