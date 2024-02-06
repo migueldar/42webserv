@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <cstdint>
 #include <algorithm>
 #include <cstddef>
 #include <limits>

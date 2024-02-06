@@ -1,5 +1,10 @@
 NAME := webserv
-SRCS := srcs/main.cpp \
+SRCS := srcs/mymain.cpp \
+		srcs/Location2.cpp \
+		srcs/Server2.cpp \
+		srcs/Connection.cpp \
+		srcs/Listener.cpp \
+		srcs/PollHandler.cpp \
 		srcs/parser/CDParserFile.cpp \
 		srcs/parser/CDParserLocation.cpp \
 		srcs/parser/CDParserServer.cpp \
@@ -20,6 +25,7 @@ $(NAME): $(OBJS)
 
 objs:
 	@mkdir	objs \
+			objs/sockets \
 			objs/parser \
 
 objs/%.o: srcs/%.cpp | objs
@@ -38,5 +44,11 @@ exe:
 sanitize:: CXXFLAGS += -fsanitize=address -g3
 sanitize:: LDFLAGS += -fsanitize=address
 sanitize:: re
+
+noflag:: CXXFLAGS = -I inc -std=c++98
+noflag:: re
+
+client: test/cli/client.o
+	$(CXX) $(LDFLAGS) test/cli/client.o -o client
 
 .PHONY: all clean fclean re sanitize
