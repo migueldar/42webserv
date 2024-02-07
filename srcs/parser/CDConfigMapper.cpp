@@ -45,7 +45,6 @@ public:
             if (flag == 1)
                 throw std::runtime_error(*it);
         }
-        return ();
     }
 
 private:

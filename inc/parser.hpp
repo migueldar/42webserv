@@ -13,7 +13,7 @@
 #include "CDLocation.hpp"
 #include "CDServer.hpp"
 
-#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/1.conf"
+#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/nginx1.conf"
 
 enum methodsEnum{
     GET,
@@ -38,7 +38,7 @@ enum ConfigType {
 
 //UTILS
 std::vector<std::string> splitString(const std::string& input, char delimiter);
-unsigned long stringToUnsignedLong(const std::string& str);
+short stringToUnsignedLong(const std::string& str);
 
 template <typename T>
 std::string toString(T value) {

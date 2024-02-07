@@ -25,6 +25,8 @@ class ParserFile {
     
         std::vector<std::string> getRoutesKeysByPort(unsigned long port) const; 
 
+        int checkRoutesServer(const std::map<std::string, Location>& routes, const std::string& keyToFind);
+
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Server vector

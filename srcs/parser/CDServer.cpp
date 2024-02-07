@@ -26,9 +26,10 @@ void Server::addErrorPage(const std::string& statusCode, const std::string& html
     errPages[statusCode] = htmlRoute;
 }
 
-void Server::addLocation(const std::string& path, const Location& location){
+void Server::addLocation(const std::string& path, const Location& location) {
     routes[path] = location;
 }
+
 
 
 long Server::getNumRoutes(void){

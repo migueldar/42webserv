@@ -14,7 +14,14 @@ Location::Location(Location const& other) {
 	*this = other;
 }
 
-Location& Location::operator=(Location const& rhs) {
-	root = rhs.root;
-	return (*this);
+Location& Location::operator=(Location const& other) {
+    if (this != &other) {
+        root = other.root;
+        defaultPath = other.defaultPath;
+        redirectionUrl = other.redirectionUrl;
+        std::copy(other.methods, other.methods + METHODS_NUM, methods);
+        autoindex = other.autoindex;
+    }
+    return *this;
 }
+
