@@ -1,4 +1,5 @@
 #include "webserv.hpp"
+#include <sys/poll.h>
 
 Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers) {}
 
@@ -15,6 +16,10 @@ bool Connection::operator==(const Connection& other) const {
 int Connection::handleEvent(struct pollfd& pollfd) const {
 	if (pollfd.revents & POLLHUP) {
 		std::cout << "pollhup" << std::endl;
+		return 1;
+	}
+	else if (pollfd.revents & POLLERR) {
+		std::cout << "pollerr" << std::endl;
 		return 1;
 	}
 	else if (pollfd.revents & POLLIN) {

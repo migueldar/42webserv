@@ -1,6 +1,10 @@
 #include "webserv.hpp"
 
-Location::Location() {}
+Location::Location(): autoindex(false) {
+    methods[GET] = 1;
+    methods[POST] = 1;
+    methods[DELETE] = 1;
+}
 
 Location::Location(std::string root): root(root) {}
 

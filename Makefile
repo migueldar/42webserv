@@ -1,13 +1,11 @@
 NAME := webserv
 SRCS := srcs/mymain.cpp \
-		srcs/Location2.cpp \
-		srcs/Server2.cpp \
-		srcs/Connection.cpp \
-		srcs/Listener.cpp \
-		srcs/PollHandler.cpp \
+		srcs/engine/Connection.cpp \
+		srcs/engine/Listener.cpp \
+		srcs/engine/PollHandler.cpp \
+		srcs/parser/CDLocation.cpp \
 		srcs/parser/CDParserFile.cpp \
-		srcs/parser/CDParserLocation.cpp \
-		srcs/parser/CDParserServer.cpp \
+		srcs/parser/CDServer.cpp \
 		srcs/parser/parserUtils.cpp \
 		
 OBJS := $(SRCS:srcs/%.cpp=objs/%.o)
@@ -25,7 +23,7 @@ $(NAME): $(OBJS)
 
 objs:
 	@mkdir	objs \
-			objs/sockets \
+			objs/engine \
 			objs/parser \
 
 objs/%.o: srcs/%.cpp | objs
