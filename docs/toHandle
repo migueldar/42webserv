@@ -8,3 +8,7 @@ HANDLE
 BEHAVIOUR
 - when a error needs to be returned which has no error page, return a default error page (which simply showcases the error found)
 - set a timeout for when a request tells is going to send a content-lenght but it doesnt
+
+
+NOTES
+- request-line lengths of 8000 octets.

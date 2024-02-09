@@ -26,15 +26,15 @@ int Connection::handleEvent(struct pollfd& pollfd) const {
 
 		std::cout << "pollin" << std::endl;
 		int read_res;
-		char *read_buff = new char[0x10];
-		memset(read_buff, 0, 0x10);
+		char *read_buff = new char[0x1000];
+		memset(read_buff, 0, 0x1000);
 		//think about how to join all parts of a broken down request
 		//maybe MSG_WAITALL could be used
-		read_res = recv(sock, read_buff, 0x10, 0);
+		read_res = recv(sock, read_buff, 0x1000, 0);
 		std::cout << read_buff << std::endl;
 
 		if (read_res <= 0) {
-			return 0;
+			return 1;
 		}
 		// parse req //for now, i assume all the req comes to me in just one call  (not sure)
 		// parseReq(read_buff);
