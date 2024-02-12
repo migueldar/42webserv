@@ -1,6 +1,22 @@
 #include "webserv.hpp"
 
+
+bool isRegularFile(const std::string& filePath) {
+    struct stat fileInfo;
+
+    if (stat(filePath.c_str(), &fileInfo) != 0) {
+        return false;
+    }
+
+    return S_ISREG(fileInfo.st_mode);
+}
+
+
 ParserFile::ParserFile(std::string routeToParserFile): configParserFile(routeToParserFile == "" ? DEFAULT_CONFIG_ParserFile : routeToParserFile.c_str()) {
+    if(!isRegularFile(routeToParserFile)){
+        throw std::runtime_error("Error: Bad file");
+    }
+
     if (!configParserFile.is_open()) {
         throw std::runtime_error("Error: ParserFile couldn't be opened: " + routeToParserFile);
     }
