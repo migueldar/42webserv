@@ -12,7 +12,6 @@ class Server {
         //ATRIBUTES------------------------------------------------------------------·#
         //PARSE MAX BODYSIZE
         unsigned long maxBodySize;
-        // FULL 4 bytes AUTOASIGNABLE
         std::string serverName;        
 
         //METHODS--------------------------------------------------------------------·#

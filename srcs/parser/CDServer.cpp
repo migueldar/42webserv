@@ -1,9 +1,7 @@
 #include "webserv.hpp"
 
-Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()) {
-    static unsigned long idCount = 0;
+Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()), serverName("") {
     Location initLocation;
-    serverName = "serverN:" + toString(idCount++); 
 }
 
 Server::Server(std::vector<std::string>& s, std::vector<Location>& l) {
