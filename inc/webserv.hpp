@@ -20,5 +20,6 @@
 #include "Listener.hpp"
 #include "PollHandler.hpp"
 #include "parser.hpp"
+#include "http.hpp"
 
 #endif
