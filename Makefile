@@ -3,6 +3,8 @@ SRCS := srcs/mymain.cpp \
 		srcs/engine/Connection.cpp \
 		srcs/engine/Listener.cpp \
 		srcs/engine/PollHandler.cpp \
+		srcs/http/Request.cpp \
+		srcs/http/http_utils.cpp \
 		srcs/parser/CDLocation.cpp \
 		srcs/parser/CDParserFile.cpp \
 		srcs/parser/CDServer.cpp \
@@ -24,6 +26,7 @@ $(NAME): $(OBJS)
 objs:
 	@mkdir	objs \
 			objs/engine \
+			objs/http \
 			objs/parser \
 
 objs/%.o: srcs/%.cpp | objs

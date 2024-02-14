@@ -66,3 +66,7 @@ int main() {
 
 	//std::cout << "Done" << std::endl;
 }
+
+
+//test parser first line
+//bateria de tests

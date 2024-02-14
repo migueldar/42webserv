@@ -1,4 +1,4 @@
-#include "Request.hpp"
+#include "http.hpp"
 #include "parser.hpp"
 #include <cstddef>
 
@@ -17,8 +17,9 @@ Request::Request(std::string data) {
 
 	it += 2;
 
-	parseFirstLine(first_line);
+	parseRequestLine(first_line);
 
+	std::cout << *this << std::endl;
 }
 
 Request::~Request() {}
@@ -30,43 +31,87 @@ bool Request::addToBody(std::string data) {
 	return true;
 }
 
-void Request::parseFirstLine(std::string& line) {
-	std::string first, second, third;
-	std::string::const_iterator it = line.begin();
-
-	while (it != line.end() && *it != ' ') {
-		first += *it;
-		it++;
-	}
-	if (it == line.end())
-		throw BadRequest();
-	if (first == "GET")
+void Request::parseMethod(std::string& str) {
+	if (str == "GET")
 		method = GET;
-	else if (first == "POST")
+	else if (str == "POST")
 		method = POST;
-	else if (first == "DELETE")
+	else if (str == "DELETE")
 		method = DELETE;
 	else
 		throw MethodNotAllowed();
+}
+
+void Request::parseRequestTarget(std::string& str) {
+	std::string::const_iterator it = str.begin();
+	std::string aux;
+
+	while (it != str.end()) {
+		if (*it != '/')
+			throw BadRequest();
+		it++;
+		aux.clear();
+		while (it != str.end() && *it != '/') {
+			aux += *it;
+			it++;
+		}
+		if (!isSegment(aux))
+			throw BadRequest();
+	}
+
+	for (it = str.begin(); it != str.end(); it++) {
+		if (*it == '%') {
+			target += hexToNum(it[1]) * 0x10 + hexToNum(it[2]);
+			it++; it++;
+		}
+		else
+			target += *it;
+	}
+}
+
+void Request::parseVersion(std::string& str) {
+	if (str.length() != 8 || str.substr(0, 5) != "HTTP/"\
+		|| !isdigit(str[5]) || str[6] != '.' || !isdigit(str[7]))
+		throw BadRequest();
+	if (str[5] != '1' || str[7] == '0')
+		throw HTTPVersionNotSupported();
+}
+
+void Request::parseRequestLine(std::string& line) {
+	std::string aux;
+	std::string::const_iterator it = line.begin();
+
+	if (line.length() > 8000)
+		throw URITooLong();
 
 	while (it != line.end() && *it != ' ') {
-		second += *it;
+		aux += *it;
 		it++;
 	}
 	if (it == line.end())
 		throw BadRequest();
-	//need to check location correctness before this, also maybe divide between location and query
+	parseMethod(aux);
+	std::cout << "method parsed" << std::endl;
 
-	location = second;
-
+	aux.clear();
+	it++;
 	while (it != line.end() && *it != ' ') {
-		third += *it;
+		aux += *it;
 		it++;
 	}
 	if (it == line.end())
 		throw BadRequest();
+	parseRequestTarget(aux);
+	std::cout << "req target parsed" << std::endl;
 
-	//need to parse req
+	aux.clear();
+	it++;
+	while (it != line.end()) {
+		aux += *it;
+		it++;
+	}
+	parseVersion(aux);
+	std::cout << "version parsed" << std::endl;
 }
 
 // Request::Request(Request const& other) {
@@ -82,8 +127,7 @@ void Request::parseFirstLine(std::string& line) {
 
 std::ostream& operator<<(std::ostream& o, Request const& prt) {
 	o << "Method: " << std::endl << "    " << prt.method << std::endl << std::endl;
-	o << "Location: " << std::endl << "    " << prt.location << std::endl << std::endl;
-	o << "Version: " << std::endl << "    " << prt.version << std::endl << std::endl;
+	o << "Target: " << std::endl << "    " << prt.target << std::endl << std::endl;
 	o << "Headers: " << std::endl;
 	for (std::map<std::string, std::string>::const_iterator it = prt.headers.begin(); it != prt.headers.end(); it++)
 		o << "    " << it->first << ": " << it->second << std::endl; 
