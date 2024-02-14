@@ -17,8 +17,13 @@ ParserFile::~ParserFile() {
 }
 
 ParserFile::ParserFile(string routeToParserFile): configParserFile(routeToParserFile == "" ? DEFAULT_CONFIG_ParserFile : routeToParserFile.c_str()) {
+
+    if(routeToParserFile == ""){
+        routeToParserFile = DEFAULT_CONFIG_ParserFile;
+    }
+
     if(!isRegularFile(routeToParserFile)){
-        throw runtime_error("Error: Bad file");
+        throw runtime_error("Error: Bad file, file route:" + routeToParserFile);
     }
 
     if (!configParserFile.is_open()) {
@@ -45,48 +50,44 @@ void removeLastSemicolon(string& word) {
 }
 
 
-// // En el archivo CDParserFile.cpp
-// void ParserFile::printServersByPort(unsigned int targetPort) {
-//     map<unsigned long, vector<Server> >::iterator serverIter = serverDefinitions.find(targetPort);
+void ParserFile::printServersByPort(unsigned int targetPort) {
 
-//     if (serverIter != serverDefinitions.end()) {
-//         cout << "Servers for port " << targetPort << ":" << endl;
+    cout << "Servers for port " << targetPort << ":" << endl;
+    for (map<string, vector<Server> >::iterator it = (serverDefinitions[targetPort]).begin(); it != (serverDefinitions[targetPort]).end() ; ++it ){
+        vector<Server> server = (serverDefinitions[targetPort])[it->first];
+        for (vector<Server>::iterator serverVecIter = server.begin(); serverVecIter != server.end(); ++serverVecIter) {
+            const Server& server = *serverVecIter;
 
-//         vector<Server>& servers = serverIter->second;
-//         for (vector<Server>::iterator serverVecIter = servers.begin(); serverVecIter != servers.end(); ++serverVecIter) {
-//             const Server& server = *serverVecIter;
+            cout << "  Server Name: " << server.serverName << endl;
 
-//             cout << "  Server Name: " << server.serverName << endl;
+            cout << "  Error Pages:" << endl;
+            map<string, string>::const_iterator errorPageIter = server.getErrPages().begin();
+            while (errorPageIter != server.getErrPages().end()) {
+                cout << "    Status: " << errorPageIter->first << ", Route: " << errorPageIter->second << endl;
+                ++errorPageIter;
+            }
 
-//             cout << "  Error Pages:" << endl;
-//             map<string, string>::const_iterator errorPageIter = server.getErrPages().begin();
-//             while (errorPageIter != server.getErrPages().end()) {
-//                 cout << "    Status: " << errorPageIter->first << ", Route: " << errorPageIter->second << endl;
-//                 ++errorPageIter;
-//             }
+            cout << "  Locations:" << endl;
+            const map<string, Location>& routes = server.getRoutes();
+            for (map<string, Location>::const_iterator locationIter = routes.begin(); locationIter != routes.end(); ++locationIter) {
+                const string& path = locationIter->first;
+                const Location& location = locationIter->second;
 
-//             cout << "  Locations:" << endl;
-//             const map<string, Location>& routes = server.getRoutes();
-//             for (map<string, Location>::const_iterator locationIter = routes.begin(); locationIter != routes.end(); ++locationIter) {
-//                 const string& path = locationIter->first;
-//                 const Location& location = locationIter->second;
+                cout << "    Location Path: " << path << endl;
+                cout << "      Root: " << location.root << endl;
+                cout << "      Default Path: " << location.defaultPath << endl;
+                cout << "      Redirection URL: " << location.redirectionUrl << endl;
+                cout << "      Methods: ";
+                for (int i = 0; i < METHODS_NUM; ++i) {
+                    cout << (location.methods[i] ? "1" : "0") << " ";
+                }
+                cout << endl;
+                cout << "      Autoindex: " << (location.autoindex ? "true" : "false") << endl;
+            }
+        }
+    }
+}
 
-//                 cout << "    Location Path: " << path << endl;
-//                 cout << "      Root: " << location.root << endl;
-//                 cout << "      Default Path: " << location.defaultPath << endl;
-//                 cout << "      Redirection URL: " << location.redirectionUrl << endl;
-//                 cout << "      Methods: ";
-//                 for (int i = 0; i < METHODS_NUM; ++i) {
-//                     cout << (location.methods[i] ? "1" : "0") << " ";
-//                 }
-//                 cout << endl;
-//                 cout << "      Autoindex: " << (location.autoindex ? "true" : "false") << endl;
-//             }
-//         }
-//     } else {
-//         cout << "No servers found for port " << targetPort << endl;
-//     }
-// }
 
 
 int ParserFile::checkRoutesServer(const map<string, Location>& routes, const string& keyToFind) {
