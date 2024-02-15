@@ -21,6 +21,7 @@ Location& Location::operator=(Location const& other) {
         redirectionUrl = other.redirectionUrl;
         std::copy(other.methods, other.methods + METHODS_NUM, methods);
         autoindex = other.autoindex;
+        cgi = other.cgi; 
     }
     return *this;
 }

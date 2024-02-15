@@ -13,7 +13,7 @@
 #include "CDLocation.hpp"
 #include "CDServer.hpp"
 
-#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/nginx1.conf"
+#define DEFAULT_CONFIG_ParserFile "test/nginxTesting/conf/nginx4.conf"
 
 enum methodsEnum{
     GET,
@@ -33,6 +33,7 @@ enum ConfigType {
     METHODS,
     AUTO_INDEX,
     BRACE_CLOSE,
+    CGI,
     UNKNOWN
 };
 

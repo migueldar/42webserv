@@ -21,16 +21,16 @@ class ParserFile {
 
         void fillServers();
         
-        void printServersByPort(unsigned long targetPort);
+        void printServersByPort(unsigned int targetPort);
     
-        std::vector<std::string> getRoutesKeysByPort(unsigned long port) const; 
+        std::vector<std::string> getRoutesKeysByPort(unsigned int) const; 
 
         int checkRoutesServer(const std::map<std::string, Location>& routes, const std::string& keyToFind);
 
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Server vector
-        std::map<unsigned long, std::vector<Server> > serverDefinitions;
+        std::map<unsigned int, std::map<std::string, std::vector<Server> > > serverDefinitions;
         
 };
 

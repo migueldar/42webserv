@@ -84,3 +84,62 @@ DICCIONARIO DE STATUS
     504 Gateway Timeout
     505 HTTP Version Not Supported
     */
+
+
+Implement in config_file	
+
+Errores 5xx
+implement std::map<int, std::map<std::string, std::vector<server> > >
+
+
+IN LOCATIONS
+	CGI
+	Allow
+
+
+
+server {
+    host 8081
+    server_name kk
+
+    location / {
+
+    }
+}
+
+server {
+    host 8080
+    server_name kk
+
+    location / {
+
+    }
+}
+
+
+std::map<int, std::vector<server>>
+        # Servername           PORT : SERV VECTOR
+std::map<std::string, std::map<int, std::vector<server> > >
+
+        # PORT           servername : SERV VECTOR
+std::map<int, std::map<std::string, std::vector<server> > >
+
+server {
+    host 8080
+    server_name kk
+
+    location / {
+
+    }
+}
+
+
+server {
+    host 8080
+    server_name uwu
+}
+
+server {
+    host 8081
+    server_name uwu
+}
