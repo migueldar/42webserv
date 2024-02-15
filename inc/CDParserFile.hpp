@@ -23,8 +23,6 @@ class ParserFile {
         
         void printServersByPort(unsigned int targetPort);
     
-        std::vector<std::string> getRoutesKeysByPort(unsigned int) const; 
-
         int checkRoutesServer(const std::map<std::string, Location>& routes, const std::string& keyToFind);
 
     private:
