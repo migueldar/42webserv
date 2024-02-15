@@ -1,5 +1,5 @@
-#include "webserv.hpp"
 
+#include "webserv.hpp"
 using namespace std;
 
 bool isRegularFile(const string& filePath) {
@@ -83,8 +83,11 @@ void ParserFile::printServersByPort(unsigned int targetPort) {
                 }
                 cout << endl;
                 cout << "      Cgi: ";
-                for (vector<CGI>::const_iterator it = (location.cgi).begin(); it != (location.cgi).end() ; ++it) {
-                    cout << (*it == py ? ".py" : ".go") << " ";
+                for (vector<enum CGI>::const_iterator it = (location.cgi).begin(); it != (location.cgi).end() ; ++it) {
+                    if(*it == py)
+                        cout << ".py" << " ";
+                    else
+                        cout << ".go" << " ";
                 }
                 cout << endl;
                 cout << "      Autoindex: " << (location.autoindex ? "true" : "false") << endl;
@@ -152,16 +155,16 @@ void parseMethods(vector<string> wordLines, int lineNum, bool *aux){
     }
 }
 
-void parseCGI(vector<string> wordLines, int lineNum, bool *aux){
+void parseCGI(const vector<string>& wordLines, int lineNum, bool *aux) {
 
-    for (unsigned long i = 1; i < wordLines.size(); i++)
-    {
-        if (wordLines[i] == ".py")
-            aux[(int)py] = 1;
-        else if(wordLines[i] == ".go")
-            aux[(int)go] = 1;
-        else
+    for (unsigned long i = 1; i < wordLines.size(); i++) {
+        if (wordLines[i] == ".py") {
+            aux[(int)py] = true;
+        } else if (wordLines[i] == ".go") {
+            aux[(int)go] = true;
+        } else {
             throw runtime_error("Error line " + toString(lineNum) + ": unknown cgi:" + wordLines[i]);
+        }
     }
 }
 
@@ -399,16 +402,18 @@ void ParserFile::fillServers() {
 
             case CGI:
                 configTypeMap["cgi"] = UNKNOWN;
-                if(wordLines.size() >= 2 && wordLines.size() <= 4 && brace == 2){
-                    bool aux[2] = {0};
+                if (wordLines.size() >= 2 && wordLines.size() <= 4 && brace == 2) {
+                    location.cgi.clear();
+                    bool aux[2] = {false, false};
                     parseCGI(wordLines, lineNum, aux);
-                    if(aux[(int)py] == 1)
+                    if (aux[py] == true)
                         location.cgi.push_back(py);
-                    if(aux[(int)go] == 1)
+                    if (aux[go] == true)
                         location.cgi.push_back(go);
-                }
-                else
+
+                } else {
                     throw runtime_error("Error line " + toString(lineNum) + ": bad config CGI:" + *(--wordLines.end()));
+                }
                 break;
 
             //(})   
@@ -431,7 +436,6 @@ void ParserFile::fillServers() {
                         }
                         
                         ((serverDefinitions[port])[server.serverName]).insert(((serverDefinitions[port])[server.serverName]).begin(), server);
-                        
                         setValuesConfigTypeMap(configTypeMap, 1);
                     }
                     if(brace == 1){

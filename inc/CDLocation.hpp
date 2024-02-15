@@ -6,8 +6,8 @@
 #define METHODS_NUM 3
 
 enum CGI{
-	py,
-	go,
+	py = 0,
+	go = 1,
 };
 
 // src/paser/CDLocation.cpp
