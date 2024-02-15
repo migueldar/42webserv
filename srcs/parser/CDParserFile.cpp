@@ -82,6 +82,11 @@ void ParserFile::printServersByPort(unsigned int targetPort) {
                     cout << (location.methods[i] ? "1" : "0") << " ";
                 }
                 cout << endl;
+                cout << "      Cgi: ";
+                for (vector<CGI>::const_iterator it = (location.cgi).begin(); it != (location.cgi).end() ; ++it) {
+                    cout << (*it == py ? ".py" : ".go") << " ";
+                }
+                cout << endl;
                 cout << "      Autoindex: " << (location.autoindex ? "true" : "false") << endl;
             }
         }
@@ -144,6 +149,19 @@ void parseMethods(vector<string> wordLines, int lineNum, bool *aux){
             aux[DELETE] = 1;
         else
             throw runtime_error("Error line " + toString(lineNum) + ": unknown method:" + wordLines[i]);
+    }
+}
+
+void parseCGI(vector<string> wordLines, int lineNum, bool *aux){
+
+    for (unsigned long i = 1; i < wordLines.size(); i++)
+    {
+        if (wordLines[i] == ".py")
+            aux[(int)py] = 1;
+        else if(wordLines[i] == ".go")
+            aux[(int)go] = 1;
+        else
+            throw runtime_error("Error line " + toString(lineNum) + ": unknown cgi:" + wordLines[i]);
     }
 }
 
@@ -217,6 +235,7 @@ static void setValuesLocation(map<string, ConfigType> &configTypeMap){
     configTypeMap["auto_index"] = AUTO_INDEX;
     configTypeMap["location"] = UNKNOWN;
     configTypeMap["error_page"] = UNKNOWN;
+    configTypeMap["cgi"] = CGI;
     configTypeMap["}"] = BRACE_CLOSE;
 }
 
@@ -376,6 +395,20 @@ void ParserFile::fillServers() {
                 }
                 else
                     throw runtime_error("Error line " + toString(lineNum) + ": bad config methods:" + *(--wordLines.end()));
+                break;
+
+            case CGI:
+                configTypeMap["cgi"] = UNKNOWN;
+                if(wordLines.size() >= 2 && wordLines.size() <= 4 && brace == 2){
+                    bool aux[2] = {0};
+                    parseCGI(wordLines, lineNum, aux);
+                    if(aux[(int)py] == 1)
+                        location.cgi.push_back(py);
+                    if(aux[(int)go] == 1)
+                        location.cgi.push_back(go);
+                }
+                else
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config CGI:" + *(--wordLines.end()));
                 break;
 
             //(})   
