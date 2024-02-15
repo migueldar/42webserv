@@ -108,25 +108,6 @@ int ParserFile::checkRoutesServer(const map<string, Location>& routes, const str
     }
 }
 
-// vector<string> ParserFile::getRoutesKeysByPort(unsigned int port) const {
-//     vector<string> routes;
-
-//     map<unsigned int, vector<Server> >::const_iterator it = serverDefinitions.find(port);
-//     if (it != serverDefinitions.end()) {
-//         const vector<Server>& servers = it->second;
-//         for (vector<Server>::const_iterator serverIter = servers.begin(); serverIter != servers.end(); ++serverIter) {
-//             const vector<string>& serverRoutes = serverIter->getKeysRoutes();
-
-//             for (vector<string>::const_iterator routeIter = serverRoutes.begin(); routeIter != serverRoutes.end(); ++routeIter) {
-//                 routes.push_back(*routeIter);
-//             }
-//         }
-//     }
-
-//     return routes;
-// }
-
-
  bool checkAllRoutesByServerVec(const vector<Server>& servers, const vector<string>& newRoutes) {
      for (vector<Server>::const_iterator serverIter = servers.begin(); serverIter != servers.end(); ++serverIter) {
          vector<string> serverRoutes = serverIter->getKeysRoutes();
