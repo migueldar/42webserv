@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	IP = "127.0.0.1"
+	IP   = "127.0.0.1"
 	PORT = "8080"
 )
+
+var scanner *bufio.Scanner
 
 func percentageExpander(input *string) {
 	var index int
@@ -31,48 +33,114 @@ func percentageExpander(input *string) {
 	}
 }
 
-func inverseBarExpander(input *string){
+func inverseBarExpander(input *string) {
 	*input = strings.Replace(*input, "\\n", "\n", -1)
-
 	*input = strings.Replace(*input, "\\r", "\r", -1)
 }
 
-func main() {
-	conn, err := net.Dial("tcp", IP + ":" + PORT)
+func modeFileReq() string {
+	fmt.Print("Filepath:> ")
+	scanner.Scan()
+	filePath := scanner.Text()
+
+	fileContent, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println("Error connecting:", err)
-		return
+		fmt.Println("Error reading file:", err)
+		return ""
 	}
-	defer conn.Close()
 
-	scanner := bufio.NewScanner(os.Stdin)
+	input := string(fileContent)
 
-	args := os.Args
+	return input
+}
+
+func modeSingleReq() string {
+	fmt.Print("> ")
+	scanner.Scan()
+	input := scanner.Text()
+
+	return input
+}
+
+func establishConnections(numConnections int) []net.Conn {
+	var conexiones []net.Conn
+
+	for i := 0; i < numConnections; i++ {
+		conn, err := net.Dial("tcp", IP+":"+PORT)
+		if err != nil {
+			fmt.Println("Error connecting:", err)
+			return nil
+		}
+		conexiones = append(conexiones, conn)
+		defer conn.Close()
+	}
+
+	return conexiones
+}
+
+func receiveMessages(conexiones []net.Conn, mode string) {
+	switch mode {
+	case "multi":
+		logger, err := os.Create("/multiTestClientLogs")
+		if err != nil {
+			fmt.Println("Error creating log file:", err)
+			return
+		}
+		defer logger.Close()
+
+		for i := 0; i < len(conexiones); i++ {
+			message, err := bufio.NewReader(conexiones[i]).ReadString(0)
+			if err != nil {
+				fmt.Println("Error reading from server:", err)
+				return
+			}
+			logger.WriteString("CLIENT NUM(" + strconv.Itoa(i) + ") OUTPUT:\n")
+			logger.WriteString(message)
+		}
+	default:
+		message, err := bufio.NewReader(conexiones[0]).ReadString(0)
+		if err != nil {
+			fmt.Println("Error reading from server:", err)
+			return
+		}
+		fmt.Printf("Message received: %s\n", message)
+	}
+}
+
+func main() {
+	var conexiones []net.Conn
+
+	scanner = bufio.NewScanner(os.Stdin)
+
+	fmt.Print("Input Req Mode:\n----> Single Request: \"single\"\n----> File Request:   \"fileInput\"\n----> Multi Request:  \"multi\"\n")
+	fmt.Print("> ")
+	scanner.Scan()
+	mode := scanner.Text()
+
+	switch mode {
+	case "multi":
+		fmt.Print("Input number of connections to make:\n")
+		fmt.Print("> ")
+		scanner.Scan()
+		connectionNum, err := strconv.Atoi(scanner.Text())
+		if err != nil {
+			fmt.Println("Error parsing number of connections:", err)
+			return
+		}
+
+		conexiones = establishConnections(connectionNum)
+	default:
+		conexiones = establishConnections(1)
+	}
 
 	for {
 		var input string
 
-		if len(args) < 2 {
-			fmt.Print("> ")
-			scanner.Scan()
-			input = scanner.Text()
-		} else {
-			filePath := args[1]
-
-			f, err := os.Open(filePath)
-			if err != nil {
-				fmt.Println("Error opening file:", err)
-				return
-			}
-			defer f.Close()
-
-			fileContent, err := ioutil.ReadAll(f)
-			if err != nil {
-				fmt.Println("Error reading file:", err)
-				return
-			}
-
-			input = string(fileContent)
+		switch mode {
+		case "fileInput":
+			input = modeFileReq()
+		default:
+			input = modeSingleReq()
 		}
 
 		if input != "" {
@@ -86,19 +154,12 @@ func main() {
 
 			fmt.Printf("Message to send: %s\n", input)
 
-			fmt.Fprintf(conn, input)
-
-			message, err := bufio.NewReader(conn).ReadString(0)
-			if err != nil {
-				fmt.Println("Error reading from server:", err)
-				return
+			for i := 0; i < len(conexiones); i++ {
+				fmt.Fprintf(conexiones[i], input)
 			}
 
-			fmt.Printf("Message received: %s\n", message)
-
-			if len(args) >= 2 {
-				return
-			}
+			receiveMessages(conexiones, mode)
 		}
 	}
 }
+
