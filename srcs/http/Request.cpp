@@ -14,7 +14,6 @@ Request::Request(std::string data) {
 
 	aux = getHTTPLine(it, end);
 	parseRequestLine(aux);
-	it += 2;
 
 	//fill fields
 	aux = getHTTPLine(it, end);
@@ -140,6 +139,7 @@ void Request::parseField(std::string& fieldLine) {
 	if (*it != ':' || !isToken(fieldName))
 		throw BadRequest();
 	it++;
+	std::cout << "field name parsed" << std::endl;
 
 	while (it != fieldLine.end() && (*it == ' ' || *it == '\t'))
 		it++;
@@ -147,14 +147,19 @@ void Request::parseField(std::string& fieldLine) {
 	rit--;
 	while (rit != it - 1 && (*rit == ' ' || *rit == '\t'))
 		rit--;
-	while (it < rit) {
+	while (it <= rit) {
 		fieldValue += *it;
 		it++;
 	}
 	if (!isFieldLine(fieldValue))
 		throw BadRequest();
+	std::cout << "field value parsed" << std::endl;
 
-	//add to map, si ya existe poner lo que haya y sumarle , y el nuevo
+	//value is in map
+	if (headers.count(fieldName) == 1)
+		headers[fieldName] = headers[fieldName].append(", " + fieldValue);
+	else
+		headers[fieldName] = fieldValue;
 }
 
 void Request::parseBody(std::string& messageBody) {

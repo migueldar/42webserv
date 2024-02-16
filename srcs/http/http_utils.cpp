@@ -60,6 +60,7 @@ std::string getHTTPLine(std::string::const_iterator& it, std::string::const_iter
 	}
 	if (it == end || it + 1 == end)
 		throw Request::BadRequest();
+	it++;it++;
 	return ret;
 }
 
