@@ -62,8 +62,8 @@ void PollHandler::removeFromFds(int fd) {
 }
 
 int PollHandler::pollMode() {
-	int			status = poll(fds, listeners.size() + connections.size(), -1);
-	int			i = 0;
+	int	status = poll(fds, listeners.size() + connections.size(), -1);
+	int	i = 0;
 
 	(void) status;
 	//check listeners
@@ -86,10 +86,8 @@ int PollHandler::pollMode() {
 		i++;
 	}
 
-
 	for (std::vector<Connection>::iterator it = toRemove.begin(); it != toRemove.end(); it++)
 		removeConnection(*it);
-
 
 	return 1;
 }

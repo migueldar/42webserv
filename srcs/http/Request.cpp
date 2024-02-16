@@ -1,24 +1,36 @@
 #include "http.hpp"
 #include "parser.hpp"
 #include <cstddef>
+#include <algorithm>
 
-//to my understanding, all headers must be in the first req, so they all get parsed here
+//we will be able to handle requests which come multiple messages, but rn we assume all the request comes in one
+//the way to handle is to parse  1:reqline  2:fields  3:body, checking when we hit the termination conditions
+//which are  1:\r\n  2:\r\n\r\n and  3:dependant on headers, either chunked or body-len
+//a way to timeout must be added as well, if a timeout is hit, 400 Bad Req
 Request::Request(std::string data) {
-	std::string first_line;
+	std::string aux;
 	std::string::const_iterator it = data.begin();
+	std::string::const_iterator end = data.end();
 
-	//fill the first line //check it ending before 
-	while (it != data.end() && it + 1 != data.end() && (*it) != '\r' && *(it + 1) != '\n') {
-		first_line += *it;
-		it++;
-	}
-	if (it == data.end() || it + 1 == data.end())
-		throw BadRequest();
-
+	aux = getHTTPLine(it, end);
+	parseRequestLine(aux);
 	it += 2;
 
-	parseRequestLine(first_line);
+	//fill fields
+	aux = getHTTPLine(it, end);
+	while (aux != "") {
+		parseField(aux);
+		aux = getHTTPLine(it, end);
+	}
 
+	//check correctness of fields
+
+	//check wether body is needed
+
+	//read body
+
+	parseBody(data);
+	
 	std::cout << *this << std::endl;
 }
 
@@ -114,6 +126,39 @@ void Request::parseRequestLine(std::string& line) {
 	}
 	parseVersion(aux);
 	std::cout << "version parsed" << std::endl;
+}
+
+
+void Request::parseField(std::string& fieldLine) {
+	std::string fieldName, fieldValue;
+	std::string::const_iterator it = fieldLine.begin();
+
+	while (it != fieldLine.end() && *it != ':') {
+		fieldName += *it;
+		it++;
+	}
+	if (*it != ':' || !isToken(fieldName))
+		throw BadRequest();
+	it++;
+
+	while (it != fieldLine.end() && (*it == ' ' || *it == '\t'))
+		it++;
+	std::string::const_iterator rit = fieldLine.end();
+	rit--;
+	while (rit != it - 1 && (*rit == ' ' || *rit == '\t'))
+		rit--;
+	while (it < rit) {
+		fieldValue += *it;
+		it++;
+	}
+	if (!isFieldLine(fieldValue))
+		throw BadRequest();
+
+	//add to map, si ya existe poner lo que haya y sumarle , y el nuevo
+}
+
+void Request::parseBody(std::string& messageBody) {
+	(void) messageBody;
 }
 
 // Request::Request(Request const& other) {

@@ -64,6 +64,8 @@ class Request {
 		void parseMethod(std::string& method);
 		void parseRequestTarget(std::string& target);
 		void parseVersion(std::string& version);
+		void parseField(std::string& fieldLine);
+		void parseBody(std::string& messageBody);
 		// Request(Request const& other);
 		// Request &operator=(Request const& rhs);
 };

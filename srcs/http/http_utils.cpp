@@ -1,4 +1,5 @@
 #include <iostream>
+#include "Request.hpp"
 
 //defined in RFC 9110
 bool isToken(std::string str) {
@@ -28,12 +29,38 @@ bool isSegment(std::string str) {
 	return true;
 }
 
+//defined in RFC 3986
+bool isFieldLine(std::string str) {
+	if (str.length() == 0 || (str.length() == 1 && (unsigned char) str[0] >= 0x21))
+		return true;
+	if (!((unsigned char) str[0] >= 0x21 && (unsigned char) str[str.length() - 1] >= 0x21))
+		return false;
+	for (std::string::const_iterator it = str.begin() + 1; it != str.end() - 1; it++) {
+		if (!((unsigned char) *it >= 0x20 || *it == '\t'))
+			return false;
+	}
+	return true;
+}
+
 int hexToNum(char c) {
 	if (isdigit(c))
 		return c - '0';
 	if (islower(c))
 		return c - 'a' + 10;
 	return c - 'A' + 10;
+}
+
+// its normal line but ends in \r\n
+std::string getHTTPLine(std::string::const_iterator& it, std::string::const_iterator& end) {
+	std::string ret;
+
+	while (it != end && it + 1 != end && *it != '\r' && *(it + 1) != '\n') {
+		ret += *it;
+		it++;
+	}
+	if (it == end || it + 1 == end)
+		throw Request::BadRequest();
+	return ret;
 }
 
 //status 1 if fail

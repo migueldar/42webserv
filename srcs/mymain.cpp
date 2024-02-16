@@ -48,28 +48,28 @@ void sH(int a) {
 	exit(0);
 }
 
-// int main() {
-// 	signal(SIGINT, sH);
+int main() {
+	signal(SIGINT, sH);
 
-// 	std::vector<Server> servs = buildSampleServers();
-// 	std::vector<Server> servs2 = buildSampleServers();
+	std::vector<Server> servs = buildSampleServers();
+	std::vector<Server> servs2 = buildSampleServers();
 
-// 	Listener l1(8080, servs), l2(8081, servs);
-// 	//, l3(8082, servs);
-// 	// Connection c1(100, servs), c2(101, servs), c3(102, servs);
-// 	PollHandler po;
+	Listener l1(8080, servs), l2(8081, servs);
+	//, l3(8082, servs);
+	// Connection c1(100, servs), c2(101, servs), c3(102, servs);
+	PollHandler po;
 
-// 	po.addListener(l1);
-// 	po.addListener(l2);
-// 	po.listenMode();
+	po.addListener(l1);
+	po.addListener(l2);
+	po.listenMode();
 
-// 	while (1) {
-// 		po.pollMode();
-// 		// usleep(500000);
-// 	}
+	while (1) {
+		po.pollMode();
+		// usleep(500000);
+	}
 
-// 	//std::cout << "Done" << std::endl;
-// }
+	//std::cout << "Done" << std::endl;
+}
 
 void testReq(std::string str) {
 	std::cout << "------------------------------------------" << std::endl << std::endl;
@@ -81,64 +81,64 @@ void testReq(std::string str) {
 	}
 }
 
-//test parser first line
-//bateria de tests
-int main() {
-	signal(SIGINT, sH);
-	atexit(leaks);
+// //test parser first line
+// //bateria de tests
+// int main() {
+// 	signal(SIGINT, sH);
+// 	atexit(leaks);
 
-	//first line
-	{
-		//general
-		testReq("");
-		testReq("\r\n");
-		testReq("meow");
-		{
-			std::string s = "test";
-			while (s.length() <= 8000)
-				s += s;
-			s += "\r\n";
-			testReq(s);
-		}
+// 	//first line
+// 	{
+// 		//general
+// 		testReq("");
+// 		testReq("\r\n");
+// 		testReq("meow");
+// 		{
+// 			std::string s = "test";
+// 			while (s.length() <= 8000)
+// 				s += s;
+// 			s += "\r\n";
+// 			testReq(s);
+// 		}
 
-		//method
-		testReq("GET\r\n");
-		testReq("KK \r\n");
-		testReq("K,K / \r\n");
+// 		//method
+// 		testReq("GET\r\n");
+// 		testReq("KK \r\n");
+// 		testReq("K,K / \r\n");
 
-		//target
-		testReq("GET /\r\n");
-		testReq("GET 90 \r\n");
-		testReq("POST /blablabla# \r\n");
-		testReq("POST /bla%4Z \r\n");
-		testReq("POST /data/blablabla# \r\n");
-		testReq("POST /data/bla%4Z \r\n");
+// 		//target
+// 		testReq("GET /\r\n");
+// 		testReq("GET 90 \r\n");
+// 		testReq("POST /blablabla# \r\n");
+// 		testReq("POST /bla%4Z \r\n");
+// 		testReq("POST /data/blablabla# \r\n");
+// 		testReq("POST /data/bla%4Z \r\n");
 
-		//version
-		testReq("GET / fsdafdjaslk\r\n");
-		testReq("GET / HHHH/1.1\r\n");
-		testReq("GET / HTTP/a.1\r\n");
-		testReq("GET / HTTP/111\r\n");
-		testReq("GET / HTTP/1.a\r\n");
-		testReq("GET / HTTP/2.1\r\n");
-		testReq("GET / HTTP/1.0\r\n");
+// 		//version
+// 		testReq("GET / fsdafdjaslk\r\n");
+// 		testReq("GET / HHHH/1.1\r\n");
+// 		testReq("GET / HTTP/a.1\r\n");
+// 		testReq("GET / HTTP/111\r\n");
+// 		testReq("GET / HTTP/1.a\r\n");
+// 		testReq("GET / HTTP/2.1\r\n");
+// 		testReq("GET / HTTP/1.0\r\n");
 
-		//general correcto
-		testReq("GET /%20data HTTP/1.1\r\n");
-		testReq("POST /%20data/miau/ HTTP/1.9\r\n");
-	}
-	////////////
+// 		//general correcto
+// 		testReq("GET /%20data HTTP/1.1\r\n");
+// 		testReq("POST /%20data/miau/ HTTP/1.9\r\n");
+// 	}
+// 	////////////
 
-	//fields
-	{
+// 	//fields
+// 	{
 
 
-	}
-	///////////
+// 	}
+// 	///////////
 
-	//body
-	{
+// 	//body
+// 	{
 
-	}
-	///////////
-}
+// 	}
+// 	///////////
+// }

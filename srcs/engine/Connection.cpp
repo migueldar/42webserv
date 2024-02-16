@@ -24,7 +24,6 @@ int Connection::handleEvent(struct pollfd& pollfd) const {
 		return 1;
 	}
 	else if (pollfd.revents & POLLIN) {
-
 		std::cout << "pollin" << std::endl;
 		int read_res;
 		char *read_buff = new char[0x10000];
