@@ -27,6 +27,9 @@ func main() {
 		var input string
 
 		if modeSelect == 1 {
+			if conexiones != nil{
+				closeConnections()
+			}
 			modeSelect = 0
 			mode = selectMode()
 			switch mode {
@@ -227,6 +230,12 @@ func receiveMessages(conexiones []net.Conn, mode string) {
 func exit() {
 	fmt.Println("Exiting...")
 	os.Exit(0)
+}
+
+func closeConnections(){
+	for i := 0; i < len(conexiones); i++{
+		(conexiones[i]).Close()
+	}
 }
 
 func percentageExpander(input *string) {
