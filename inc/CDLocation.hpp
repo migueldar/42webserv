@@ -5,10 +5,7 @@
 
 #define METHODS_NUM 3
 
-enum CGI{
-	py = 0,
-	go = 1,
-};
+#include "CDCgiHandler.hpp"
 
 // src/paser/CDLocation.cpp
 class Location {
@@ -20,7 +17,7 @@ class Location {
 		//MANAGES ESPECIFIC RULES FOR METHODS
 		bool methods[METHODS_NUM];
 
-		std::vector<CGI> cgi;
+		std::map<std::string, std::string> cgi;
 		//OFF predeterminado
 		bool autoindex;
 	

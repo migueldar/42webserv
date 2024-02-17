@@ -60,6 +60,7 @@ func TestParser(t *testing.T) {
 		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/nginx4.conf"},
 		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx5.conf"},
 		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx6.conf"},
+		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx7.conf"},
 		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/nginx7.conf"},
 	}
 

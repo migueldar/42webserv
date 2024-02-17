@@ -83,11 +83,8 @@ void ParserFile::printServersByPort(unsigned int targetPort) {
                 }
                 cout << endl;
                 cout << "      Cgi: ";
-                for (vector<enum CGI>::const_iterator it = (location.cgi).begin(); it != (location.cgi).end() ; ++it) {
-                    if(*it == py)
-                        cout << ".py" << " ";
-                    else
-                        cout << ".go" << " ";
+                for (map<string, string>::const_iterator it = (location.cgi).begin(); it != (location.cgi).end() ; ++it) {
+                    cout << it->first << " " << it->second << endl;
                 }
                 cout << endl;
                 cout << "      Autoindex: " << (location.autoindex ? "true" : "false") << endl;
@@ -382,15 +379,18 @@ void ParserFile::fillServers() {
                 break;
 
             case CGI:
-                configTypeMap["cgi"] = UNKNOWN;
-                if (wordLines.size() >= 2 && wordLines.size() <= 4 && brace == 2) {
+                if (wordLines.size() == 3 && brace == 2) {
                     location.cgi.clear();
-                    bool aux[2] = {false, false};
-                    parseCGI(wordLines, lineNum, aux);
-                    if (aux[py] == true)
-                        location.cgi.push_back(py);
-                    if (aux[go] == true)
-                        location.cgi.push_back(go);
+                    if(wordLines[1].find('.') == 0 && wordLines[1].find('.', 1) == std::string::npos)
+                        throw runtime_error("Error line " + toString(lineNum) + ": CGI error, not valid extension: " + wordLines[1]);
+                    if(wordLines[2][0] != '/')
+                        throw runtime_error("Error line " + toString(lineNum) + ": CGI error, invalid executable route: " + wordLines[2]);
+                    if(location.cgi[wordLines[1]] == ""){
+                        location.cgi[wordLines[1]] = wordLines[2];
+                    }
+                    else{
+                        throw runtime_error("Error line " + toString(lineNum) + ": duplicated CGI rule:" + *(--wordLines.end()));
+                    }
 
                 } else {
                     throw runtime_error("Error line " + toString(lineNum) + ": bad config CGI:" + *(--wordLines.end()));
