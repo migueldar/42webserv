@@ -1,0 +1,10 @@
+- reflexionar sobre timeouts, quiza:
+  - implementar doble timeout, tanto por request como por conection, en tal caso, hacer el de la request mas corto que el de la conexion
+  - cambiar la gestion de los timeouts de las requests a las connections
+
+- gestionar que me pasen las requests en varias partes
+- checkeo de header correctness
+
+- parseo del body
+  - body-length
+  - chunked body

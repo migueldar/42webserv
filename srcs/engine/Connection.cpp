@@ -1,9 +1,9 @@
 #include "webserv.hpp"
 #include <sys/poll.h>
-#include "http.hpp"
 
-Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers) {}
+Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers), req(NULL) {}
 
+//if smt around here fails, check this, bc its not currently a full copy
 Connection::Connection(Connection const& other): sock(other.sock), servers(other.servers) {}
 
 Connection::~Connection() {}
@@ -14,7 +14,7 @@ bool Connection::operator==(const Connection& other) const {
 }
 
 //0 means ok, 1 means remove
-int Connection::handleEvent(struct pollfd& pollfd) const {
+int Connection::handleEvent(struct pollfd& pollfd) {
 	if (pollfd.revents & POLLHUP) {
 		std::cout << "pollhup" << std::endl;
 		return 1;
@@ -23,36 +23,53 @@ int Connection::handleEvent(struct pollfd& pollfd) const {
 		std::cout << "pollerr" << std::endl;
 		return 1;
 	}
+
 	else if (pollfd.revents & POLLIN) {
 		std::cout << "pollin" << std::endl;
+
+
 		int read_res;
-		char *read_buff = new char[0x10000];
-		memset(read_buff, 0, 0x10000);
-		//think about how to join all parts of a broken down request
-		//maybe MSG_WAITALL could be used
-		read_res = recv(sock, read_buff, 0x10000, 0);
+		char *read_buff = new char[SIZE_READ];
+
+		memset(read_buff, 0, SIZE_READ);
+		read_res = recv(sock, read_buff, SIZE_READ, 0);
 		std::cout << read_buff << std::endl;
 
 		if (read_res <= 0) {
+			delete[] read_buff;
 			return 1;
 		}
-		// parse req //for now, i assume all the req comes to me in just one call  (not sure)
-		Request(std::string(read_buff));
 
+		if (!req) {
+			req = new Request();
+			req->startTimer();
+		}
+
+		req->addData(std::string(read_buff));
 		delete[] read_buff;
-		pollfd.events = POLLOUT;
+
+		if (req->full) {
+			pollfd.events = POLLOUT;
+		}
 	}
+
+	//response handling should be done here, not in pollin
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
 
+		//probably have to handle send return value
 		send(sock, "HTTP/1.1 200 OK\r\n\
 Content-Length: 0\r\n\
 Connection: keep-alive\r\n\
 Content-Type: text/plain; charset=utf-8\r\n\
 \r\n", 104, 0);
-		pollfd.events = POLLIN;
-	}
 
+
+		//call Response constructor, we pass request
+		pollfd.events = POLLIN;
+		delete req;
+		req = NULL;
+	}
 
 	return 0;
 }

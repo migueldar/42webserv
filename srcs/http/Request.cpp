@@ -3,43 +3,55 @@
 #include <cstddef>
 #include <algorithm>
 
+Request::Request(): startTime(0), target(""), body(""), full(false) {}
+
+// Request::Request(std::string data) {
+// 	std::string aux;
+// 	std::string::const_iterator it = data.begin();
+// 	std::string::const_iterator end = data.end();
+
+// 	aux = getHTTPLine(it, end);
+// 	parseRequestLine(aux);
+
+// 	//fill fields
+// 	aux = getHTTPLine(it, end);
+// 	while (aux != "") {
+// 		parseField(aux);
+// 		aux = getHTTPLine(it, end);
+// 	}
+
+// 	//check correctness of fields
+
+// 	//check wether body is needed
+
+// 	//read body
+
+// 	parseBody(data);
+	
+// 	std::cout << *this << std::endl;
+// }
+
+Request::~Request() {}
+
 //we will be able to handle requests which come multiple messages, but rn we assume all the request comes in one
 //the way to handle is to parse  1:reqline  2:fields  3:body, checking when we hit the termination conditions
 //which are  1:\r\n  2:\r\n\r\n and  3:dependant on headers, either chunked or body-len
 //a way to timeout must be added as well, if a timeout is hit, 400 Bad Req
-Request::Request(std::string data) {
-	std::string aux;
-	std::string::const_iterator it = data.begin();
-	std::string::const_iterator end = data.end();
+void Request::addData(std::string data) {
+	rawData += data;
 
-	aux = getHTTPLine(it, end);
-	parseRequestLine(aux);
 
-	//fill fields
-	aux = getHTTPLine(it, end);
-	while (aux != "") {
-		parseField(aux);
-		aux = getHTTPLine(it, end);
-	}
-
-	//check correctness of fields
-
-	//check wether body is needed
-
-	//read body
-
-	parseBody(data);
-	
-	std::cout << *this << std::endl;
+	//remember to try catch for HTTPerrors, other (memory) errors may be handeled elsewhere
 }
 
-Request::~Request() {}
+void Request::startTimer() {
+	startTime = time(NULL);
+}
 
-bool Request::addToBody(std::string data) {
-	body += data;
-
-	//must check wether the read of the req is done, use content-length header
-	return true;
+// returns true if timeout
+// 60s timeout
+bool Request::checkTimer() {
+	return (startTime + 60 <= time(NULL));
 }
 
 void Request::parseMethod(std::string& str) {
@@ -55,6 +67,7 @@ void Request::parseMethod(std::string& str) {
 		throw MethodNotAllowed();
 }
 
+//CHECK FOR QUERY PARAMS
 void Request::parseRequestTarget(std::string& str) {
 	std::string::const_iterator it = str.begin();
 	std::string aux;

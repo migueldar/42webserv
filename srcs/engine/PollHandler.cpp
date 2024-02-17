@@ -62,32 +62,39 @@ void PollHandler::removeFromFds(int fd) {
 }
 
 int PollHandler::pollMode() {
-	int	status = poll(fds, listeners.size() + connections.size(), -1);
+	int	status = poll(fds, listeners.size() + connections.size(), 1000);
 	int	i = 0;
 
-	(void) status;
-	//check listeners
-	std::cout << "Checking listeners" << std::endl;
-	for (std::vector<Listener>::const_iterator it = listeners.begin(); it != listeners.end(); it++) {
-		if (fds[i].revents) {
-			Connection c(it->handleEvent(fds[i].revents));
-			addConnection(c);
+	if (status != 0) {
+		//check listeners
+		std::cout << "Checking listeners" << std::endl;
+		for (std::vector<Listener>::const_iterator it = listeners.begin(); it != listeners.end(); it++) {
+			if (fds[i].revents) {
+				Connection c(it->handleEvent(fds[i].revents));
+				addConnection(c);
+			}
+			i++;
 		}
-		i++;
+
+		//check connections
+		std::cout << "Checking connections" << std::endl;
+		std::vector<Connection> toRemove;
+		for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++) {
+			if (fds[i].revents)
+				if (it->handleEvent(fds[i]))
+					toRemove.push_back(*it);
+			i++;
+		}
+
+		for (std::vector<Connection>::iterator it = toRemove.begin(); it != toRemove.end(); it++)
+			removeConnection(*it);
+		
 	}
 
-	//check connections
-	std::cout << "Checking connections" << std::endl;
-	std::vector<Connection> toRemove;
-	for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++) {
-		if (fds[i].revents)
-			if (it->handleEvent(fds[i]))
-				toRemove.push_back(*it);
-		i++;
-	}
+	//check timeouts
+	for (std::list<Connection>::const_iterator it = connections.begin(); it != connections.end(); it++) {}
 
-	for (std::vector<Connection>::iterator it = toRemove.begin(); it != toRemove.end(); it++)
-		removeConnection(*it);
+
 
 	return 1;
 }

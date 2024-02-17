@@ -21,45 +21,52 @@ class Request {
 	// };
 
 	private:
+		std::string	rawData;
+		time_t		startTime;
 
 	public:
 
-		class BadRequest: public std::exception {
+		class HTTPException: public std::exception {
+			virtual const char* what() const throw() = 0;
+		};
+		
+		class BadRequest: public HTTPException {
 			virtual const char* what() const throw() {
 				return "400 bad request";
 			}
 		};
 
-		class MethodNotAllowed: public std::exception {
+		class MethodNotAllowed: public HTTPException {
 			virtual const char* what() const throw() {
 				return "405 method not allowed";
 			}
 		};
 
-		class URITooLong: public std::exception {
+		class URITooLong: public HTTPException {
 			virtual const char* what() const throw() {
 				return "414 URI Too Long";
 			}
 		};
 
-		class HTTPVersionNotSupported: public std::exception {
+		class HTTPVersionNotSupported: public HTTPException {
 			virtual const char* what() const throw() {
 				return "505 HTTP Version Not Supported";
 			}
 		};
 
-
+		std::string							errorStatus;
 		methodsEnum							method;
 		std::string							target;
 		std::map<std::string, std::string>	queryParams;
 		std::map<std::string, std::string>	headers;
 		std::string							body;
+		bool								full;
 
-		Request(std::string data);
+		Request();
 		~Request();
-		//returns wether the request has been fully read already
-		bool addToBody(std::string str);
-
+		void addData(std::string data);
+		void startTimer();
+		bool checkTimer();
 		void parseRequestLine(std::string& line);
 		void parseMethod(std::string& method);
 		void parseRequestTarget(std::string& target);
