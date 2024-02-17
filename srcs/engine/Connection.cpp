@@ -36,7 +36,7 @@ int Connection::handleEvent(struct pollfd& pollfd) const {
 		delete[] read_buff;
 
 		if (read_res <= 0) {
-			return 0;
+			return 1;
 		}
 
 		pollfd.events = POLLOUT;
