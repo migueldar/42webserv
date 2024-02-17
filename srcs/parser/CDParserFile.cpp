@@ -381,7 +381,7 @@ void ParserFile::fillServers() {
             case CGI:
                 if (wordLines.size() == 3 && brace == 2) {
                     location.cgi.clear();
-                    if(wordLines[1].find('.') == 0 && wordLines[1].find('.', 1) == std::string::npos)
+                    if(wordLines[1].find('.') != 0 || wordLines[1].find('.', 1) != std::string::npos)
                         throw runtime_error("Error line " + toString(lineNum) + ": CGI error, not valid extension: " + wordLines[1]);
                     if(wordLines[2][0] != '/')
                         throw runtime_error("Error line " + toString(lineNum) + ": CGI error, invalid executable route: " + wordLines[2]);
