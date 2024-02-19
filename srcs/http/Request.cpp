@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 
-Request::Request(): startTime(0), target(""), body(""), full(false) {}
+Request::Request(): startTime(0), target(""), body(""), parsed(NOTHING) {}
 
 // Request::Request(std::string data) {
 // 	std::string aux;
@@ -35,13 +35,43 @@ Request::~Request() {}
 
 //we will be able to handle requests which come multiple messages, but rn we assume all the request comes in one
 //the way to handle is to parse  1:reqline  2:fields  3:body, checking when we hit the termination conditions
-//which are  1:\r\n  2:\r\n\r\n and  3:dependant on headers, either chunked or body-len
+//which are  1:\r\n  2:line with only\r\n and  3:dependant on headers, either chunked or body-len
 //a way to timeout must be added as well, if a timeout is hit, 400 Bad Req
+//remember to try catch for HTTPerrors, other (memory) errors may be handeled elsewhere
 void Request::addData(std::string data) {
+	size_t found;
+
 	rawData += data;
+	if (parsed == NOTHING) {
+		found = rawData.find("\r\n");
+		if (found != std::string::npos)	{
+			parseRequestLine(rawData.substr(0, found));
+			parsed = REQLINE;
+			rawData = rawData.substr(found + 2);
+		}
+	}
+
+	if (parsed == REQLINE) {
+		found = rawData.find("\r\n");
+		if (found == 0)
+			throw BadRequest();
+		else {
+			found = rawData.find("\r\n\r\n");
+			if (found != std::string::npos)	{
+				parseFields(rawData.substr(0, found + 2));
+				parsed = HEADERS;
+				checkFields();
+				rawData = rawData.substr(found + 4);
+			}
+		}
+	}
+
+	if (parsed == HEADERS) {
+
+	}
 
 
-	//remember to try catch for HTTPerrors, other (memory) errors may be handeled elsewhere
+	std::cout << "State: " << parsed << std::endl << *this << std::endl;
 }
 
 void Request::startTimer() {
@@ -103,7 +133,7 @@ void Request::parseVersion(std::string& str) {
 		throw HTTPVersionNotSupported();
 }
 
-void Request::parseRequestLine(std::string& line) {
+void Request::parseRequestLine(std::string line) {
 	std::string aux;
 	std::string::const_iterator it = line.begin();
 
@@ -140,8 +170,7 @@ void Request::parseRequestLine(std::string& line) {
 	std::cout << "version parsed" << std::endl;
 }
 
-
-void Request::parseField(std::string& fieldLine) {
+void Request::parseField(std::string fieldLine) {
 	std::string fieldName, fieldValue;
 	std::string::const_iterator it = fieldLine.begin();
 
@@ -173,6 +202,37 @@ void Request::parseField(std::string& fieldLine) {
 		headers[fieldName] = headers[fieldName].append(", " + fieldValue);
 	else
 		headers[fieldName] = fieldValue;
+}
+
+void Request::parseFields(std::string fields) {
+	size_t found = 0;
+	size_t prev_found = 0;
+
+	found = fields.find("\r\n", prev_found);
+	while (found != std::string::npos) {
+		parseField(fields.substr(prev_found, found - prev_found));
+		prev_found = found + 2;
+		found = fields.find("\r\n", prev_found);
+	}
+}
+
+//
+void Request::checkFields() {
+	if (headers.count("Host") != 1)
+		throw BadRequest();
+	if (headers.count("Transfer-Encoding") != 1) {
+		if (headers.count("Content-Length") != 1)
+			throw BadRequest();
+		if (!isAllDigits(headers["Content-Length"]) || headers["Content-Length"].length() > 18)
+			throw BadRequest();
+		measure = CONTENT_LENGTH;
+		contentLength = std::stol(headers["Content-Length"]);
+	}
+	else {
+		if (headers["Transfer-Encoding"] != "chunked")
+			throw NotImplemented();
+		measure = CHUNKED;
+	}
 }
 
 void Request::parseBody(std::string& messageBody) {

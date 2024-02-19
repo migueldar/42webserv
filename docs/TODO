@@ -1,10 +1,17 @@
-- reflexionar sobre timeouts, quiza:
-  - implementar doble timeout, tanto por request como por conection, en tal caso, hacer el de la request mas corto que el de la conexion
-  - cambiar la gestion de los timeouts de las requests a las connections
+- check host correctness (https://www.rfc-editor.org/rfc/rfc3986.html#section-3.2.2)
 
 - gestionar que me pasen las requests en varias partes
-- checkeo de header correctness
+
+- cambiar la gestion de los timeouts de las requests a las connections
+
+- cambiar parseo de la primera linea para parsear bien la query
 
 - parseo del body
   - body-length
   - chunked body
+
+
+- reflexionar sobre como checkear el maxbody size del server, idealmente saberlo antes de parsear el body, asi podremos\
+  cortar en cuanto veamos que nos pasan un body length mas grande que el que queramos recibir en vez de parsear todo
+
+- reflexionar sobre que pasa cuando el puerto en header Host no es por el que me estan mandando la request (probablemente ignorar)

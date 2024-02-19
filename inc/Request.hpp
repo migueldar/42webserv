@@ -6,7 +6,6 @@
 #include <string>
 
 //check max body length from server
-//check max req line length
 class Request {
 
 	// enum t_method {
@@ -25,6 +24,18 @@ class Request {
 		time_t		startTime;
 
 	public:
+
+		enum ParseState {
+			NOTHING,
+			REQLINE,
+			HEADERS,
+			ALL
+		};
+
+		enum BodyLengthMeasure {
+			CHUNKED,
+			CONTENT_LENGTH
+		};
 
 		class HTTPException: public std::exception {
 			virtual const char* what() const throw() = 0;
@@ -48,6 +59,12 @@ class Request {
 			}
 		};
 
+		class NotImplemented: public HTTPException {
+			virtual const char* what() const throw() {
+				return "501 Not Implemented";
+			}
+		};
+
 		class HTTPVersionNotSupported: public HTTPException {
 			virtual const char* what() const throw() {
 				return "505 HTTP Version Not Supported";
@@ -60,18 +77,22 @@ class Request {
 		std::map<std::string, std::string>	queryParams;
 		std::map<std::string, std::string>	headers;
 		std::string							body;
-		bool								full;
+		ParseState							parsed;
+		BodyLengthMeasure					measure;
+		long								contentLength;
 
 		Request();
 		~Request();
 		void addData(std::string data);
 		void startTimer();
 		bool checkTimer();
-		void parseRequestLine(std::string& line);
 		void parseMethod(std::string& method);
 		void parseRequestTarget(std::string& target);
 		void parseVersion(std::string& version);
-		void parseField(std::string& fieldLine);
+		void parseRequestLine(std::string line);
+		void parseField(std::string fieldLine);
+		void parseFields(std::string fields);
+		void checkFields();
 		void parseBody(std::string& messageBody);
 		// Request(Request const& other);
 		// Request &operator=(Request const& rhs);

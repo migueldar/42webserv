@@ -35,10 +35,9 @@ bool isFieldLine(std::string str) {
 		return true;
 	if (!((unsigned char) str[0] >= 0x21 && (unsigned char) str[str.length() - 1] >= 0x21))
 		return false;
-	for (std::string::const_iterator it = str.begin() + 1; it != str.end() - 1; it++) {
+	for (std::string::const_iterator it = str.begin() + 1; it != str.end() - 1; it++)
 		if (!((unsigned char) *it >= 0x20 || *it == '\t'))
 			return false;
-	}
 	return true;
 }
 
@@ -48,6 +47,15 @@ int hexToNum(char c) {
 	if (islower(c))
 		return c - 'a' + 10;
 	return c - 'A' + 10;
+}
+
+bool isAllDigits(std::string str) {
+	if (str.length() == 0)
+		return false;
+	for (std::string::const_iterator it = str.begin(); it != str.end(); it++)
+		if (!isdigit(*it))
+			return false;
+	return true;
 }
 
 // its normal line but ends in \r\n

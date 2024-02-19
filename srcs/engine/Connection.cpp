@@ -48,7 +48,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		req->addData(std::string(read_buff));
 		delete[] read_buff;
 
-		if (req->full) {
+		if (req->parsed == Request::ALL) {
 			pollfd.events = POLLOUT;
 		}
 	}

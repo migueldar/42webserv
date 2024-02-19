@@ -1,2 +1,11 @@
 conection timeout: 9.5. Failures and Timeouts [RFC 9112]
 request timeout: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/408
+
+la conclusion mirando el comportamiento de nginx es que ambos timeouts son el mismo
+el handling que hace nginx es que si un cliente no le manda un request valida en un minuto
+le cierra el socket y se la pela
+
+Vamos a hacer el mismo handling pero quiza en vez de cerrar y ya le podemos mandar un 408 al client
+
+Cuando se instancia una conexion se inicia un timeout, el cual se resetea cada vez que una request esta full (o quiza cuando en el POLLOUT)
+Salimos de poll cada uno o dos segundos
