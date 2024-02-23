@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 
-Request::Request(): startTime(0), target(""), body(""), parsed(NOTHING) {}
+Request::Request(): rawData(""), startTime(0), target(""), body(""), parsed(NOTHING) {}
 
 // Request::Request(std::string data) {
 // 	std::string aux;
@@ -67,7 +67,14 @@ void Request::addData(std::string data) {
 	}
 
 	if (parsed == HEADERS) {
+		if (measure == NO_BODY)
+			parsed = ALL;
+		else if (measure == CONTENT_LENGTH) {
 
+		}
+		else {
+
+		}
 	}
 
 
@@ -115,14 +122,7 @@ void Request::parseRequestTarget(std::string& str) {
 			throw BadRequest();
 	}
 
-	for (it = str.begin(); it != str.end(); it++) {
-		if (*it == '%') {
-			target += hexToNum(it[1]) * 0x10 + hexToNum(it[2]);
-			it++; it++;
-		}
-		else
-			target += *it;
-	}
+	target = parsePctEncoding(str);
 }
 
 void Request::parseVersion(std::string& str) {
@@ -205,7 +205,7 @@ void Request::parseField(std::string fieldLine) {
 }
 
 void Request::parseFields(std::string fields) {
-	size_t found = 0;
+	size_t found;
 	size_t prev_found = 0;
 
 	found = fields.find("\r\n", prev_found);
@@ -216,13 +216,22 @@ void Request::parseFields(std::string fields) {
 	}
 }
 
-//
 void Request::checkFields() {
-	if (headers.count("Host") != 1)
+	std::cout << "start checkFields" << std::endl;
+	if (headers.count("Host") != 1 || !isHostHeader(headers["Host"]))
 		throw BadRequest();
+	else {
+		if (isIPV4(headers["Host"].substr(0, headers["Host"].find(":"))))
+			hostType = IPV4;
+		else
+			hostType = REGNAME;
+		headers["Host"] = parsePctEncoding(headers["Host"]);
+	}
 	if (headers.count("Transfer-Encoding") != 1) {
-		if (headers.count("Content-Length") != 1)
-			throw BadRequest();
+		if (headers.count("Content-Length") != 1) {
+			measure = NO_BODY;
+			return ;
+		}
 		if (!isAllDigits(headers["Content-Length"]) || headers["Content-Length"].length() > 18)
 			throw BadRequest();
 		measure = CONTENT_LENGTH;
@@ -233,6 +242,7 @@ void Request::checkFields() {
 			throw NotImplemented();
 		measure = CHUNKED;
 	}
+	std::cout << "end checkFields" << std::endl;
 }
 
 void Request::parseBody(std::string& messageBody) {
@@ -259,5 +269,7 @@ std::ostream& operator<<(std::ostream& o, Request const& prt) {
 
 	o << std::endl;
 	o << "Body: " << std::endl << "    " << prt.body << std::endl << std::endl;
+	o << "BodyLengthMeasure: " << std::endl << "    " << prt.measure << std::endl << std::endl;
+	o << "HostType: " << std::endl << "    " << prt.hostType << std::endl << std::endl;
 	return (o);
 }

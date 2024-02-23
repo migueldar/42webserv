@@ -33,8 +33,14 @@ class Request {
 		};
 
 		enum BodyLengthMeasure {
+			NO_BODY,
 			CHUNKED,
 			CONTENT_LENGTH
+		};
+
+		enum HostType {
+			IPV4,
+			REGNAME
 		};
 
 		class HTTPException: public std::exception {
@@ -78,6 +84,7 @@ class Request {
 		std::map<std::string, std::string>	headers;
 		std::string							body;
 		ParseState							parsed;
+		HostType							hostType;
 		BodyLengthMeasure					measure;
 		long								contentLength;
 

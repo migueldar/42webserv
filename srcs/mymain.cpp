@@ -86,7 +86,7 @@ void testReq(std::string str) {
 //bateria de tests
 int main() {
 	signal(SIGINT, sH);
-	atexit(leaks);
+	// atexit(leaks);
 
 	//first line
 	{
@@ -126,7 +126,7 @@ int main() {
 
 		//general correcto
 		testReq("GET /%20data HTTP/1.1\r\n\r\n");
-		testReq("POST /%20data/miau/ HTTP/1.9\r\n\r\n");
+		testReq("POST /%20data/miau/ HTTP/1.9\r\nHost:''\r\n\r\n");
 	}
 	////////////
 
@@ -148,13 +148,20 @@ int main() {
 
 		//bad host
 		testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\n\r\n");
-
-		//
+		testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:\r\n\r\n");
+		testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:@\r\n\r\n");
+		
+		//bad body length
+		testReq("GET / HTTP/1.1\r\nContent-Length: x\r\nHost:''\r\n\r\n");
+		testReq("GET / HTTP/1.1\r\nContent-Length: 543753872975954325342\r\nHost:''\r\n\r\n");
+		testReq("GET / HTTP/1.1\r\nTransfer-Encoding: x\r\nHost:''\r\n\r\n");
 
 		//general correcto
-		testReq("GET / HTTP/1.1\r\nData:  	  uwu   	  \r\n\r\n");
-		testReq("GET / HTTP/1.1\r\nData:\r\n\r\n");
-		testReq("GET / HTTP/1.1\r\nData:\r\nData: n\r\nData: q\r\n\r\n");
+		testReq("GET / HTTP/1.1\r\nContent-Length: x\r\nTransfer-Encoding: chunked\r\nHost:''\r\n\r\n");
+		testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:''\r\n\r\n");
+		testReq("GET / HTTP/1.1\r\nHost: ''\r\nData:  	  uwu   	  \r\n\r\n");
+		testReq("GET / HTTP/1.1\r\nHost: %20e%20e\r\nData:\r\n\r\n");
+		testReq("GET / HTTP/1.1\r\nHost: 127.0.0.1\r\nData:\r\nData: n\r\nData: q\r\n\r\n");
 
 	}
 	///////////

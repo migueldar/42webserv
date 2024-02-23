@@ -4,7 +4,7 @@
 Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers), req(NULL) {}
 
 //if smt around here fails, check this, bc its not currently a full copy
-Connection::Connection(Connection const& other): sock(other.sock), servers(other.servers) {}
+Connection::Connection(Connection const& other): sock(other.sock), servers(other.servers), req(other.req) {}
 
 Connection::~Connection() {}
 
