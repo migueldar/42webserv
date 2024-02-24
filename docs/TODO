@@ -1,9 +1,8 @@
 DOING
+- cambiar la gestion de los timeouts de las requests a las connections
 
 TODO
 - gestionar que me pasen las requests en varias partes
-
-- cambiar la gestion de los timeouts de las requests a las connections
 
 ?(quiza lo hace joan cgi) cambiar parseo de la primera linea para parsear bien la query
 
@@ -13,12 +12,18 @@ TODO
 
 - check with real browser req
 
+- gestionar errores en las llamadas al sistema
+
 - reflexionar sobre como checkear el maxbody size del server, idealmente saberlo antes de parsear el body, asi podremos\
   cortar en cuanto veamos que nos pasan un body length mas grande que el que queramos recibir en vez de parsear todo
 
 - reflexionar sobre que pasa cuando el puerto en header Host no es por el que me estan mandando la request (probablemente ignorar)
 
 - reflexionar sobre que pasa cuando el Host es una ip o localhost en vez de un regname, a que server lo mando??
+
+- ver como usar los fds en non-blocking mode
+
+- mirar tema de reusar sockets
 
 DONE
 - check host correctness (https://www.rfc-editor.org/rfc/rfc3986.html#section-3.2.2)

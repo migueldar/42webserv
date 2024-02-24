@@ -7,6 +7,11 @@
 #define SIZE_READ 0x10000
 
 class Connection {
+	private:
+		time_t		startTime;
+		//only on false when server is doing response processing
+		bool		checkTime;
+
 	public:
 		int					sock;
 		std::vector<Server>	&servers;
@@ -16,10 +21,10 @@ class Connection {
 		Connection(int socket, std::vector<Server> &servers);
 		Connection(const Connection &other);
 		~Connection();
+		void startTimer();
+		bool checkTimer() const;
 		bool operator==(const Connection &other) const;
 		int handleEvent(struct pollfd &pollfd);
-
-	private:
 };
 
 #endif

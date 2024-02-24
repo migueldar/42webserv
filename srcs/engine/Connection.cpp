@@ -1,14 +1,27 @@
 #include "webserv.hpp"
 #include <sys/poll.h>
 
-Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers), req(NULL) {}
+Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers), req(NULL) {
+	startTimer();
+}
 
 //if smt around here fails, check this, bc its not currently a full copy
-Connection::Connection(Connection const& other): sock(other.sock), servers(other.servers), req(other.req) {}
+Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), sock(other.sock), servers(other.servers), req(other.req) {}
 
 Connection::~Connection() {}
 
-//a connection is uniquely identified by sock fd, no need to check the server
+void Connection::startTimer() {
+	startTime = time(NULL);
+	checkTime = true;
+}
+
+// returns true if timeout
+// 60s timeout
+bool Connection::checkTimer() const {
+	return (checkTime && startTime + 60 <= time(NULL));
+}
+
+//a connection is uniquely identified by sock fd
 bool Connection::operator==(const Connection& other) const {
 	return (other.sock == sock);
 }
@@ -40,16 +53,15 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			return 1;
 		}
 
-		if (!req) {
+		if (!req)
 			req = new Request();
-			req->startTimer();
-		}
 
 		req->addData(std::string(read_buff));
 		delete[] read_buff;
 
 		if (req->parsed == Request::ALL) {
 			pollfd.events = POLLOUT;
+			checkTime = false;
 		}
 	}
 
@@ -63,9 +75,9 @@ Content-Length: 0\r\n\
 Connection: keep-alive\r\n\
 Content-Type: text/plain; charset=utf-8\r\n\
 \r\n", 104, 0);
-
-
 		//call Response constructor, we pass request
+
+		startTimer();
 		pollfd.events = POLLIN;
 		delete req;
 		req = NULL;

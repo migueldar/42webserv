@@ -3,33 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 
-Request::Request(): rawData(""), startTime(0), target(""), body(""), parsed(NOTHING) {}
-
-// Request::Request(std::string data) {
-// 	std::string aux;
-// 	std::string::const_iterator it = data.begin();
-// 	std::string::const_iterator end = data.end();
-
-// 	aux = getHTTPLine(it, end);
-// 	parseRequestLine(aux);
-
-// 	//fill fields
-// 	aux = getHTTPLine(it, end);
-// 	while (aux != "") {
-// 		parseField(aux);
-// 		aux = getHTTPLine(it, end);
-// 	}
-
-// 	//check correctness of fields
-
-// 	//check wether body is needed
-
-// 	//read body
-
-// 	parseBody(data);
-	
-// 	std::cout << *this << std::endl;
-// }
+Request::Request(): rawData(""), target(""), body(""), parsed(NOTHING) {}
 
 Request::~Request() {}
 
@@ -78,17 +52,7 @@ void Request::addData(std::string data) {
 	}
 
 
-	std::cout << "State: " << parsed << std::endl << *this << std::endl;
-}
-
-void Request::startTimer() {
-	startTime = time(NULL);
-}
-
-// returns true if timeout
-// 60s timeout
-bool Request::checkTimer() {
-	return (startTime + 60 <= time(NULL));
+	std::cout << parsed << std::endl << *this << std::endl;
 }
 
 void Request::parseMethod(std::string& str) {

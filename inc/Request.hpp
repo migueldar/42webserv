@@ -21,7 +21,6 @@ class Request {
 
 	private:
 		std::string	rawData;
-		time_t		startTime;
 
 	public:
 
@@ -91,8 +90,6 @@ class Request {
 		Request();
 		~Request();
 		void addData(std::string data);
-		void startTimer();
-		bool checkTimer();
 		void parseMethod(std::string& method);
 		void parseRequestTarget(std::string& target);
 		void parseVersion(std::string& version);
