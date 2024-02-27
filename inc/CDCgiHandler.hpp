@@ -12,12 +12,12 @@ enum CGI{
 class CgiHandler {
 	private:
 		enum CGI type;
-		std::string exec;
-		std::string route;
-		std::string params;
+		std::string script_name;
+		std::string path_info;
+		std::string query_string;
 
 	public:
-		CgiHandler(enum CGI type);
+		CgiHandler(Request);
 
 		void setParams(std::string route, std::string params);
 

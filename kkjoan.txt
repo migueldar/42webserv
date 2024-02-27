@@ -85,61 +85,20 @@ DICCIONARIO DE STATUS
     505 HTTP Version Not Supported
     */
 
+CGI SHIT:
 
-Implement in config_file	
+Example uriCgiRequest:
+    -http://example.com/cgi-bin/myscript.cgi/param1/value1/param2/value2
+    -http://example.com/cgi-bin/category/script.cgi/product1
+    -http://example.com/cgi-bin/main_script.cgi/sub_script1/sub_script2/data/info
+    -http://example.com/cgi-bin/myscript.cgi/category/products/product1?param1=value1&param2=value2
 
-Errores 5xx
-implement std::map<int, std::map<std::string, std::vector<server> > >
+metaVariables:
+ - SCRIPT_NAME: Representa el componente inicial de la ruta del script. Es la parte de la URI que está asociada con el script CGI en cuestión. Por ejemplo, si la URI es "/cgi-bin/myscript.cgi", entonces SCRIPT_NAME podría ser "/cgi-bin/myscript.cgi".
 
+ - PATH_INFO: Representa la parte adicional de la ruta que sigue a SCRIPT_NAME. Es la información de ruta adicional después del nombre del script en la URI. Utiliza el ejemplo anterior, si la URI es "/cgi-bin/myscript.cgi/some/path", entonces PATH_INFO podría ser "/some/path".
 
-IN LOCATIONS
-	CGI
-	Allow
+ - QUERY_STRING: Representa los parámetros de consulta en la URI. Es la parte de la URI que sigue al símbolo '?' y contiene los parámetros y sus valores. Por ejemplo, si la URI es "/cgi-bin/myscript.cgi?param1=value1&param2=value2", entonces QUERY_STRING podría ser "param1=value1&param2=value2".
 
-
-
-server {
-    host 8081
-    server_name kk
-
-    location / {
-
-    }
-}
-
-server {
-    host 8080
-    server_name kk
-
-    location / {
-
-    }
-}
-
-
-std::map<int, std::vector<server>>
-        # Servername           PORT : SERV VECTOR
-std::map<std::string, std::map<int, std::vector<server> > >
-
-        # PORT           servername : SERV VECTOR
-std::map<int, std::map<std::string, std::vector<server> > >
-
-server {
-    host 8080
-    server_name kk
-
-    location / {
-
-    }
-}
-
-
-server {
-    host 8080
-    server_name uwu
-}
-
-server {
-    host 8081
-    server_name uwu
-}
+URI CGI STRUCTURE
+ script-URI = <scheme> "://" <server-name> ":" <server-port> <script-path> <extra-path> "?" <query-string>
