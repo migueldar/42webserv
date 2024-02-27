@@ -2,6 +2,7 @@
 #define CDCGIHANDLER_HPP
 
 #include <iostream>
+#include "delete.hpp"
 
 enum CGI{
 	py = 0,
@@ -11,7 +12,8 @@ enum CGI{
 // src/cgi/cgiHandler.cpp
 class CgiHandler {
 	private:
-		enum CGI type;
+		enum CGI 	type;
+		std::string	body;
 		std::string script_name;
 		std::string path_info;
 		std::string query_string;
