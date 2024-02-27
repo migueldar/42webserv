@@ -12,5 +12,7 @@ bool		isAllDigits(std::string& str);
 int			hexToNum(char c);
 std::string parsePctEncoding(std::string& str);
 std::string	getHTTPLine(std::string::const_iterator& it, std::string::const_iterator& end);
+std::string toLower(const std::string &str);
+long		hexStringToLong(std::string& str);
 
 #endif

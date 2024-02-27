@@ -7,52 +7,59 @@ Request::Request(): rawData(""), target(""), body(""), parsed(NOTHING) {}
 
 Request::~Request() {}
 
-//we will be able to handle requests which come multiple messages, but rn we assume all the request comes in one
-//the way to handle is to parse  1:reqline  2:fields  3:body, checking when we hit the termination conditions
-//which are  1:\r\n  2:line with only\r\n and  3:dependant on headers, either chunked or body-len
-//a way to timeout must be added as well, if a timeout is hit, 400 Bad Req
-//remember to try catch for HTTPerrors, other (memory) errors may be handeled elsewhere
 void Request::addData(std::string data) {
 	size_t found;
 
 	rawData += data;
-	if (parsed == NOTHING) {
-		found = rawData.find("\r\n");
-		if (found != std::string::npos)	{
-			parseRequestLine(rawData.substr(0, found));
-			parsed = REQLINE;
-			rawData = rawData.substr(found + 2);
-		}
-	}
-
-	if (parsed == REQLINE) {
-		found = rawData.find("\r\n");
-		if (found == 0)
-			throw BadRequest();
-		else {
-			found = rawData.find("\r\n\r\n");
+	try {
+		if (parsed == NOTHING) {
+			found = rawData.find("\r\n");
 			if (found != std::string::npos)	{
-				parseFields(rawData.substr(0, found + 2));
-				parsed = HEADERS;
-				checkFields();
-				rawData = rawData.substr(found + 4);
+				parseRequestLine(rawData.substr(0, found));
+				parsed = REQLINE;
+				rawData = rawData.substr(found + 2);
 			}
 		}
-	}
 
-	if (parsed == HEADERS) {
-		if (measure == NO_BODY)
-			parsed = ALL;
-		else if (measure == CONTENT_LENGTH) {
-
+		if (parsed == REQLINE) {
+			found = rawData.find("\r\n");
+			if (found == 0)
+				throw BadRequest();
+			else {
+				found = rawData.find("\r\n\r\n");
+				if (found != std::string::npos)	{
+					parseFields(rawData.substr(0, found + 2));
+					parsed = HEADERS;
+					checkFields();
+					rawData = rawData.substr(found + 4);
+				}
+			}
 		}
-		else {
 
+		if (parsed == HEADERS) {
+			if (measure == NO_BODY)
+				parsed = ALL;
+			else if (measure == CONTENT_LENGTH) {
+				if (rawData.length() == contentLength) {
+					parsed = ALL;
+					body = rawData;
+					rawData.clear();
+				}
+			}
+			else {
+				found = rawData.find_last_of("\r\n\r\n");
+				if (found != std::string::npos)	{
+					if (found != rawData.length() - 4)
+						throw BadRequest();
+					parseChunkedBody(rawData.substr(0, found + 2));
+					rawData.clear();
+				}
+			}
 		}
+	} catch (const HTTPException& e) {
+		errorStatus = e.what();
+		parsed = ALL;
 	}
-
-
-	std::cout << parsed << std::endl << *this << std::endl;
 }
 
 void Request::parseMethod(std::string& str) {
@@ -202,38 +209,103 @@ void Request::checkFields() {
 		contentLength = std::stol(headers["Content-Length"]);
 	}
 	else {
-		if (headers["Transfer-Encoding"] != "chunked")
+		if (toLower(headers["Transfer-Encoding"]) != "chunked")
 			throw NotImplemented();
 		measure = CHUNKED;
 	}
 	std::cout << "end checkFields" << std::endl;
 }
 
-void Request::parseBody(std::string& messageBody) {
-	(void) messageBody;
+void Request::parseChunkedBody(std::string messageBody) {
+	std::cout << "parseChunked start" << std::endl;
+
+	size_t		counter = 0;
+	size_t		len;
+	size_t		found;
+	std::string	lenHex;
+	std::string chunkBody;
+
+	while (messageBody[counter]) {
+		lenHex.clear();
+		while (isxdigit(messageBody[counter])) {
+			lenHex += messageBody[counter];
+			counter++;
+		}
+		if (lenHex.length() == 0)
+			throw BadRequest();
+		try {
+			len = hexStringToLong(lenHex); 
+		} catch (const std::exception& _) {
+			throw BadRequest();
+		}
+
+		found = messageBody.find("\r\n", counter);
+		std::cout << len << std::endl;
+		if (found == std::string::npos)
+			throw BadRequest();
+		if (len == 0)
+			break ;
+		counter = found + 2;
+
+		chunkBody = messageBody.substr(counter, len);
+		if (chunkBody.length() != len || messageBody[counter + len] != '\r' || messageBody[counter + len + 1] != '\n')
+			throw BadRequest();
+		body += chunkBody;
+		counter += len + 2;
+	}
+
+	if (!messageBody[counter])
+		throw BadRequest();
+
+	std::cout << "parseChunked end" << std::endl << std::endl;
 }
 
-// Request::Request(Request const& other) {
-// 	std::cout << "Request copy constructor called" << std::endl;
-// 	*this = other;
-// }
-
-// Request& Request::operator=(Request const& rhs) {
-// 	(void) rhs;
-// 	std::cout << "Request copy assignment operator called" << std::endl;
-// 	return (*this);
-// }
-
 std::ostream& operator<<(std::ostream& o, Request const& prt) {
-	o << "Method: " << std::endl << "    " << prt.method << std::endl << std::endl;
-	o << "Target: " << std::endl << "    " << prt.target << std::endl << std::endl;
+	o << "Method: ";
+	switch (prt.method) {
+		case GET:
+			o << "GET";
+			break ;
+		case POST:
+			o << "POST";
+			break ;
+		case DELETE:
+			o << "DELETE";
+			break ;
+	}
+	o << std::endl << std::endl;
+	o << "Target: " << prt.target << std::endl << std::endl;
 	o << "Headers: " << std::endl;
 	for (std::map<std::string, std::string>::const_iterator it = prt.headers.begin(); it != prt.headers.end(); it++)
 		o << "    " << it->first << ": " << it->second << std::endl; 
 
 	o << std::endl;
 	o << "Body: " << std::endl << "    " << prt.body << std::endl << std::endl;
-	o << "BodyLengthMeasure: " << std::endl << "    " << prt.measure << std::endl << std::endl;
-	o << "HostType: " << std::endl << "    " << prt.hostType << std::endl << std::endl;
+	o << "BodyLengthMeasure: ";
+	switch (prt.measure) {
+		case Request::NO_BODY:
+			o << "NO_BODY";
+			break ;
+		case Request::CHUNKED:
+			o << "CHUNKED";
+			break ;
+		case Request::CONTENT_LENGTH:
+			o << "CONTENT_LENGTH";
+			break ;
+	} 
+	o << std::endl << std::endl;
+	o << "Content-Length: " << prt.contentLength << std::endl << std::endl;
+	o << "HostType: ";
+	switch (prt.hostType) {
+		case Request::IPV4:
+			o << "IPV4";
+			break ;
+		case Request::REGNAME:
+			o << "REGNAME";
+			break ;
+	}
+	o << std::endl << std::endl;
+	o << "ErrorStatus: " << prt.errorStatus << std::endl << std::endl;
+	o << "Parsed: " << prt.parsed << std::endl << std::endl;
 	return (o);
 }

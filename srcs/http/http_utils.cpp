@@ -139,31 +139,18 @@ std::string getHTTPLine(std::string::const_iterator& it, std::string::const_iter
 	return ret;
 }
 
-//status 1 if fail
-// int	ft_atoi(const char *str, int *status)
-// {
-// 	int				minus;
-// 	long int		ret;
-// 	int				counter;
+std::string toLower(const std::string &str) {
+	std::string ret = "";
+	for (std::string::const_iterator it = str.begin(); it != str.end(); it++)
+		ret += tolower(*it);
+	return ret;
+}
 
-// 	ret = 0;
-// 	minus = 0;
-// 	counter = 0;
-// 	if (*str == '+' || *str == '-')
-// 		if (*(str++) == '-')
-// 			minus++;
-// 	while (*str)
-// 	{
-// 		if (!(*str <= '9' && *str >= '0'))
-// 			return (*status = 0, 0);
-// 		ret = ret * 10 + (*str++ - '0');
-// 		counter++;
-// 	}
-// 	if (counter > 10 || (ret > 0x7fffffff && !minus)
-// 		|| (ret > 0x80000000 && minus))
-// 		return (*status = 1, 0);
-// 	if (minus)
-// 		ret *= -1;
-// 	return (*status = 0, ret);
-// }
+long hexStringToLong(std::string& str) {
+    std::istringstream iss(str);
+    long ret;
 
+    if (!(iss >> std::hex >> ret)) 
+		throw std::runtime_error("overflow");
+    return ret;
+}

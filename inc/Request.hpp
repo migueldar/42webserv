@@ -43,7 +43,8 @@ class Request {
 		};
 
 		class HTTPException: public std::exception {
-			virtual const char* what() const throw() = 0;
+			public:
+				virtual const char* what() const throw() = 0;
 		};
 		
 		class BadRequest: public HTTPException {
@@ -76,16 +77,16 @@ class Request {
 			}
 		};
 
-		std::string							errorStatus;
 		methodsEnum							method;
 		std::string							target;
-		std::map<std::string, std::string>	queryParams;
 		std::map<std::string, std::string>	headers;
+		std::map<std::string, std::string>	queryParams;
 		std::string							body;
 		ParseState							parsed;
 		HostType							hostType;
 		BodyLengthMeasure					measure;
-		long								contentLength;
+		unsigned long						contentLength;
+		std::string							errorStatus;
 
 		Request();
 		~Request();
@@ -97,7 +98,7 @@ class Request {
 		void parseField(std::string fieldLine);
 		void parseFields(std::string fields);
 		void checkFields();
-		void parseBody(std::string& messageBody);
+		void parseChunkedBody(std::string messageBody);
 		// Request(Request const& other);
 		// Request &operator=(Request const& rhs);
 };
