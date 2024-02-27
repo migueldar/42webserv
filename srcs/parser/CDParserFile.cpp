@@ -35,7 +35,7 @@ ParserFile::ParserFile(string routeToParserFile): configParserFile(routeToParser
     if(serverDefinitions.size() == 0)
         throw runtime_error("Error: no servers defined");
 
-    for(map<unsigned int, map<string, vector<Server> > >::iterator it = serverDefinitions.begin(); it != serverDefinitions.end(); ++it)
+    for(map<unsigned int, vector<Server> >::iterator it = serverDefinitions.begin(); it != serverDefinitions.end(); ++it)
         printServersByPort(it->first);
 }
 
@@ -52,18 +52,21 @@ void removeLastSemicolon(string& word) {
 
 void ParserFile::printServersByPort(unsigned int targetPort) {
 
-    cout << "Servers for port " << targetPort << ":" << endl;
-    for (map<string, vector<Server> >::iterator it = (serverDefinitions[targetPort]).begin(); it != (serverDefinitions[targetPort]).end() ; ++it ){
-        vector<Server> server = (serverDefinitions[targetPort])[it->first];
-        for (vector<Server>::iterator serverVecIter = server.begin(); serverVecIter != server.end(); ++serverVecIter) {
+       std::map<unsigned int, std::vector<Server> >::iterator serverIter = serverDefinitions.find(targetPort);
+
+    if (serverIter != serverDefinitions.end()) {
+        std::cout << "Servers for port " << targetPort << ":" << std::endl;
+
+        std::vector<Server>& servers = serverIter->second;
+        for (std::vector<Server>::iterator serverVecIter = servers.begin(); serverVecIter != servers.end(); ++serverVecIter) {
             const Server& server = *serverVecIter;
 
-            cout << "  Server Name: " << server.serverName << endl;
+            std::cout << "  Server Name: " << server.serverName << std::endl;
 
-            cout << "  Error Pages:" << endl;
-            map<string, string>::const_iterator errorPageIter = server.getErrPages().begin();
+            std::cout << "  Error Pages:" << std::endl;
+            std::map<std::string, std::string>::const_iterator errorPageIter = server.getErrPages().begin();
             while (errorPageIter != server.getErrPages().end()) {
-                cout << "    Status: " << errorPageIter->first << ", Route: " << errorPageIter->second << endl;
+                std::cout << "    Status: " << errorPageIter->first << ", Route: " << errorPageIter->second << std::endl;
                 ++errorPageIter;
             }
 
@@ -412,11 +415,11 @@ void ParserFile::fillServers() {
                             throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing location");
                         }
 
-                        if(checkAllRoutesByServerVec(((serverDefinitions[port])[server.serverName]), server.getKeysRoutes()) == 1){
+                        if(checkAllRoutesByServerVec(serverDefinitions[port], server.getKeysRoutes()) == 1){
                             throw runtime_error("Error line " + toString(lineNum) + ": one route or more is already registered to this port");
                         }
                         
-                        ((serverDefinitions[port])[server.serverName]).insert(((serverDefinitions[port])[server.serverName]).begin(), server);
+                        serverDefinitions[port].insert(serverDefinitions[port].begin(), server);
                         setValuesConfigTypeMap(configTypeMap, 1);
                     }
                     if(brace == 1){
