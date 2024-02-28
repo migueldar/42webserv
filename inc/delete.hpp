@@ -33,8 +33,6 @@ class Request {
 		};
 
 		std::string							errorStatus;
-		std::string							target; // URI
-		std::map<std::string, std::string>	queryParams;
 		std::map<std::string, std::string>	headers;
 		std::string							body;
 		ParseState							parsed;
