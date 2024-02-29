@@ -10,6 +10,20 @@ CgiHandler::CgiHandler(std::string pathScript, Request req, std::vector<std::str
 void CgiHandler::initDictParser(void){
     methodMap[SCRIPT_NAME] = &CgiHandler::parseSCRIPT_NAME;
 }
+void CgiHandler::parseLOCATION(void) {
+    std::string location;
+
+    while (!uri.empty()) {
+        size_t found = uri[0].find(req.cgiToken);
+        if (found != std::string::npos) {
+            metaVariables["LOCATION"] = location;
+            break;
+        }
+        location += "/" + uri[0];
+        uri.erase(uri.begin());
+    }
+    return;
+}
 
 void CgiHandler::parseSCRIPT_NAME(void) {
     bool    bad = 0;
@@ -32,20 +46,6 @@ void CgiHandler::parseSCRIPT_NAME(void) {
     return;
 }
 
-void CgiHandler::parseLOCATION(void) {
-    std::string location;
-
-    while (!uri.empty()) {
-        size_t found = uri[0].find(req.cgiToken);
-        if (found != std::string::npos) {
-            metaVariables["LOCATION"] = location;
-            break;
-        }
-        location += uri[0];
-        uri.erase(uri.begin());
-    }
-    return;
-}
 
 
 void	parsePATH_INFO(void){
