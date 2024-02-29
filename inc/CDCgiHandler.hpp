@@ -11,12 +11,13 @@ class CgiHandler {
 		using parsePointer = void(CgiHandler::*)();
 
 		enum metaVariables{
+			LOCATION,
+			PATH_INFO,
 			SCRIPT_NAME,
 			AUTH_TYPE,
 			CONTENT_LENGTH,
 			CONTENT_TYPE,
 			GATEWAY_INTERFACE,
-			PATH_INFO,
 			PATH_TRANSLATED,
 			QUERY_STRING,
 			REMOTE_ADDR,
@@ -33,13 +34,14 @@ class CgiHandler {
 		CgiHandler(std::string pathScript ,Request req, std::vector<std::string> uri, std::string query_string);
 		void 	initDictParser(void);
 
+		void	parseLOCATION(void);
+		void	parsePATH_INFO(void);
 		void	parseSCRIPT_NAME(void);
 
 		void	parseAUTH_TYPE(void);
 		void	parseCONTENT_LENGTH(void);
 		void	parseCONTENT_TYPE(void);
 		void	parseGATEWAY_INTERFACE(void);
-		void	parsePATH_INFO(void);
 		void	parsePATH_TRANSLATED(void);
 		void	parseQUERY_STRING(void);
 		void	parseREMOTE_ADDR(void);
@@ -57,6 +59,7 @@ class CgiHandler {
 		std::map<enum metaVariables, parsePointer> 	methodMap;
 		std::string 								body;
 		std::map<std::string, std::string> 			metaVariables;
+		std::string									script;
 		Request 									&req;
 		std::vector<std::string>					&uri; 
 		std::string 								&query_string;
