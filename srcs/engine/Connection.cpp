@@ -66,6 +66,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	}
 
 	//response handling should be done here, not in pollin
+	//si hay un error en la request (4xx, 5xx) devolvemos Connection: close y cerramos conexion
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
 

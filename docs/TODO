@@ -4,24 +4,17 @@ DOING
 
 TODO
 
+- tanto GET como DELETE 
+
 - tener en cuenta que el body es opcional aunque sea chunked
 
-- GET POST DELETE (https://datatracker.ietf.org/doc/html/rfc7231#section-4.3.1)
+- test requests partidas
 
-- parseo de los chunks incorrecto, la condicion de final no es correcta, debe ser cuando lleguemos al last-chunk,\
-  no cuando lleguemos a la condicion de \r\n\r\n, ya que esto puede ocurrir en cualquier punto en el medio del\
-  chunk (en un chunk puede haber cualquier cosa)
-
-- check with real browser req
-
-- test c++98
-
-?(quiza lo hace joan cgi) cambiar parseo de la primera linea para parsear bien la query
-
+- tengo que bajar el puerto hasta joan
+                                                    
 - reflexionar sobre de cuanto en cuanto leo, y como gestionar la data extra en las conexiones
 + gestionarlo leyendo de x en x, el metodo addData de la request devuelve la data que no ha usado y la data\
   por parsear se guarda en la conexion
-+ opcion mierdosa: leer de 1 en 1
 
 - gestionar errores en las llamadas al sistema
 
@@ -30,22 +23,20 @@ TODO
 + Quizas no tiene sentido hacerlo ya que solo valdria para una proteccion contra DDOS, pero podria haber otras muchas formas en\
   las que nos pueden hacer DDOS.
 
-- reflexionar sobre que pasa cuando el puerto en header Host no es por el que me estan mandando la request
-+ ignorar puerto siempre (comportamiento nginx)
-
 - reflexionar sobre que pasa cuando el Host es una ip o localhost en vez de un regname, a que server lo mando?? 
 + quiza aqui es donde entra el default y nuestra interpretacion primera era correcta, el equipo de pepe
   interpreta que el "host" del subject es la ip propia, asi que siempre es el mismo, por tanto el default del server_name es a nivel de port
 
-- add goto CGI confirmation (find .py or .go)
+- añadir parseo pctEnconded en URI DESPUES de dividir por barras e interrogaciones
 
-- reflexionar sobre equipo de pepe no permite mismo server name y port
+- add goto CGI confirmation (find .py or .go)
 
 - reflexionar sobre almacenamiento (particularmente imagenes y videos) en deques, porque gestiona la memoria en bloques de 512
 
 - ver como usar los fds en non-blocking mode
 
 - mirar tema de reusar sockets
+
 
 DONE
 

@@ -98,7 +98,7 @@ class Request {
 		void parseField(std::string fieldLine);
 		void parseFields(std::string fields);
 		void checkFields();
-		void parseChunkedBody(std::string messageBody);
+		std::string parseChunkedBody();
 		// Request(Request const& other);
 		// Request &operator=(Request const& rhs);
 };

@@ -43,7 +43,7 @@ bool isFieldLine(std::string& str) {
 	return true;
 }
 
-std::string parsePctEncoding(std::string& str) {
+std::string parsePctEncoding(std::string str) {
 	std::string target;
 
 	for (std::string::const_iterator it = str.begin(); it != str.end(); it++) {
@@ -65,7 +65,7 @@ bool isIPV4(std::string str) {
 	for (int i = 0; i < 4; i++) {
 		found = str.find(".", prev_found);
 		aux = str.substr(prev_found, found - prev_found);
-		if (aux.length() > 3 || !isAllDigits(aux) || std::stol(aux) > 255 || std::stol(aux) < 0)
+		if (aux.length() > 3 || !isAllDigits(aux) || std::atoi(aux.c_str()) > 255 || std::atoi(aux.c_str()) < 0)
 			return false;
 		prev_found = found + 1;
 	}
@@ -95,7 +95,7 @@ bool isHost(std::string str) {
 }
 
 bool isPort(std::string str) {
-	return !(str.length() == 0 || str.length() > 5 || !isAllDigits(str) || std::stol(str) > 0xffff || std::stol(str) <= 0);
+	return !(str.length() == 0 || str.length() > 5 || !isAllDigits(str) || std::atoi(str.c_str()) > 0xffff || std::atoi(str.c_str()) <= 0);
 }
 
 bool isHostHeader(std::string& str) {
@@ -146,11 +146,11 @@ std::string toLower(const std::string &str) {
 	return ret;
 }
 
-long hexStringToLong(std::string& str) {
+long hexStringToLong(std::string str) {
     std::istringstream iss(str);
     long ret;
 
     if (!(iss >> std::hex >> ret)) 
-		throw std::runtime_error("overflow");
+		return ret;
     return ret;
 }

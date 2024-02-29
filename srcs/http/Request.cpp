@@ -36,6 +36,7 @@ void Request::addData(std::string data) {
 			}
 		}
 
+		//change content length to return unread data
 		if (parsed == HEADERS) {
 			if (measure == NO_BODY)
 				parsed = ALL;
@@ -47,19 +48,18 @@ void Request::addData(std::string data) {
 				}
 			}
 			else {
-				found = rawData.find_last_of("\r\n\r\n");
-				if (found != std::string::npos)	{
-					if (found != rawData.length() - 4)
-						throw BadRequest();
-					parseChunkedBody(rawData.substr(0, found + 2));
-					rawData.clear();
-				}
+				rawData = parseChunkedBody();
+				if (parsed == ALL) {}
+					//return rawData;
+			
 			}
 		}
 	} catch (const HTTPException& e) {
 		errorStatus = e.what();
 		parsed = ALL;
 	}
+	if (parsed == ALL)
+		std::cout << std::endl << "FULLY PARSED: " << *this;
 }
 
 void Request::parseMethod(std::string& str) {
@@ -75,7 +75,6 @@ void Request::parseMethod(std::string& str) {
 		throw MethodNotAllowed();
 }
 
-//CHECK FOR QUERY PARAMS
 void Request::parseRequestTarget(std::string& str) {
 	std::string::const_iterator it = str.begin();
 	std::string aux;
@@ -92,8 +91,7 @@ void Request::parseRequestTarget(std::string& str) {
 		if (!isSegment(aux))
 			throw BadRequest();
 	}
-
-	target = parsePctEncoding(str);
+	target = str;
 }
 
 void Request::parseVersion(std::string& str) {
@@ -196,7 +194,7 @@ void Request::checkFields() {
 			hostType = IPV4;
 		else
 			hostType = REGNAME;
-		headers["Host"] = parsePctEncoding(headers["Host"]);
+		headers["Host"] = parsePctEncoding(headers["Host"].substr(0, headers["Host"].find(":")));
 	}
 	if (headers.count("Transfer-Encoding") != 1) {
 		if (headers.count("Content-Length") != 1) {
@@ -206,7 +204,7 @@ void Request::checkFields() {
 		if (!isAllDigits(headers["Content-Length"]) || headers["Content-Length"].length() > 18)
 			throw BadRequest();
 		measure = CONTENT_LENGTH;
-		contentLength = std::stol(headers["Content-Length"]);
+		contentLength = std::atol(headers["Content-Length"].c_str());
 	}
 	else {
 		if (toLower(headers["Transfer-Encoding"]) != "chunked")
@@ -216,48 +214,41 @@ void Request::checkFields() {
 	std::cout << "end checkFields" << std::endl;
 }
 
-void Request::parseChunkedBody(std::string messageBody) {
+//returns unparsed data
+std::string Request::parseChunkedBody() {
 	std::cout << "parseChunked start" << std::endl;
 
 	size_t		counter = 0;
 	size_t		len;
 	size_t		found;
-	std::string	lenHex;
 	std::string chunkBody;
 
-	while (messageBody[counter]) {
-		lenHex.clear();
-		while (isxdigit(messageBody[counter])) {
-			lenHex += messageBody[counter];
-			counter++;
-		}
-		if (lenHex.length() == 0)
-			throw BadRequest();
-		try {
-			len = hexStringToLong(lenHex); 
-		} catch (const std::exception& _) {
-			throw BadRequest();
-		}
-
-		found = messageBody.find("\r\n", counter);
-		std::cout << len << std::endl;
+	while (1) {
+		found = rawData.find("\r\n", counter);
 		if (found == std::string::npos)
+			return rawData.substr(counter);
+		if (!isdigit(rawData[counter]))
 			throw BadRequest();
+		len = hexStringToLong(rawData.substr(counter, found - counter));
 		if (len == 0)
-			break ;
-		counter = found + 2;
-
-		chunkBody = messageBody.substr(counter, len);
-		if (chunkBody.length() != len || messageBody[counter + len] != '\r' || messageBody[counter + len + 1] != '\n')
+			break;
+	
+		chunkBody = rawData.substr(found + 2, len);
+		if (chunkBody.length() != len)
+			return rawData.substr(counter);
+		if (rawData[found + 2 + len] != '\r' || rawData[found + 2 + len + 1] != '\n')
 			throw BadRequest();
 		body += chunkBody;
-		counter += len + 2;
+		counter = found + 2 + len + 2;
 	}
 
-	if (!messageBody[counter])
-		throw BadRequest();
-
+	found = rawData.find("\r\n\r\n", counter);
+	if (found == std::string::npos)
+		return rawData.substr(counter);
+	
+	parsed = ALL;
 	std::cout << "parseChunked end" << std::endl << std::endl;
+	return rawData.substr(found + 4);
 }
 
 std::ostream& operator<<(std::ostream& o, Request const& prt) {

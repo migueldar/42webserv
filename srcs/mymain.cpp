@@ -48,147 +48,147 @@ void sH(int a) {
 	exit(0);
 }
 
-// int main() {
-// 	signal(SIGINT, sH);
-
-// 	std::vector<Server> servs = buildSampleServers();
-// 	std::vector<Server> servs2 = buildSampleServers();
-
-// 	Listener l1(8080, servs), l2(8081, servs);
-// 	//, l3(8082, servs);
-// 	// Connection c1(100, servs), c2(101, servs), c3(102, servs);
-// 	PollHandler po;
-
-// 	po.addListener(l1);
-// 	po.addListener(l2);
-// 	po.listenMode();
-
-// 	while (1) {
-// 		po.pollMode();
-// 		// usleep(500000);
-// 	}
-
-// 	//std::cout << "Done" << std::endl;
-// }
-
-void testReq(std::string str) {
-	std::cout << "------------------------------------------" << std::endl;
-	std::cout << "Test:\n" << str << std::endl << std::endl;
-
-	Request a;
-	a.addData(str);
-	std::cout << std::endl << a << std::endl;
-}
-
-//test parser first line
-//bateria de tests
 int main() {
 	signal(SIGINT, sH);
-	// atexit(leaks);
 
-	//first line
-	// {
-	// 	//general
-	// 	testReq("");
-	// 	testReq("\r\n");
-	// 	testReq("meow");
-	// 	{
-	// 		std::string s = "test";
-	// 		while (s.length() <= 8000)
-	// 			s += s;
-	// 		s += "\r\n";
-	// 		testReq(s);
-	// 	}
+	std::vector<Server> servs = buildSampleServers();
+	std::vector<Server> servs2 = buildSampleServers();
 
-	// 	//method
-	// 	testReq("GET\r\n");
-	// 	testReq("KK \r\n");
-	// 	testReq("K,K / \r\n");
+	Listener l1(8080, servs), l2(8081, servs);
+	//, l3(8082, servs);
+	// Connection c1(100, servs), c2(101, servs), c3(102, servs);
+	PollHandler po;
 
-	// 	//target
-	// 	testReq("GET /\r\n");
-	// 	testReq("GET 90 \r\n");
-	// 	testReq("POST /blablabla# \r\n");
-	// 	testReq("POST /bla%4Z \r\n");
-	// 	testReq("POST /data/blablabla# \r\n");
-	// 	testReq("POST /data/bla%4Z \r\n");
+	po.addListener(l1);
+	po.addListener(l2);
+	po.listenMode();
 
-	// 	//version
-	// 	testReq("GET / fsdafdjaslk\r\n");
-	// 	testReq("GET / HHHH/1.1\r\n");
-	// 	testReq("GET / HTTP/a.1\r\n");
-	// 	testReq("GET / HTTP/111\r\n");
-	// 	testReq("GET / HTTP/1.a\r\n");
-	// 	testReq("GET / HTTP/2.1\r\n");
-	// 	testReq("GET / HTTP/1.0\r\n");
-
-	// 	//general correcto
-	// 	testReq("GET /%20data HTTP/1.1\r\n\r\n");
-	// 	testReq("POST /%20data/miau/ HTTP/1.9\r\nHost:''\r\n\r\n");
-	// }
-	// ////////////
-
-	// std::cout << std::endl << std::endl << std::endl << std::endl;
-
-	// //fields
-	// {
-	// 	//bad name
-	// 	testReq("GET / HTTP/1.1\r\nHOLA\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nK,K: \r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nHOLA: jej\r\nTONTO\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nHOLA:jj \r\nK,K: \r\n\r\n");
-
-	// 	//bad value
-	// 	testReq("GET / HTTP/1.1\r\nHOLA:\x19\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nHOLA:56\x19 31\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nADIOS:\r\nHOLA:\x19\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nADIOS:\r\nHOLA:56\x19 31\r\n\r\n");
-
-	// 	//bad host
-	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:@\r\n\r\n");
-		
-	// 	//bad body length
-	// 	testReq("GET / HTTP/1.1\r\nContent-Length: x\r\nHost:''\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 543753872975954325342\r\nHost:''\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nTransfer-Encoding: x\r\nHost:''\r\n\r\n");
-
-	// 	//general correcto
-	// 	testReq("GET / HTTP/1.1\r\nContent-Length: x\r\nTransfer-Encoding: chunked\r\nHost:''\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:''\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nHost: ''\r\nData:  	  uwu   	  \r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nHost: %20e%20e\r\nData:\r\n\r\n");
-	// 	testReq("GET / HTTP/1.1\r\nHost: 127.0.0.1\r\nData:\r\nData: n\r\nData: q\r\n\r\n");
-
-	// }
-	///////////
-
-	std::cout << std::endl << std::endl << std::endl << std::endl;
-
-	//body
-	{
-		std::string reqline = "GET / HTTP/1.1\r\n";
-		std::string headersHost = "Host: 127.0.0.1\r\n";
-		std::string headersChunked = "Host: 127.0.0.1\r\nTransfer-Encoding: chunked\r\n\r\n";
-		std::string reqHost = reqline + headersHost;
-		std::string reqChunk = reqline + headersChunked;
-		//content-length
-
-
-		//chunked
-		// testReq(reqChunk + "q1cwu\r\nelmiguemol\r\n    ilpepnomola\r\n00000\r\n\r\n");
-		testReq(reqChunk + "11wu\r\n\r\nelmiguemoaaaaaa\r\n00000\r\n\r\n");
-
-
-		// //correct chunked
-		// testReq(reqChunk + "1cwu\r\nelmiguemola\r\n    ilpepnomola\r\n00000\r\n\r\n");
-		// testReq(reqChunk + "0000000000000000000000000\r\n\r\n");
-
-		// //body size
-		// testReq(reqHost + "Content-Length: 80\r\n\r\n1cwu\r\nelmiguemola\r\n    ilpepnomola\r\n00000\r\n\r\n");
-
-
+	while (1) {
+		po.pollMode();
+		// usleep(500000);
 	}
-	///////////
+
+	//std::cout << "Done" << std::endl;
 }
+
+// void testReq(std::string str) {
+// 	std::cout << "------------------------------------------" << std::endl;
+// 	std::cout << "Test:\n" << str << std::endl << std::endl;
+
+// 	Request a;
+// 	a.addData(str);
+// 	std::cout << std::endl << a << std::endl;
+// }
+
+// //test parser first line
+// //bateria de tests
+// int main() {
+// 	signal(SIGINT, sH);
+// 	// atexit(leaks);
+
+// 	//first line
+// 	// {
+// 	// 	//general
+// 	// 	testReq("");
+// 	// 	testReq("\r\n");
+// 	// 	testReq("meow");
+// 	// 	{
+// 	// 		std::string s = "test";
+// 	// 		while (s.length() <= 8000)
+// 	// 			s += s;
+// 	// 		s += "\r\n";
+// 	// 		testReq(s);
+// 	// 	}
+
+// 	// 	//method
+// 	// 	testReq("GET\r\n");
+// 	// 	testReq("KK \r\n");
+// 	// 	testReq("K,K / \r\n");
+
+// 	// 	//target
+// 	// 	testReq("GET /\r\n");
+// 	// 	testReq("GET 90 \r\n");
+// 	// 	testReq("POST /blablabla# \r\n");
+// 	// 	testReq("POST /bla%4Z \r\n");
+// 	// 	testReq("POST /data/blablabla# \r\n");
+// 	// 	testReq("POST /data/bla%4Z \r\n");
+
+// 	// 	//version
+// 	// 	testReq("GET / fsdafdjaslk\r\n");
+// 	// 	testReq("GET / HHHH/1.1\r\n");
+// 	// 	testReq("GET / HTTP/a.1\r\n");
+// 	// 	testReq("GET / HTTP/111\r\n");
+// 	// 	testReq("GET / HTTP/1.a\r\n");
+// 	// 	testReq("GET / HTTP/2.1\r\n");
+// 	// 	testReq("GET / HTTP/1.0\r\n");
+
+// 	// 	//general correcto
+// 	// 	testReq("GET /%20data HTTP/1.1\r\n\r\n");
+// 	// 	testReq("POST /%20data/miau/ HTTP/1.9\r\nHost:''\r\n\r\n");
+// 	// }
+// 	// ////////////
+
+// 	// std::cout << std::endl << std::endl << std::endl << std::endl;
+
+// 	// //fields
+// 	// {
+// 	// 	//bad name
+// 	// 	testReq("GET / HTTP/1.1\r\nHOLA\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nK,K: \r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nHOLA: jej\r\nTONTO\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nHOLA:jj \r\nK,K: \r\n\r\n");
+
+// 	// 	//bad value
+// 	// 	testReq("GET / HTTP/1.1\r\nHOLA:\x19\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nHOLA:56\x19 31\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nADIOS:\r\nHOLA:\x19\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nADIOS:\r\nHOLA:56\x19 31\r\n\r\n");
+
+// 	// 	//bad host
+// 	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:@\r\n\r\n");
+		
+// 	// 	//bad body length
+// 	// 	testReq("GET / HTTP/1.1\r\nContent-Length: x\r\nHost:''\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 543753872975954325342\r\nHost:''\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nTransfer-Encoding: x\r\nHost:''\r\n\r\n");
+
+// 	// 	//general correcto
+// 	// 	testReq("GET / HTTP/1.1\r\nContent-Length: x\r\nTransfer-Encoding: chunked\r\nHost:''\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nContent-Length: 10\r\nHost:''\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nHost: ''\r\nData:  	  uwu   	  \r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nHost: %20e%20e\r\nData:\r\n\r\n");
+// 	// 	testReq("GET / HTTP/1.1\r\nHost: 127.0.0.1\r\nData:\r\nData: n\r\nData: q\r\n\r\n");
+
+// 	// }
+// 	///////////
+
+// 	std::cout << std::endl << std::endl << std::endl << std::endl;
+
+// 	//body
+// 	{
+// 		std::string reqline = "GET / HTTP/1.1\r\n";
+// 		std::string headersHost = "Host: 127.0.0.1\r\n";
+// 		std::string headersChunked = "Host: 127.0.0.1\r\nTransfer-Encoding: chunked\r\n\r\n";
+// 		std::string reqHost = reqline + headersHost;
+// 		std::string reqChunk = reqline + headersChunked;
+// 		//content-length
+
+
+// 		//chunked
+// 		// testReq(reqChunk + "q1cwu\r\nelmiguemol\r\n    ilpepnomola\r\n00000\r\n\r\n");
+// 		testReq(reqChunk + "11wu\r\n\r\nelmiguemoaaaaaa\r\n1\r\njuwu\r\n00000\r\n\r\n");
+
+
+// 		// //correct chunked
+// 		// testReq(reqChunk + "1cwu\r\nelmiguemola\r\n    ilpepnomola\r\n00000\r\n\r\n");
+// 		// testReq(reqChunk + "0000000000000000000000000\r\n\r\n");
+
+// 		// //body size
+// 		// testReq(reqHost + "Content-Length: 80\r\n\r\n1cwu\r\nelmiguemola\r\n    ilpepnomola\r\n00000\r\n\r\n");
+
+
+// 	}
+// 	///////////
+// }
