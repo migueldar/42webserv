@@ -136,19 +136,6 @@ void parseMethods(vector<string> wordLines, int lineNum, bool *aux){
     }
 }
 
-void parseCGI(const vector<string>& wordLines, int lineNum, bool *aux) {
-
-    for (unsigned long i = 1; i < wordLines.size(); i++) {
-        if (wordLines[i] == ".py") {
-            aux[(int)py] = true;
-        } else if (wordLines[i] == ".go") {
-            aux[(int)go] = true;
-        } else {
-            throw runtime_error("Error line " + toString(lineNum) + ": unknown cgi:" + wordLines[i]);
-        }
-    }
-}
-
 bool isClientErrorHttpCode(const string& httpCode) {
     if (httpCode.size() != 3) {
         return false;

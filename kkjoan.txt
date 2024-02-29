@@ -102,3 +102,26 @@ metaVariables:
 
 URI CGI STRUCTURE
  script-URI = <scheme> "://" <server-name> ":" <server-port> <script-path> <extra-path> "?" <query-string>
+
+
+meta-variable-value = "" | 1*<TEXT, CHAR or tokens of value>
+
+Variables de entorno van al execv (meta variables añadidas al **)
+Infile al pipe  del ejecutable pasas body(gestion poll)
+path relativo + script selection
+path relativo + path_info
+
+  meta-variable-name = "AUTH_TYPE" | "CONTENT_LENGTH" |
+                            "CONTENT_TYPE" | "GATEWAY_INTERFACE" |
+                            "PATH_INFO" | "PATH_TRANSLATED" |
+                            "QUERY_STRING" | "REMOTE_ADDR" |
+                            "REMOTE_HOST" | "REMOTE_IDENT" |
+                            "REMOTE_USER" | "REQUEST_METHOD" |
+                            "SCRIPT_NAME" | "SERVER_NAME" |
+                            "SERVER_PORT" | "SERVER_PROTOCOL" |
+                            "SERVER_SOFTWARE" | scheme |
+                            protocol-var-name | extension-var-name
+       protocol-var-name  = ( protocol | scheme ) "_" var-name
+       scheme             = alpha *( alpha | digit | "+" | "-" | "." )
+       var-name           = token
+       extension-var-name = token
