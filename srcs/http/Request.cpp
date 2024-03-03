@@ -7,7 +7,8 @@ Request::Request(): rawData(""), target(""), body(""), parsed(NOTHING) {}
 
 Request::~Request() {}
 
-void Request::addData(std::string data) {
+//returns the data which doesnt belong to this request
+std::string Request::addData(std::string data) {
 	size_t found;
 
 	rawData += data;
@@ -36,30 +37,34 @@ void Request::addData(std::string data) {
 			}
 		}
 
-		//change content length to return unread data
 		if (parsed == HEADERS) {
-			if (measure == NO_BODY)
+			if (measure == NO_BODY || method == GET || method == DELETE) {
 				parsed = ALL;
+				// std::cout << std::endl << "FULLY PARSED: " << std::endl << *this;
+				return rawData;
+			}
 			else if (measure == CONTENT_LENGTH) {
-				if (rawData.length() == contentLength) {
+				if (rawData.length() >= contentLength) {
 					parsed = ALL;
-					body = rawData;
-					rawData.clear();
+					body = rawData.substr(0, contentLength);
+					// std::cout << std::endl << "FULLY PARSED: " << std::endl << *this;
+					return rawData.substr(contentLength);
 				}
 			}
 			else {
 				rawData = parseChunkedBody();
-				if (parsed == ALL) {}
-					//return rawData;
-			
+				if (parsed == ALL) {
+					// std::cout << std::endl << "FULLY PARSED: " << std::endl << *this;
+					return rawData;
+				}
 			}
 		}
 	} catch (const HTTPException& e) {
 		errorStatus = e.what();
 		parsed = ALL;
+		//std::cout << std::endl << "FULLY PARSED: " << std::endl << *this;
 	}
-	if (parsed == ALL)
-		std::cout << std::endl << "FULLY PARSED: " << *this;
+	return "";
 }
 
 void Request::parseMethod(std::string& str) {

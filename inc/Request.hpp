@@ -5,20 +5,7 @@
 #include <exception>
 #include <string>
 
-//check max body length from server
 class Request {
-
-	// enum t_method {
-	// 	GET,
-	// 	HEAD,
-	// 	POST,
-	// 	PUT,
-	// 	DELETE,
-	// 	CONNECT,
-	// 	OPTIONS,
-	// 	TRACE
-	// };
-
 	private:
 		std::string	rawData;
 
@@ -90,7 +77,7 @@ class Request {
 
 		Request();
 		~Request();
-		void addData(std::string data);
+		std::string addData(std::string data);
 		void parseMethod(std::string& method);
 		void parseRequestTarget(std::string& target);
 		void parseVersion(std::string& version);
@@ -99,8 +86,6 @@ class Request {
 		void parseFields(std::string fields);
 		void checkFields();
 		std::string parseChunkedBody();
-		// Request(Request const& other);
-		// Request &operator=(Request const& rhs);
 };
 
 std::ostream &operator<<(std::ostream &o, Request const &prt);

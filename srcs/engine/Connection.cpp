@@ -1,12 +1,12 @@
 #include "webserv.hpp"
 #include <sys/poll.h>
 
-Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers), req(NULL) {
+Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers), req(NULL), data("") {
 	startTimer();
 }
 
 //if smt around here fails, check this, bc its not currently a full copy
-Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), sock(other.sock), servers(other.servers), req(other.req) {}
+Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), sock(other.sock), servers(other.servers), req(other.req), data(other.data) {}
 
 Connection::~Connection() {}
 
@@ -28,15 +28,14 @@ bool Connection::operator==(const Connection& other) const {
 
 //0 means ok, 1 means remove
 int Connection::handleEvent(struct pollfd& pollfd) {
-	if (pollfd.revents & POLLHUP) {
-		std::cout << "pollhup" << std::endl;
-		return 1;
-	}
-	else if (pollfd.revents & POLLERR) {
+	if (pollfd.revents & POLLERR) {
 		std::cout << "pollerr" << std::endl;
 		return 1;
 	}
-
+	else if (pollfd.revents & POLLHUP) {
+		std::cout << "pollhup" << std::endl;
+		return 1;
+	}
 	else if (pollfd.revents & POLLIN) {
 		std::cout << "pollin" << std::endl;
 
@@ -53,16 +52,8 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			return 1;
 		}
 
-		if (!req)
-			req = new Request();
-
-		req->addData(std::string(read_buff));
+		data += read_buff;
 		delete[] read_buff;
-
-		if (req->parsed == Request::ALL) {
-			pollfd.events = POLLOUT;
-			checkTime = false;
-		}
 	}
 
 	//response handling should be done here, not in pollin
@@ -78,10 +69,23 @@ Content-Type: text/plain; charset=utf-8\r\n\
 \r\n", 104, 0);
 		//call Response constructor, we pass request
 
-		startTimer();
 		pollfd.events = POLLIN;
+		//after send
+		startTimer();
 		delete req;
 		req = NULL;
+	}
+
+	if (data != "") {
+		if (!req)
+			req = new Request();
+
+		data = req->addData(data);
+
+		if (req->parsed == Request::ALL) {
+			pollfd.events = POLLOUT;
+			checkTime = false;
+		}
 	}
 
 	return 0;

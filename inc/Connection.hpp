@@ -4,7 +4,7 @@
 #include "parser.hpp"
 #include "Request.hpp"
 
-#define SIZE_READ 0x10000
+#define SIZE_READ 0x1000
 
 class Connection {
 	private:
@@ -17,6 +17,8 @@ class Connection {
 		std::vector<Server>	&servers;
 		//if set to NULL, no request is being parsed currently
 		Request				*req;
+		//saves data which hasnt being processed by a request yet
+		std::string			data;
 
 		Connection(int socket, std::vector<Server> &servers);
 		Connection(const Connection &other);
