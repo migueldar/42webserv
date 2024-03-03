@@ -2,11 +2,9 @@ DOING
 
 TODO
 
-- gestionar errores en las llamadas al sistema
-
-- mirar tema de reusar sockets
-
 - ver como usar los fds en non-blocking mode
+
+- gestionar errores en las llamadas al sistema
 
 - tengo que bajar el puerto hasta joan                                
 
