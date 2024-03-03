@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "Connection.hpp"
 #include "Listener.hpp"

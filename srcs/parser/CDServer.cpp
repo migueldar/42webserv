@@ -1,10 +1,8 @@
 #include "webserv.hpp"
 
-Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()) {
-    static unsigned long idCount = 0;
-    Location initLocation;
-    serverName = "serverN:" + toString(idCount++); 
+Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()), serverName("") {
 }
+
 
 Server::Server(std::vector<std::string>& s, std::vector<Location>& l) {
 	for (size_t i = 0; i < s.size(); i++) {
@@ -26,10 +24,9 @@ void Server::addErrorPage(const std::string& statusCode, const std::string& html
     errPages[statusCode] = htmlRoute;
 }
 
-void Server::addLocation(const std::string& path, const Location& location){
+void Server::addLocation(const std::string& path, const Location& location) {
     routes[path] = location;
 }
-
 
 long Server::getNumRoutes(void){
     return(routes.size());

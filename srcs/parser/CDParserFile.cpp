@@ -1,13 +1,41 @@
-#include "webserv.hpp"
 
-ParserFile::ParserFile(std::string routeToParserFile): configParserFile(routeToParserFile == "" ? DEFAULT_CONFIG_ParserFile : routeToParserFile.c_str()) {
+#include "webserv.hpp"
+using namespace std;
+
+bool isRegularFile(const string& filePath) {
+    struct stat fileInfo;
+
+    if (stat(filePath.c_str(), &fileInfo) != 0) {
+        return false;
+    }
+
+    return S_ISREG(fileInfo.st_mode);
+}
+
+ParserFile::~ParserFile() {
+    configParserFile.close();
+}
+
+ParserFile::ParserFile(string routeToParserFile): configParserFile(routeToParserFile == "" ? DEFAULT_CONFIG_ParserFile : routeToParserFile.c_str()) {
+
+    if(routeToParserFile == ""){
+        routeToParserFile = DEFAULT_CONFIG_ParserFile;
+    }
+
+    if(!isRegularFile(routeToParserFile)){
+        throw runtime_error("Error: Bad file, file route:" + routeToParserFile);
+    }
+
     if (!configParserFile.is_open()) {
-        throw std::runtime_error("Error: ParserFile couldn't be opened: " + routeToParserFile);
+        throw runtime_error("Error: ParserFile couldn't be opened: " + routeToParserFile);
     }
 
     fillServers();
 
-    for(std::map<unsigned long, std::vector<Server> >::iterator it = serverDefinitions.begin(); it != serverDefinitions.end(); ++it)
+    if(serverDefinitions.size() == 0)
+        throw runtime_error("Error: no servers defined");
+
+    for(map<unsigned int, map<string, vector<Server> > >::iterator it = serverDefinitions.begin(); it != serverDefinitions.end(); ++it)
         printServersByPort(it->first);
 }
 
@@ -16,92 +44,84 @@ ParserFile::ParserFile(std::string routeToParserFile): configParserFile(routeToP
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void removeLastSemicolon(std::string& word) {
+void removeLastSemicolon(string& word) {
     if(!word.empty() && word[word.length() - 1] == ';')
         word.erase(word.length() - 1);
 }
 
 
-// En el archivo CDParserFile.cpp
-void ParserFile::printServersByPort(unsigned long targetPort) {
-    std::map<unsigned long, std::vector<Server> >::iterator serverIter = serverDefinitions.find(targetPort);
+void ParserFile::printServersByPort(unsigned int targetPort) {
 
-    if (serverIter != serverDefinitions.end()) {
-        std::cout << "Servers for port " << targetPort << ":" << std::endl;
-
-        std::vector<Server>& servers = serverIter->second;
-        for (std::vector<Server>::iterator serverVecIter = servers.begin(); serverVecIter != servers.end(); ++serverVecIter) {
+    cout << "Servers for port " << targetPort << ":" << endl;
+    for (map<string, vector<Server> >::iterator it = (serverDefinitions[targetPort]).begin(); it != (serverDefinitions[targetPort]).end() ; ++it ){
+        vector<Server> server = (serverDefinitions[targetPort])[it->first];
+        for (vector<Server>::iterator serverVecIter = server.begin(); serverVecIter != server.end(); ++serverVecIter) {
             const Server& server = *serverVecIter;
 
-            std::cout << "  Server Name: " << server.serverName << std::endl;
+            cout << "  Server Name: " << server.serverName << endl;
 
-            std::cout << "  Error Pages:" << std::endl;
-            std::map<std::string, std::string>::const_iterator errorPageIter = server.getErrPages().begin();
+            cout << "  Error Pages:" << endl;
+            map<string, string>::const_iterator errorPageIter = server.getErrPages().begin();
             while (errorPageIter != server.getErrPages().end()) {
-                std::cout << "    Status: " << errorPageIter->first << ", Route: " << errorPageIter->second << std::endl;
+                cout << "    Status: " << errorPageIter->first << ", Route: " << errorPageIter->second << endl;
                 ++errorPageIter;
             }
 
-            std::cout << "  Locations:" << std::endl;
-            const std::map<std::string, Location>& routes = server.getRoutes();
-            for (std::map<std::string, Location>::const_iterator locationIter = routes.begin(); locationIter != routes.end(); ++locationIter) {
-                const std::string& path = locationIter->first;
+            cout << "  Locations:" << endl;
+            const map<string, Location>& routes = server.getRoutes();
+            for (map<string, Location>::const_iterator locationIter = routes.begin(); locationIter != routes.end(); ++locationIter) {
+                const string& path = locationIter->first;
                 const Location& location = locationIter->second;
 
-                std::cout << "    Location Path: " << path << std::endl;
-                std::cout << "      Root: " << location.root << std::endl;
-                std::cout << "      Default Path: " << location.defaultPath << std::endl;
-                std::cout << "      Redirection URL: " << location.redirectionUrl << std::endl;
-                std::cout << "      Methods: ";
+                cout << "    Location Path: " << path << endl;
+                cout << "      Root: " << location.root << endl;
+                cout << "      Default Path: " << location.defaultPath << endl;
+                cout << "      Redirection URL: " << location.redirectionUrl << endl;
+                cout << "      Methods: ";
                 for (int i = 0; i < METHODS_NUM; ++i) {
-                    std::cout << (location.methods[i] ? "1" : "0") << " ";
+                    cout << (location.methods[i] ? "1" : "0") << " ";
                 }
-                std::cout << std::endl;
-                std::cout << "      Autoindex: " << (location.autoindex ? "true" : "false") << std::endl;
+                cout << endl;
+                cout << "      Cgi: ";
+                for (vector<enum CGI>::const_iterator it = (location.cgi).begin(); it != (location.cgi).end() ; ++it) {
+                    if(*it == py)
+                        cout << ".py" << " ";
+                    else
+                        cout << ".go" << " ";
+                }
+                cout << endl;
+                cout << "      Autoindex: " << (location.autoindex ? "true" : "false") << endl;
             }
         }
+    }
+}
+
+
+
+int ParserFile::checkRoutesServer(const map<string, Location>& routes, const string& keyToFind) {
+    map<string, Location>::const_iterator iter = routes.find(keyToFind);
+
+    if (iter != routes.end()) {
+        return 1;
     } else {
-        std::cout << "No servers found for port " << targetPort << std::endl;
+        return 0;
     }
 }
 
+ bool checkAllRoutesByServerVec(const vector<Server>& servers, const vector<string>& newRoutes) {
+     for (vector<Server>::const_iterator serverIter = servers.begin(); serverIter != servers.end(); ++serverIter) {
+         vector<string> serverRoutes = serverIter->getKeysRoutes();
 
+         for (vector<string>::const_iterator routeIter = newRoutes.begin(); routeIter != newRoutes.end(); ++routeIter) {
+             if (find(serverRoutes.begin(), serverRoutes.end(), *routeIter) != serverRoutes.end()) {
+                 return true;
+             }
+         }
+     }
+     return false;
+ }
 
-
-
-std::vector<std::string> ParserFile::getRoutesKeysByPort(unsigned long port) const {
-    std::vector<std::string> routes;
-
-    std::map<unsigned long, std::vector<Server> >::const_iterator it = serverDefinitions.find(port);
-    if (it != serverDefinitions.end()) {
-        const std::vector<Server>& servers = it->second;
-        for (std::vector<Server>::const_iterator serverIter = servers.begin(); serverIter != servers.end(); ++serverIter) {
-            const std::vector<std::string>& serverRoutes = serverIter->getKeysRoutes();
-
-            for (std::vector<std::string>::const_iterator routeIter = serverRoutes.begin(); routeIter != serverRoutes.end(); ++routeIter) {
-                routes.push_back(*routeIter);
-            }
-        }
-    }
-
-    return routes;
-}
-
-
-bool checkAllRoutesByServerVec(const std::vector<Server>& servers, const std::vector<std::string>& newRoutes) {
-    for (std::vector<Server>::const_iterator serverIter = servers.begin(); serverIter != servers.end(); ++serverIter) {
-        std::vector<std::string> serverRoutes = serverIter->getKeysRoutes();
-
-        for (std::vector<std::string>::const_iterator routeIter = newRoutes.begin(); routeIter != newRoutes.end(); ++routeIter) {
-            if (std::find(serverRoutes.begin(), serverRoutes.end(), *routeIter) != serverRoutes.end()) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-void parseMethods(std::vector<std::string> wordLines, int lineNum, bool *aux){
+void parseMethods(vector<string> wordLines, int lineNum, bool *aux){
 
     for (unsigned long i = 1; i < wordLines.size(); i++)
     {
@@ -112,31 +132,44 @@ void parseMethods(std::vector<std::string> wordLines, int lineNum, bool *aux){
         else if(wordLines[i] == "DELETE")
             aux[DELETE] = 1;
         else
-            throw std::runtime_error("Error line " + toString(lineNum) + ": unknown method:" + wordLines[i]);
+            throw runtime_error("Error line " + toString(lineNum) + ": unknown method:" + wordLines[i]);
     }
 }
 
-bool isClientErrorHttpCode(const std::string& httpCode) {
+void parseCGI(const vector<string>& wordLines, int lineNum, bool *aux) {
+
+    for (unsigned long i = 1; i < wordLines.size(); i++) {
+        if (wordLines[i] == ".py") {
+            aux[(int)py] = true;
+        } else if (wordLines[i] == ".go") {
+            aux[(int)go] = true;
+        } else {
+            throw runtime_error("Error line " + toString(lineNum) + ": unknown cgi:" + wordLines[i]);
+        }
+    }
+}
+
+bool isClientErrorHttpCode(const string& httpCode) {
     if (httpCode.size() != 3) {
         return false;
     }
 
-    for (std::string::const_iterator it = httpCode.begin(); it != httpCode.end(); ++it) {
-        if (!std::isdigit(*it)) {
+    for (string::const_iterator it = httpCode.begin(); it != httpCode.end(); ++it) {
+        if (!isdigit(*it)) {
             return false;
         }
     }
 
-    std::istringstream iss(httpCode);
+    istringstream iss(httpCode);
     int errorCode;
     iss >> errorCode;
 
-    return ((errorCode >= 400 && errorCode < 417) || errorCode == 426 || errorCode == 451);
+    return ((errorCode >= 400 && errorCode <= 417) || errorCode == 426 || errorCode == 451 || (errorCode >= 500 && errorCode <= 505));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-unsigned long parsePort(std::string portString){
+unsigned long parsePort(string portString){
     unsigned long port;
     bool flag = 0;
     
@@ -148,12 +181,12 @@ unsigned long parsePort(std::string portString){
         if(port == 0)
             flag = 1; 
     }
-    catch(std::invalid_argument &e){
+    catch(invalid_argument &e){
         flag = 1;
     }
     
     if(flag == 1)
-        throw std::runtime_error("Error line: bad config port: " + portString); 
+        throw runtime_error("Error line: bad config port: " + portString); 
 
     return port;
 }
@@ -161,12 +194,12 @@ unsigned long parsePort(std::string portString){
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-static ConfigType stringToConfigType(const std::string& str, const std::map<std::string, ConfigType> &configTypeMap) {
-    std::map<std::string, ConfigType>::const_iterator it = configTypeMap.find(str);
+static ConfigType stringToConfigType(const string& str, const map<string, ConfigType> &configTypeMap) {
+    map<string, ConfigType>::const_iterator it = configTypeMap.find(str);
     return (it != configTypeMap.end()) ? it->second : UNKNOWN;
 }
 
-static void setValuesConfigTypeMap(std::map<std::string, ConfigType> &configTypeMap, bool hard = 0){
+static void setValuesConfigTypeMap(map<string, ConfigType> &configTypeMap, bool hard = 0){
     if(configTypeMap["server"] != UNKNOWN || hard == 1)
         configTypeMap["server"] = SERVER;
     if(configTypeMap["server_name"] != UNKNOWN || hard == 1)
@@ -178,12 +211,15 @@ static void setValuesConfigTypeMap(std::map<std::string, ConfigType> &configType
     configTypeMap["}"] = BRACE_CLOSE;
 }
 
-static void setValuesLocation(std::map<std::string, ConfigType> &configTypeMap){
+static void setValuesLocation(map<string, ConfigType> &configTypeMap){
     configTypeMap["redirect"] = REDIRECT;
     configTypeMap["root"] = ROOT;
     configTypeMap["index"] = INDEX;
     configTypeMap["methods"] = METHODS;
     configTypeMap["auto_index"] = AUTO_INDEX;
+    configTypeMap["location"] = UNKNOWN;
+    configTypeMap["error_page"] = UNKNOWN;
+    configTypeMap["cgi"] = CGI;
     configTypeMap["}"] = BRACE_CLOSE;
 }
 
@@ -191,17 +227,17 @@ void ParserFile::fillServers() {
     long brace = 0;
     unsigned int port;
     Location location;
-    std::string routeKey;
-    std::string line;
-    std::map<std::string, ConfigType> configTypeMap;
-    std::vector<std::string> wordLines;
-    std::vector<std::string>::iterator it;
+    string routeKey;
+    string line;
+    map<string, ConfigType> configTypeMap;
+    vector<string> wordLines;
+    vector<string>::iterator it;
     Server server;
     unsigned int lineNum = 0;
 
     setValuesConfigTypeMap(configTypeMap);
 
-    while (std::getline(configParserFile, line)) {
+    while (getline(configParserFile, line)) {
         ++lineNum;
         wordLines = splitString(line, ' ');
 
@@ -212,32 +248,28 @@ void ParserFile::fillServers() {
         removeLastSemicolon(wordLines[wordLines.size() - 1]);
 
         if(wordLines[wordLines.size() - 1] == "")
-            throw std::runtime_error("Error line " + toString(lineNum) + ": bad config no input: ';'");
+            throw runtime_error("Error line " + toString(lineNum) + ": bad config no input: ';'");
 
         ConfigType configType = stringToConfigType(wordLines[0], configTypeMap);
 
         switch (configType) {
             case SERVER:
-                if(wordLines.size() == 2 && wordLines[1] == "{"){
-                    if(brace != 0)
-                        throw std::runtime_error("Error line " + toString(lineNum) + ": missing terminator");
+                if(wordLines.size() == 2 && wordLines[1] == "{" && brace == 0){
                     server = Server();
                     ++brace;
-                    std::cout << "SERVER FOUND"<< std::endl;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config server:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config server:" + *(--wordLines.end()));
                 break;
 
             //(server_name)
             case SERVER_NAME:
                 configTypeMap["server_name"] = UNKNOWN;
-                if(wordLines.size() == 2){
+                if(wordLines.size() == 2 && brace == 1){
                     server.serverName = wordLines[1];
-                    std::cout << "SERVER NAME FOUND: " + wordLines[1] << std::endl;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config server_name:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config server_name:" + *(--wordLines.end()));
                 break;
 
             //(port)
@@ -245,117 +277,124 @@ void ParserFile::fillServers() {
                 configTypeMap["port"] = UNKNOWN;
                 if(wordLines.size() == 2){
                     port = parsePort(wordLines[1]);
-                    
-                    std::cout << "PORT FOUND:" << toString(port) << std::endl;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config port:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config port:" + *(--wordLines.end()));
                 break;
 
             //(location)    
             case LOCATION:
-                if(wordLines.size() == 3 && wordLines[2] == "{"){
+                if(wordLines.size() == 3 && wordLines[2] == "{" && brace == 1){
                     setValuesLocation(configTypeMap);
                     location = Location();
                     if(wordLines[1][0] != '/')
-                        throw std::runtime_error("Error line " + toString(lineNum) + ": not valid location dir:" + wordLines[1]);
-
-                    //CHECKEA POR PUERTO SI EXISTE ESTA CLAVE;
+                        throw runtime_error("Error line " + toString(lineNum) + ": not valid location dir:" + wordLines[1]);
+                    if(checkRoutesServer(server.getRoutes(), wordLines[1]) == 1)
+                        throw runtime_error("Error line " + toString(lineNum) + ": duplicated location dir:" + wordLines[1]);
                     routeKey = wordLines[1];
-                    std::cout << "LOCATION FOUND: key:" << routeKey << std::endl;
                     ++brace;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config location:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config location:" + *(--wordLines.end()));
                 break;
 
             //(redirect)    
             case REDIRECT:
                 configTypeMap["redirect"] = UNKNOWN;
-                if(wordLines.size() == 2){
+                if(wordLines.size() == 2 && brace == 2){
                     if(wordLines[1][0] != '/')
-                        throw std::runtime_error("Error line " + toString(lineNum) + ": not valid redirect dir:" + wordLines[1]);
+                        throw runtime_error("Error line " + toString(lineNum) + ": not valid redirect dir:" + wordLines[1]);
 
                     location.redirectionUrl = wordLines[1];
-                    std::cout << "REDIRECT FOUND" << std::endl;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config redirection:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config redirection:" + *(--wordLines.end()));
                 break;
             
             //(error_page)
             case ERROR_PAGE:
-                if(wordLines.size() == 3){
+                if(wordLines.size() == 3 && brace == 1){
                     if(!isClientErrorHttpCode(wordLines[1]))
-                        throw std::runtime_error("Error line " + toString(lineNum) + ": error_page status code error: " + wordLines[1]);
+                        throw runtime_error("Error line " + toString(lineNum) + ": error_page status code error: " + wordLines[1]);
 
                     if(server.getPageStatus(wordLines[1]) != "")
-                        throw std::runtime_error("Error line " + toString(lineNum) + ": error_page status code already used: " + wordLines[1]);
+                        throw runtime_error("Error line " + toString(lineNum) + ": error_page status code already used: " + wordLines[1]);
 
                     server.addErrorPage(wordLines[1], wordLines[2]);
-                    std::cout << "ERROR PAGE FOUND" << std::endl;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config error_page:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config error_page:" + *(--wordLines.end()));
                 break;
             
             //(root)
             case ROOT:
                 configTypeMap["root"] = UNKNOWN;
-                if(wordLines.size() == 2){
+                if(wordLines.size() == 2 && brace == 2){
                     if(wordLines[1][0] != '/')
-                        throw std::runtime_error("Error line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
+                        throw runtime_error("Error line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
 
                     location.root = wordLines[1];
-                    std::cout << "REDIRECT FOUND" << std::endl;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config root:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config root:" + *(--wordLines.end()));
                 break;
-                std::cout << "ROOT FOUND" << std::endl;
-                break;
-            
+
             //(index)
             case INDEX:
                 configTypeMap["index"] = UNKNOWN;
-                if(wordLines.size() == 2){
+                if(wordLines.size() == 2 && brace == 2){
                     location.defaultPath = wordLines[1];
-                    std::cout << "INDEX FOUND" << std::endl;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config index:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config index:" + *(--wordLines.end()));
                 break;
 
             //(auto_index)
             case AUTO_INDEX:
                 configTypeMap["auto_index"] = UNKNOWN;
-                if(wordLines.size() == 2){
+                if(wordLines.size() == 2 && brace == 2){
                     if(wordLines[1] == "true")
                         location.autoindex = 1;
                     else if(wordLines[1] == "false")
                         location.autoindex = 0;
                     else 
-                        throw std::runtime_error("Error line " + toString(lineNum) + ": auto_index not valid config" + wordLines[1]);
-                    std::cout << "INDEX FOUND" << std::endl;
+                        throw runtime_error("Error line " + toString(lineNum) + ": auto_index not valid config" + wordLines[1]);
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config auto_index:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config auto_index:" + *(--wordLines.end()));
                 break;
             
             //(methods)
             case METHODS:
                 configTypeMap["methods"] = UNKNOWN;
-                if(wordLines.size() >= 2 && wordLines.size() <= 4){
+                if(wordLines.size() >= 2 && wordLines.size() <= 4 && brace == 2){
                     bool aux[3] = {0};
                     parseMethods(wordLines, lineNum, aux);
-                    location.methods[GET] = aux[GET];
-                    location.methods[POST] = aux[POST];
-                    location.methods[DELETE] = aux[DELETE];
-                    
-                    std::cout << "METHODS FOUND" << std::endl;
+                    if(aux[GET] == 0)
+                        location.methods[GET] = 0;
+                    if(aux[POST] == 0)
+                        location.methods[POST] = 0;
+                    if(aux[POST] == 0)
+                        location.methods[DELETE] = 0;
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config methods:" + *(--wordLines.end()));
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config methods:" + *(--wordLines.end()));
+                break;
+
+            case CGI:
+                configTypeMap["cgi"] = UNKNOWN;
+                if (wordLines.size() >= 2 && wordLines.size() <= 4 && brace == 2) {
+                    location.cgi.clear();
+                    bool aux[2] = {false, false};
+                    parseCGI(wordLines, lineNum, aux);
+                    if (aux[py] == true)
+                        location.cgi.push_back(py);
+                    if (aux[go] == true)
+                        location.cgi.push_back(go);
+
+                } else {
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config CGI:" + *(--wordLines.end()));
+                }
                 break;
 
             //(})   
@@ -364,40 +403,40 @@ void ParserFile::fillServers() {
                     --brace;
                     if(brace == 0){
                         if(configTypeMap["port"] != UNKNOWN){
-                            throw std::runtime_error("Error line " + toString(lineNum) + ": bad config, missing port");
+                            throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing port");
+                        }
+                        if(configTypeMap["server_name"] != UNKNOWN){
+                            throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing server name");
                         }
                         if(!server.getNumRoutes()){
-                            throw std::runtime_error("Error line " + toString(lineNum) + ": bad config, missing location");
-                        }
-                        if(checkAllRoutesByServerVec(serverDefinitions[port], server.getKeysRoutes()) == 1){
-                            throw std::runtime_error("Error line " + toString(lineNum) + ": one route or more is already registered to this port");
+                            throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing location");
                         }
 
-                        serverDefinitions[port].insert(serverDefinitions[port].begin(), server);
+                        if(checkAllRoutesByServerVec(((serverDefinitions[port])[server.serverName]), server.getKeysRoutes()) == 1){
+                            throw runtime_error("Error line " + toString(lineNum) + ": one route or more is already registered to this port");
+                        }
+                        
+                        ((serverDefinitions[port])[server.serverName]).insert(((serverDefinitions[port])[server.serverName]).begin(), server);
                         setValuesConfigTypeMap(configTypeMap, 1);
                     }
                     if(brace == 1){
                         if(configTypeMap["index"] != UNKNOWN && configTypeMap["root"] != UNKNOWN && configTypeMap["redirection"] != UNKNOWN)
-                            throw std::runtime_error("Error line " + toString(lineNum) + ": invalid location");
+                            throw runtime_error("Error line " + toString(lineNum) + ": invalid location");
+
                         server.addLocation(routeKey, location);
+                        
                         setValuesConfigTypeMap(configTypeMap);
                     }
                 }
                 else
-                    throw std::runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
+                    throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
                 break;
             default:
-                throw std::runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
+                throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
             break;
         }
         if(brace == 0 && configType != BRACE_CLOSE){
-            throw std::runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
+            throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
         }            
     }
-}
-
-
-
-ParserFile::~ParserFile() {
-    configParserFile.close();
 }

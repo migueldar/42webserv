@@ -1,6 +1,7 @@
 #include "webserv.hpp"
 
 int main(int argc, char **argv) {
+	int ret = 0;
 	std::string configRoute;
 
 	if (argc > 2)
@@ -15,8 +16,7 @@ int main(int argc, char **argv) {
 	}
 	catch(std::exception &e){
 		std::cout << e.what() << std::endl;
-		return 1;
+		ret =  1;
 	}
-
-	return 0;
+	return ret;
 }
