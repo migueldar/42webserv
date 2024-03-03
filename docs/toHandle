@@ -1,1 +1,15 @@
-two instances of ./webserv running at the same time with the same or different config (just check for bind == -1)
+HANDLE
+- two instances of ./webserv running at the same time with the same or different config (just check for bind == -1)
+- incomplete requests
+- one req in multiple parts
+- invalid req (https://www.rfc-editor.org/rfc/rfc9112.html section 2.2)
+? client sending 2 requests which interfere with each other through the same socket (idk if this is even possible)
+
+BEHAVIOUR
+- when a error needs to be returned which has no error page, return a default error page (which simply showcases the error found)
+- set a timeout for when a request tells is going to send a content-lenght but it doesnt
+- A server MUST respond with a 400 (Bad Request) status code to any HTTP/1.1 request message that lacks a Host header field and to any request message that contains more than one Host header field line or a Host header field with an invalid field value.
+
+
+NOTES
+- request-line lengths of 8000 octets.
