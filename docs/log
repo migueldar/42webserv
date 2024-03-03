@@ -1,3 +1,0 @@
-Proto Recv-Q Send-Q Local Address           Foreign Address         State
-tcp        0      0 localhost:34748         localhost:http-alt      FIN_WAIT2
-tcp        0      0 localhost:http-alt      localhost:34748         CLOSE_WAIT
