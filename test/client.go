@@ -2,12 +2,20 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
 	"strings"
+	"time"
+)
+
+const (
+	readTimeout  = 300 * time.Millisecond
+	checkTimeout = 100 * time.Millisecond
 )
 
 const (
@@ -16,7 +24,7 @@ const (
 )
 
 var scanner *bufio.Scanner
-var conexiones []net.Conn
+var connection net.Conn
 var modeSelect int
 
 func main() {
@@ -25,19 +33,16 @@ func main() {
 
 	for {
 		var input string
-
 		if modeSelect == 1 {
-			if conexiones != nil{
-				closeConnections()
+			if connection != nil {
+				closeConnection()
 			}
 			modeSelect = 0
 			mode = selectMode()
 			switch mode {
-			case "multi":
-				handleMultiMode()
-			case "fileInput":
+			case "2":
 				handleFileInputMode()
-			case "single":
+			case "1":
 				handleSingleMode()
 			default:
 				fmt.Println("Err bad mode")
@@ -45,29 +50,59 @@ func main() {
 				continue
 			}
 		}
-		if conexiones == nil {
-			fmt.Println("Connection refused try again later")
+		if connection == nil {
+			fmt.Println("Connection refused, try again later")
 			modeSelect = 1
 			continue
 		}
 
+		inputCh := make(chan string)
+		outputCh := make(chan string)
+
+		go func() {
+			for {
+				select {
+				case msg := <-inputCh:
+					if isConnectionAvailable(connection) {
+						if msg != "" {
+							fmt.Fprintf(connection, msg)
+						}
+					}
+				}
+			}
+		}()
+
+		go func() {
+			for {
+				select {
+				case <-time.After(1 * time.Millisecond):
+					outputCh <- printMultiMessages(connection)
+				}
+			}
+		}()
+
+		go func() {
+			for {
+				select {
+				case msg := <-outputCh:
+					if msg != "" {
+						fmt.Printf("Received message: %s\n", msg)
+					}
+				}
+			}
+		}()
+
 		switch mode {
-		case "fileInput":
+		case "2":
 			input = modeFileReq()
 		default:
 			input = modeSingleReq()
 		}
-
 		if input != "" {
 			processInput(&input)
+			fmt.Println("(" + input + ")")
 
-			fmt.Printf("Message to send: %s\n", input)
-
-			for i := 0; i < len(conexiones); i++ {
-				fmt.Fprintf(conexiones[i], input)
-			}
-
-			receiveMessages(conexiones, mode)
+			inputCh <- input
 		}
 	}
 }
@@ -82,38 +117,27 @@ func processInput(input *string) {
 	}
 }
 
-func handleMultiMode() {
-	fmt.Print("Input number of connections to make:\n")
-	fmt.Print("> ")
-	scanner := newScanner()
-	scanner.Scan()
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error scanning input:", err)
-		return
-	}
+func isConnectionAvailable(conn net.Conn) bool {
+	conn.SetReadDeadline(time.Now().Add(checkTimeout))
+	defer conn.SetReadDeadline(time.Time{})
 
-	connectionNum, err := strconv.Atoi(scanner.Text())
+	_, err := conn.Read([]byte{0})
 	if err != nil {
-		fmt.Println("Error parsing number of connections:", err)
-		return
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			return true
+		}
+		return false
 	}
 
-	logger, err := os.Create("./multiTestClientLogs/logsTxtMulti")
-	if err != nil {
-		fmt.Println("Error creating log file:", err)
-		return
-	}
-	defer logger.Close()
-
-	conexiones = establishConnections(connectionNum)
+	return true
 }
 
 func handleFileInputMode() {
-	conexiones = establishConnections(1)
+	connection = establishConnection()
 }
 
 func handleSingleMode() {
-	conexiones = establishConnections(1)
+	connection = establishConnection()
 }
 
 func newScanner() *bufio.Scanner {
@@ -121,7 +145,7 @@ func newScanner() *bufio.Scanner {
 }
 
 func selectMode() string {
-	fmt.Print("Input Req Mode:\n----> Single Request: \"single\"\n----> File Request:   \"fileInput\"\n----> Multi Request:  \"multi\"\n")
+	fmt.Print("\nInput Req Mode:\n----> Single Request: \"1\"\n----> File Request:   \"2\"\n")
 	fmt.Print("> ")
 
 	scanner := newScanner()
@@ -151,6 +175,9 @@ func modeFileReq() string {
 	}
 
 	filePath := scanner.Text()
+	if filePath == "" {
+		return ""
+	}
 
 	fileContent, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -179,52 +206,52 @@ func modeSingleReq() string {
 	return input
 }
 
-func establishConnections(numConnections int) []net.Conn {
-	var conexiones []net.Conn
-
-	for i := 0; i < numConnections; i++ {
-		conn, err := net.Dial("tcp", IP+":"+PORT)
-		if err != nil {
-			fmt.Printf("Error connecting to server %d: %s\n", i, err)
-			return nil
-		}
-		conexiones = append(conexiones, conn)
+func establishConnection() net.Conn {
+	conn, err := net.Dial("tcp", IP+":"+PORT)
+	if err != nil {
+		fmt.Printf("Error connecting to server: %s\n", err)
+		return nil
 	}
-
-	return conexiones
+	return conn
 }
 
-func receiveMessages(conexiones []net.Conn, mode string) {
-	switch mode {
-	case "multi":
-		logger, err := os.OpenFile("./multiTestClientLogs/logsTxtMulti", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			fmt.Println("Error opening log file:", err)
-			return
-		}
-		defer logger.Close()
+const blockSize = 1024
 
-		for i := 0; i < len(conexiones); i++ {
-			message, err := bufio.NewReader(conexiones[i]).ReadString(0)
-			if err != nil {
-				fmt.Println("Error reading from server:", err)
-				return
+func receiveMultiMessagesToString(conexion net.Conn) string {
+	var buffer bytes.Buffer
+
+	var message bytes.Buffer
+	buf := make([]byte, blockSize)
+
+	for {
+		n, err := conexion.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				return ""
 			}
-			logger.WriteString("CLIENT NUM(" + strconv.Itoa(i) + ") OUTPUT:\n")
-			logger.WriteString(message)
 		}
 
-		if err := logger.Sync(); err != nil {
-			fmt.Println("Error syncing log file:", err)
+		message.Write(buf[:n])
+		if n < blockSize {
+			break
 		}
-	default:
-		message, err := bufio.NewReader(conexiones[0]).ReadString(0)
-		if err != nil {
-			fmt.Println("Error reading from server:", err)
-			return
-		}
-		fmt.Printf("Message received: %s\n", message)
 	}
+
+	buffer.WriteString(fmt.Sprint(message.String()))
+
+	return buffer.String()
+}
+
+func printMultiMessages(conexion net.Conn) string {
+	message := receiveMultiMessagesToString(conexion)
+	if strings.Contains(message, "Connection: close") {
+		fmt.Println("Connection closed by remote server")
+		modeSelect = 1
+		return ""
+	}
+	return message
 }
 
 func exit() {
@@ -232,10 +259,8 @@ func exit() {
 	os.Exit(0)
 }
 
-func closeConnections(){
-	for i := 0; i < len(conexiones); i++{
-		(conexiones[i]).Close()
-	}
+func closeConnection() {
+	connection.Close()
 }
 
 func percentageExpander(input *string) {
