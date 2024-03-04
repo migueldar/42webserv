@@ -2,6 +2,10 @@
 #include <sys/poll.h>
 
 Connection::Connection(int sock, std::vector<Server>& servers): sock(sock), servers(servers), req(NULL), data("") {
+	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
+		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
+	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
+		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 	startTimer();
 }
 

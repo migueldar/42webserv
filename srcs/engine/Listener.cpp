@@ -9,6 +9,12 @@ Listener::Listener(int port, std::vector<Server>& servers): port(port), servers(
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &aux, 4) == -1)
 		throw std::runtime_error("setsockopt error: " + std::string(strerror(errno)));
 
+	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
+		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
+
+	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
+		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
+
 	sockaddr.sin_family = AF_INET;
 	sockaddr.sin_addr.s_addr = INADDR_ANY;
 	sockaddr.sin_port = htons(port);
