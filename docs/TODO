@@ -14,6 +14,8 @@ TODO
 
 - en el mac hay un buffer de 10000 caracteres por socket al que le puedes escribir por cada socket, si quieres escribir mas tienes que hacer mas de un send
 
+- probablemente lo primero que haya que hacer cuando lancemos el fork sea matar TODOS los fds (para no tener el mismo fd escuchando en dos procesos), pensar en ello
+
 
 CONCLUSIONES
 
