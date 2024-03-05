@@ -1,6 +1,6 @@
 #include "webserv.hpp"
 
-int main(int argc, char **argv, char **envp) {
+int main(int argc, char **argv) {
 	int ret = 0;
 	std::string configRoute;
 

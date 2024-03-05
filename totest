@@ -1,0 +1,22 @@
+OUTSIDE:
+server		.
+else		.
+
+SERVER:
+port		.
+error_page	.
+server_name .
+else		.
+
+LOCATION:
+redirect
+methods		.
+root
+index
+autoIndex
+cgi
+else
+
+COMBINACIONES:
+port y servername repetidos	.
+location repetida			.

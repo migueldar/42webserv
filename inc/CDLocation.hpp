@@ -5,7 +5,6 @@
 
 #define METHODS_NUM 3
 
-#include "CDCgiHandler.hpp"
 
 // src/paser/CDLocation.cpp
 class Location {
