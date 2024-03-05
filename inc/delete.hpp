@@ -35,7 +35,6 @@ class Request {
 		std::string							errorStatus;
 		std::map<std::string, std::string>	headers;
 		std::string							body;
-		std::string							cgiToken;
 		ParseState							parsed;
 		HostType							hostType;
 		BodyLengthMeasure					measure;
