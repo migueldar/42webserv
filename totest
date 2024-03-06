@@ -6,16 +6,17 @@ SERVER:
 port		.
 error_page	.
 server_name .
+location	.
 else		.
 
 LOCATION:
-redirect
+redirect	.
 methods		.
-root
-index
-autoIndex
-cgi
-else
+root        .
+index		.
+autoIndex	.
+cgi			.
+else		.
 
 COMBINACIONES:
 port y servername repetidos	.
