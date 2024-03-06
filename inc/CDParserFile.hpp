@@ -28,7 +28,7 @@ class ParserFile {
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Server vector
-        std::map<unsigned int, std::map<std::string, std::vector<Server> > > serverDefinitions;
+         std::map<unsigned int, std::vector<Server> > serverDefinitions;
         
 };
 
