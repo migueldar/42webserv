@@ -55,13 +55,20 @@ func TestParser(t *testing.T) {
 		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/4.conf"},
 		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx0.conf"},
 		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/nginx1.conf"},
-		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx2.conf"},
+		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/nginx2.conf"},
 		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/nginx3.conf"},
 		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/nginx4.conf"},
 		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx5.conf"},
 		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx6.conf"},
 		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx7.conf"},
-		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/nginx7.conf"},
+		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/nginx7.conf"},
+		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/err1.conf"},
+		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/err2.conf"},
+		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/err3.conf"},
+		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/err4.conf"},
+		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/err5.conf"},
+		{DesiredResult: GOOD, FileToTest: "./nginxTesting/conf/err6.conf"},
+		{DesiredResult: BAD, FileToTest: "./nginxTesting/conf/err7.conf"},
 	}
 
 	for _, test := range tests {

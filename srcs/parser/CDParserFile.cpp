@@ -85,9 +85,9 @@ void ParserFile::printServersByPort(unsigned int targetPort) {
                     cout << (location.methods[i] ? "1" : "0") << " ";
                 }
                 cout << endl;
-                cout << "      Cgi: ";
+                cout << "      Cgi: \n";
                 for (map<string, string>::const_iterator it = (location.cgi).begin(); it != (location.cgi).end() ; ++it) {
-                    cout << it->first << " " << it->second << endl;
+                    cout << "            " << it->first << " " << it->second << endl;
                 }
                 cout << endl;
                 cout << "      Autoindex: " << (location.autoindex ? "true" : "false") << endl;
@@ -345,7 +345,7 @@ void ParserFile::fillServers() {
                     else if(wordLines[1] == "false")
                         location.autoindex = 0;
                     else 
-                        throw runtime_error("Error line " + toString(lineNum) + ": auto_index not valid config" + wordLines[1]);
+                        throw runtime_error("Error line " + toString(lineNum) + ": auto_index not valid config " + wordLines[1]);
                 }
                 else
                     throw runtime_error("Error line " + toString(lineNum) + ": bad config auto_index:" + *(--wordLines.end()));
@@ -361,7 +361,7 @@ void ParserFile::fillServers() {
                         location.methods[GET] = 0;
                     if(aux[POST] == 0)
                         location.methods[POST] = 0;
-                    if(aux[POST] == 0)
+                    if(aux[DELETE] == 0)
                         location.methods[DELETE] = 0;
                 }
                 else
@@ -370,7 +370,6 @@ void ParserFile::fillServers() {
 
             case CGI:
                 if (wordLines.size() == 3 && brace == 2) {
-                    location.cgi.clear();
                     if(wordLines[1].find('.') != 0 || wordLines[1].find('.', 1) != std::string::npos)
                         throw runtime_error("Error line " + toString(lineNum) + ": CGI error, not valid extension: " + wordLines[1]);
                     if(wordLines[2][0] != '/')
@@ -394,9 +393,6 @@ void ParserFile::fillServers() {
                     if(brace == 0){
                         if(configTypeMap["port"] != UNKNOWN){
                             throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing port");
-                        }
-                        if(configTypeMap["server_name"] != UNKNOWN){
-                            throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing server name");
                         }
                         if(!server.getNumRoutes()){
                             throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing location");
@@ -428,5 +424,8 @@ void ParserFile::fillServers() {
         if(brace == 0 && configType != BRACE_CLOSE){
             throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
         }            
+    }
+    if(brace != 0){
+        throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
     }
 }
