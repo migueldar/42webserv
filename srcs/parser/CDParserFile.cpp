@@ -121,18 +121,18 @@ int ParserFile::checkRoutesServer(const map<string, Location>& routes, const str
      return false;
  }
 
-void parseMethods(vector<string> wordLines, int lineNum, bool *aux){
+void parseMethods(vector<string> wordLines, int lineNum, bool *aux){ 
 
     for (unsigned long i = 1; i < wordLines.size(); i++)
     {
-        if (wordLines[i] == "GET")
+        if (wordLines[i] == "GET" && aux[GET] == 0)
             aux[GET] = 1;
-        else if(wordLines[i] == "POST")
+        else if(wordLines[i] == "POST" && aux[POST] == 0)
             aux[POST] = 1;
-        else if(wordLines[i] == "DELETE")
+        else if(wordLines[i] == "DELETE" && aux[DELETE] == 0)
             aux[DELETE] = 1;
         else
-            throw runtime_error("Error line " + toString(lineNum) + ": unknown method:" + wordLines[i]);
+            throw runtime_error("Error line " + toString(lineNum) + ": bad config method:" + wordLines[i]);
     }
 }
 
