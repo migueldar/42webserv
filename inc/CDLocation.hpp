@@ -5,7 +5,6 @@
 
 #define METHODS_NUM 3
 
-
 // src/paser/CDLocation.cpp
 class Location {
 	public:

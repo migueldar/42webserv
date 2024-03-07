@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "delete.hpp"
+#include "parser.hpp"
 #include <map>
 
 #define METAVARIABLES_LENGTH 15

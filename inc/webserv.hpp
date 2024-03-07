@@ -22,5 +22,6 @@
 #include "PollHandler.hpp"
 #include "parser.hpp"
 #include "http.hpp"
+#include "CDCgiHandler.hpp"
 
 #endif

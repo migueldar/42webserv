@@ -1,5 +1,5 @@
 NAME := webserv
-SRCS := srcs/main.cpp \
+SRCS := srcs/mainCgi.cpp \
 		srcs/engine/Connection.cpp \
 		srcs/engine/Listener.cpp \
 		srcs/engine/PollHandler.cpp \
@@ -9,6 +9,7 @@ SRCS := srcs/main.cpp \
 		srcs/parser/CDParserFile.cpp \
 		srcs/parser/CDServer.cpp \
 		srcs/parser/parserUtils.cpp \
+		srcs/cgi/cgiHandler.cpp \
 		
 OBJS := $(SRCS:srcs/%.cpp=objs/%.o)
 CXX = c++
@@ -28,6 +29,7 @@ objs:
 			objs/engine \
 			objs/http \
 			objs/parser \
+			objs/cgi \
 
 objs/%.o: srcs/%.cpp | objs
 	$(CXX) $(CXXFLAGS) -c $< -o $@
