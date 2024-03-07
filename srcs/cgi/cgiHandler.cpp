@@ -1,31 +1,9 @@
 
 #include "webserv.hpp"
 
-CgiHandler::CgiHandler(Location loc, std::string tokenCGI ,Request req, std::vector<std::string> uri, std::string query_string): tokenCGI(tokenCGI), req(req), uri(uri), query_string(query_string), loc(loc){
+CgiHandler::CgiHandler(Location loc, std::string tokenCGI, std::string port, Request req, std::vector<std::string> uri, std::string query_string): tokenCGI(tokenCGI), port(port), req(req), uri(uri), query_string(query_string), loc(loc){
     initDictParser();
-    //cgiScrpitSelector
-    //
 }
-
-// server {
-
-//     location / {
-//         root /usr/local/www/htdocs
-//     }
-
-//     location /32313 {
-//         root /usr/local/www/htdocs
-//     }
-// }
-
-// http://somehost.com/32313/app.py/this.is.the.path%3binfo
-
-// /32313/this.is.the.path%3binfo
-
-// /usr/local/www/htdocs/32313/this.is.the.path%3binfo
-
-// /usr/local/www/htdocs/this.is.the.path%3binfo
-
 
 
 void CgiHandler::initDictParser(void){
@@ -35,6 +13,10 @@ void CgiHandler::initDictParser(void){
     methodMap[PATH_TRANSLATED] = &CgiHandler::parsePATH_TRANSLATED;
     methodMap[QUERY_STRING] = &CgiHandler::parseQUERY_STRING;
     methodMap[REQUEST_METHOD] = &CgiHandler::parseREQUEST_METHOD;
+    methodMap[SERVER_PROTOCOL] = &CgiHandler::parseSERVER_PROTOCOL;
+    methodMap[SERVER_NAME] = &CgiHandler::parseSERVER_NAME;
+    methodMap[SERVER_PORT] = &CgiHandler::parseSERVER_PORT;
+    methodMap[SERVER_SOFTWARE] = &CgiHandler::parseSERVER_SOFTWARE;
 }
 
 void CgiHandler::parseLOCATION(void) {
@@ -105,6 +87,42 @@ void	CgiHandler::parseQUERY_STRING(void){
 }
 
 void	CgiHandler::parseREQUEST_METHOD(void){
-    //metaVariables["reqparseREQUEST_METHOD"] = req.;
+    switch (req.method)
+    {
+    case GET:
+        metaVariables["REQUEST_METHOD"] = "GET";
+        break;
+    case DELETE:
+        metaVariables["REQUEST_METHOD"] = "DELETE";
+        break;
+    case POST:
+        metaVariables["REQUEST_METHOD"] = "POST";
+        break;
+    }
+    return;
+}
+
+void	CgiHandler::parseSERVER_PROTOCOL(void){
+    metaVariables["SERVER_PROTOCOL"] = "HTTP";
+    return;
+}
+
+void	CgiHandler::parseSERVER_NAME(void){
+    metaVariables["SERVER_NAME"] = req.headers["Host"];
+    return;
+}
+
+void    CgiHandler::parseREMOTE_ADDR(void){
+    metaVariables["REMOTE_ADDR"] = req.address;
+    return;
+}
+
+void    CgiHandler::parseSERVER_PORT(void){
+    metaVariables["SERVER_PORT"] = port;
+    return;
+}
+
+void	CgiHandler::parseSERVER_SOFTWARE(void){
+    metaVariables["SERVER_SOFTWARE"] = "1.1";
     return;
 }
