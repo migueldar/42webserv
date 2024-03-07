@@ -5,12 +5,14 @@
 #include "delete.hpp"
 #include <map>
 
+#define METAVARIABLES_LENGTH 15
+
 // src/cgi/cgiHandler.cpp
 class CgiHandler {
 	public:
 
 		enum metaVariables{
-			LOCATION,
+			LOCATION = 0,
 			SCRIPT_NAME,
 			PATH_INFO,
 			PATH_TRANSLATED,
@@ -21,16 +23,14 @@ class CgiHandler {
 			REMOTE_ADDR,
 			SERVER_PORT,
 			SERVER_SOFTWARE,
-			
 			AUTH_TYPE,
 			CONTENT_LENGTH,
 			CONTENT_TYPE,
-			GATEWAY_INTERFACE,
-			REMOTE_IDENT,
+			GATEWAY_INTERFACE,			
 			REMOTE_USER,
 		};
-
-		CgiHandler(Location loc, std::string tokenCGI, std::string port, Request req, std::vector<std::string> uri, std::string query_string);
+		CgiHandler(Location &loc, std::string &tokenCGI, std::string &port, Request &req, std::vector<std::string> &uri, std::string &query_string);
+		~CgiHandler();
 		void 	initDictParser(void);
 
 		void	parseLOCATION(void);
@@ -44,7 +44,6 @@ class CgiHandler {
 		void	parseREMOTE_ADDR(void);
 		void	parseSERVER_PORT(void);
 		void	parseSERVER_SOFTWARE(void);
-
 		void	parseAUTH_TYPE(void);
 		void	parseCONTENT_LENGTH(void);
 		void	parseCONTENT_TYPE(void);
@@ -53,6 +52,7 @@ class CgiHandler {
 		void	parseREMOTE_USER(void);
 		
 	private:
+		CgiHandler();
 		std::string												tokenCGI;
 		std::map<enum metaVariables, void(CgiHandler::*)()> 	methodMap;
 		std::string 											body;

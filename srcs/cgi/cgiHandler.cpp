@@ -1,8 +1,14 @@
 
 #include "webserv.hpp"
 
-CgiHandler::CgiHandler(Location loc, std::string tokenCGI, std::string port, Request req, std::vector<std::string> uri, std::string query_string): tokenCGI(tokenCGI), port(port), req(req), uri(uri), query_string(query_string), loc(loc){
+CgiHandler::CgiHandler(Location &loc, std::string &tokenCGI, std::string &port, Request &req, std::vector<std::string> &uri, std::string &query_string): tokenCGI(tokenCGI), port(port), req(req), uri(uri), query_string(query_string), loc(loc){
     initDictParser();
+    for (enum metaVariables x = LOCATION; x < METAVARIABLES_LENGTH; x = static_cast<enum metaVariables>(x + 1)) {
+        (this->*methodMap[x])();
+    }
+    for (std::map<std::string, std::string>::iterator it = metaVariables.begin(); it != metaVariables.end(); it++){
+        std::cout << it->first << "=" << it->second << std::endl;
+    }
 }
 
 
@@ -17,6 +23,10 @@ void CgiHandler::initDictParser(void){
     methodMap[SERVER_NAME] = &CgiHandler::parseSERVER_NAME;
     methodMap[SERVER_PORT] = &CgiHandler::parseSERVER_PORT;
     methodMap[SERVER_SOFTWARE] = &CgiHandler::parseSERVER_SOFTWARE;
+    methodMap[AUTH_TYPE] = &CgiHandler::parseAUTH_TYPE;
+    methodMap[CONTENT_LENGTH] = &CgiHandler::parseCONTENT_LENGTH;
+    methodMap[CONTENT_TYPE] = &CgiHandler::parseCONTENT_TYPE;
+    methodMap[GATEWAY_INTERFACE] = &CgiHandler::parseGATEWAY_INTERFACE;
 }
 
 void CgiHandler::parseLOCATION(void) {
@@ -56,6 +66,7 @@ void CgiHandler::parseSCRIPT_NAME(void) {
     }
     if(bad != 1){
         //throw MAS DE UN SCRIPT EN URL
+        return;
     }
     return;
 }
@@ -124,5 +135,38 @@ void    CgiHandler::parseSERVER_PORT(void){
 
 void	CgiHandler::parseSERVER_SOFTWARE(void){
     metaVariables["SERVER_SOFTWARE"] = "1.1";
+    return;
+}
+
+void	CgiHandler::parseAUTH_TYPE(void){
+    if(req.headers["auth-scheme"] != ""){
+        metaVariables["AUTH_TYPE"] = req.headers["auth-scheme"];
+    }
+    return;
+}
+
+void	CgiHandler::parseCONTENT_LENGTH(void){
+    if(req.body != ""){
+        metaVariables["CONTENT_LENGTH"] = std::to_string(req.body.length());
+    }
+    return;
+}
+
+void	CgiHandler::parseCONTENT_TYPE(void){
+    if(req.headers["Content-Type"] != ""){
+        metaVariables["CONTENT_TYPE"] = req.headers["Content-Type"];
+    }
+    return;
+}
+
+void	CgiHandler::parseGATEWAY_INTERFACE(void){
+    metaVariables["GATEWAY_INTERFACE"] = "CGI / 1.1";
+    return;
+}
+
+void CgiHandler::parseREMOTE_USER(void){
+    if(metaVariables["AUTH_TYPE"] != ""){
+        metaVariables["REMOTE_USER"] = req.headers["Host"];
+    }
     return;
 }
