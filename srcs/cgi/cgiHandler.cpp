@@ -23,6 +23,7 @@ void CgiHandler::initDictParser(void){
     methodMap[REQUEST_METHOD] = &CgiHandler::parseREQUEST_METHOD;
     methodMap[SERVER_PROTOCOL] = &CgiHandler::parseSERVER_PROTOCOL;
     methodMap[SERVER_NAME] = &CgiHandler::parseSERVER_NAME;
+    methodMap[REMOTE_ADDR] = &CgiHandler::parseREMOTE_ADDR;
     methodMap[SERVER_PORT] = &CgiHandler::parseSERVER_PORT;
     methodMap[SERVER_SOFTWARE] = &CgiHandler::parseSERVER_SOFTWARE;
     methodMap[AUTH_TYPE] = &CgiHandler::parseAUTH_TYPE;
@@ -33,7 +34,6 @@ void CgiHandler::initDictParser(void){
 
 void CgiHandler::parseLOCATION(void) {
     std::string location = "";
-    std::cout << LOCATION << std::endl;
 
     while (!uri.empty()) {
         size_t found = uri[0].find(tokenCGI);
@@ -52,13 +52,11 @@ void CgiHandler::parseLOCATION(void) {
 
 void CgiHandler::parseSCRIPT_NAME(void) {
     bool    bad = 0;
-    std::cout << SCRIPT_NAME << std::endl;
 
     for (size_t i = 0; i < uri.size(); i++) {
         size_t found = uri[i].find(tokenCGI);
 
         if (found != std::string::npos) {
-            i += found;
             bad += 1;
             script = uri[i];
             metaVariables["SCRIPT_NAME"] = metaVariables["LOCATION"] + "/" + script;
@@ -78,31 +76,27 @@ void CgiHandler::parseSCRIPT_NAME(void) {
 
 void	CgiHandler::parsePATH_INFO(void){
     std::string pathinfo = "";
-    std::cout << PATH_INFO << std::endl;
 
     while (!uri.empty()) {
         pathinfo += "/" + uri[0];
         uri.erase(uri.begin());
     }
-    metaVariables["PATH_INFO"] += "/" + pathinfo;
-    metaVariables["PATH_TRANSLATED"] += "/" + pathinfo;
+    metaVariables["PATH_INFO"] += pathinfo;
+    metaVariables["PATH_TRANSLATED"] += pathinfo;
     return;
 }
 
 void	CgiHandler::parsePATH_TRANSLATED(void){
-    std::cout << PATH_TRANSLATED << std::endl;
-    metaVariables["PATH_TRANSLATED"] = "/" + loc.root + metaVariables["PATH_TRANSLATED"];
+    metaVariables["PATH_TRANSLATED"] += "/" + loc.root + metaVariables["PATH_TRANSLATED"];
     return;
 }
 
 void	CgiHandler::parseQUERY_STRING(void){
-    std::cout << QUERY_STRING << std::endl;
     metaVariables["QUERY_STRING"] = query_string;
     return;
 }
 
 void	CgiHandler::parseREQUEST_METHOD(void){
-    std::cout << REQUEST_METHOD << std::endl;
     switch (req.method)
     {
     case GET:
@@ -119,38 +113,31 @@ void	CgiHandler::parseREQUEST_METHOD(void){
 }
 
 void	CgiHandler::parseSERVER_PROTOCOL(void){
-    std::cout << SERVER_PROTOCOL << std::endl;
     metaVariables["SERVER_PROTOCOL"] = "HTTP";
     return;
 }
 
 void	CgiHandler::parseSERVER_NAME(void){
-    std::cout << SERVER_NAME << std::endl;
-    std::cout << "PETO" << std::endl;
     metaVariables["SERVER_NAME"] = req.headers["Host"];
     return;
 }
 
 void    CgiHandler::parseREMOTE_ADDR(void){
-    std::cout << REMOTE_ADDR << std::endl;
     metaVariables["REMOTE_ADDR"] = req.address;
     return;
 }
 
 void    CgiHandler::parseSERVER_PORT(void){
-    std::cout << SERVER_PORT << std::endl;
     metaVariables["SERVER_PORT"] = port;
     return;
 }
 
 void	CgiHandler::parseSERVER_SOFTWARE(void){
-    std::cout << SERVER_SOFTWARE << std::endl;
     metaVariables["SERVER_SOFTWARE"] = "1.1";
     return;
 }
 
 void	CgiHandler::parseAUTH_TYPE(void){
-    std::cout << AUTH_TYPE << std::endl;
     if(req.headers["auth-scheme"] != ""){
         metaVariables["AUTH_TYPE"] = req.headers["auth-scheme"];
     }
@@ -158,7 +145,6 @@ void	CgiHandler::parseAUTH_TYPE(void){
 }
 
 void	CgiHandler::parseCONTENT_LENGTH(void){
-    std::cout << CONTENT_LENGTH << std::endl;
     if(req.body != ""){
         metaVariables["CONTENT_LENGTH"] = std::to_string(req.body.length());
     }
@@ -166,7 +152,6 @@ void	CgiHandler::parseCONTENT_LENGTH(void){
 }
 
 void	CgiHandler::parseCONTENT_TYPE(void){
-    std::cout << CONTENT_TYPE << std::endl;
     if(req.headers["Content-Type"] != ""){
         metaVariables["CONTENT_TYPE"] = req.headers["Content-Type"];
     }

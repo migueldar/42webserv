@@ -12,12 +12,12 @@ int main() {
 	patata.push_back("gorda");
 	patata.push_back("script.py");
 	patata.push_back("extapath");
-	Location loc("/patata");
+	Location loc("patata");
 	Request req;
+	req.address = "192.168.4.1";
 	req.headers["Host"] = "calientePerro53";
 
     CgiHandler CGI = CgiHandler(loc, token , port, req, patata, querystring);
 
-	
 	return ret;
 }
