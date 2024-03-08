@@ -30,6 +30,8 @@ class CgiHandler {
 			GATEWAY_INTERFACE,			
 			REMOTE_USER,
 		};
+		
+		
 		CgiHandler(Location &loc, std::string &tokenCGI, std::string &port, Request &req, std::vector<std::string> &uri, std::string &query_string);
 		~CgiHandler();
 		void 	initDictParser(void);

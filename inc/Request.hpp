@@ -67,6 +67,7 @@ class Request {
 		methodsEnum							method;
 		std::string							target;
 		std::string							address;
+		std::vector<std::string>			uri;
 		std::map<std::string, std::string>	headers;
 		std::map<std::string, std::string>	queryParams;
 		std::string							body;

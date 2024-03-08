@@ -28,6 +28,10 @@ bool Connection::operator==(const Connection& other) const {
 
 //0 means ok, 1 means remove
 int Connection::handleEvent(struct pollfd& pollfd) {
+	//DELETE################################CGI_TESTING########################################
+	std::string CGITokenSelected = ".py";
+	//DELETE###################################################################################
+
 	if (pollfd.revents & POLLERR) {
 		std::cout << "pollerr" << std::endl;
 		return 1;
@@ -59,6 +63,16 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	//response handling should be done here, not in pollin
 	//si hay un error en la request (4xx, 5xx) devolvemos Connection: close y cerramos conexion
 	else if (pollfd.revents & POLLOUT) {
+		//DELETE################################CGI_TESTING########################################
+		if(CGITokenSelected != ""){
+			Location loc("patata");
+			req->address = "192.168.4.1";
+			std::string port = "8080";
+			std::string querystring = "arguentosRararos=1";
+			CgiHandler newCgi = CgiHandler(loc, CGITokenSelected, port, *req, req->uri, querystring);
+
+		}
+		//DELETE##################################################################################
 		std::cout << "pollout" << std::endl;
 
 		//probably have to handle send return value
@@ -81,7 +95,6 @@ Content-Type: text/plain; charset=utf-8\r\n\
 			req = new Request();
 
 		data = req->addData(data);
-
 		if (req->parsed == Request::ALL) {
 			pollfd.events = POLLOUT;
 			checkTime = false;

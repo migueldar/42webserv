@@ -14,6 +14,18 @@ std::string Request::addData(std::string data) {
 	rawData += data;
 	try {
 		if (parsed == NOTHING) {
+			//DELETE################################CGI_TESTING########################################
+			found = rawData.find('/');
+			if(found != std::string::npos){
+				std::string aux  = rawData.substr(found + 1);
+				std::stringstream ss(aux);
+
+				std::string segment;
+				while (getline(ss, segment, '/')) {
+					uri.push_back(segment);
+				}
+			}
+			//DELETE##################################################################################
 			found = rawData.find("\r\n");
 			if (found != std::string::npos)	{
 				parseRequestLine(rawData.substr(0, found));
