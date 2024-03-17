@@ -2,7 +2,7 @@
 #define CDCGIHANDLER_HPP
 
 #include <iostream>
-#include "delete.hpp"
+#include "Request.hpp"
 #include "parser.hpp"
 #include <map>
 
@@ -12,6 +12,11 @@
 class CgiHandler {
 	public:
 
+		enum CGI_STAGES {
+			WRITE_CGI_EXEC  = 0,
+			READ_CGI_EXEC,
+			FINAL_CGI_EXEC,
+		};
 		enum metaVariables{
 			LOCATION = 0,
 			SCRIPT_NAME,
@@ -35,6 +40,8 @@ class CgiHandler {
 		CgiHandler(Location &loc, std::string &tokenCGI, std::string &port, Request &req, std::vector<std::string> &uri, std::string &query_string);
 		~CgiHandler();
 		void 	initDictParser(void);
+		int 	handleCgiEvent();
+		int 	executeCgi(int &fd);
 
 		void	parseLOCATION(void);
 		void	parseSCRIPT_NAME(void);
@@ -53,6 +60,8 @@ class CgiHandler {
 		void	parseGATEWAY_INTERFACE(void);
 		void	parseREMOTE_IDENT(void);
 		void	parseREMOTE_USER(void);
+
+		std::string getCgiRespounse() const ;
 		
 	private:
 		CgiHandler();
@@ -66,6 +75,9 @@ class CgiHandler {
 		std::vector<std::string>								&uri; 
 		std::string 											&query_string;
 		Location 												&loc;
+		char 													**env;
+
+		std::string 											respounse;
 };
 
 #endif

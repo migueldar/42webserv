@@ -9,7 +9,84 @@ CgiHandler::CgiHandler(Location &loc, std::string &tokenCGI, std::string &port, 
     for (std::map<std::string, std::string>::iterator it = metaVariables.begin(); it != metaVariables.end(); it++){
         std::cout << it->first << "=" << it->second << std::endl;
     }
+
+    size_t numVariables = metaVariables.size();
+
+    env = new char *[numVariables + 1];
+
+    size_t i = 0;
+    
+    for (std::map<std::string, std::string>::const_iterator iter= metaVariables.begin(); iter != metaVariables.end(); ++iter) {
+        std::string envVar = iter->first + "=" + iter->second;
+
+        env[i] = new char[envVar.length() + 1]; 
+        strcpy(env[i], envVar.c_str()); 
+        ++i;
+    }
+
+    env[numVariables] = NULL;
+
 }
+
+int CgiHandler::handleCgiEvent() {
+    static enum CGI_STAGES stages = BEGIN_CGI_EXEC;
+    static int infd[2], outfd[2];
+    static int pid;
+
+
+    switch (stages) {
+        case BEGIN_CGI_EXEC:
+            if (pipe(infd) < 0 || pipe(outfd) < 0) {
+                //throw
+            }
+            pid = fork();
+            if (pid < 0) {
+                //throw
+            }
+            if (pid == 0) { 
+                close(infd[1]);
+                close(outfd[0]);
+                dup2(infd[0], STDIN_FILENO); 
+                dup2(outfd[1], STDOUT_FILENO); 
+
+                if (execvp(to_exec, env) < 0) {
+                    exit(EXIT_FAILURE);
+                }
+            } else { 
+                close(infd[0]);
+                close(outfd[1]);
+                stages = WRITE_CGI_EXEC;
+                return infd[1];
+            }
+        case WRITE_CGI_EXEC:
+            write()
+            stages = READ_CGI_EXEC;
+            return outfd[0]; 
+        case READ_CGI_EXEC:
+            read()
+            if (!EOF EN STRING)
+                return outfd[0]; 
+            else {
+                int status;
+                waitpid(pid, &status, 0);
+                if (WIFEXITED(status)) {
+                    int exit_status = WEXITSTATUS(status);
+                } else {
+                    printf("El proceso hijo terminó de forma anormal\n");
+                }
+                close(infd[1]); 
+                close(outfd[0]);
+                return -1;
+            }
+    }
+    return -1;
+}
+
+std::string CgiHandler::getCgiRespounse() const {
+    return respounse;
+}
+
+
 
 CgiHandler::~CgiHandler(){
 }
@@ -60,9 +137,11 @@ void CgiHandler::parseSCRIPT_NAME(void) {
             bad += 1;
             script = uri[i];
             metaVariables["SCRIPT_NAME"] = metaVariables["LOCATION"] + "/" + script;
-            metaVariables["PATH_INFO"] = "/" + script;
-            metaVariables["PATH_TRANSLATED"] = "/" + script;
             uri.erase(uri.begin());
+            if(!uri.empty()){
+                metaVariables["PATH_INFO"] = "/" + script;
+                metaVariables["PATH_TRANSLATED"] = "/" + script;
+            }
         }
     }
     if(bad != 1){
@@ -87,7 +166,8 @@ void	CgiHandler::parsePATH_INFO(void){
 }
 
 void	CgiHandler::parsePATH_TRANSLATED(void){
-    metaVariables["PATH_TRANSLATED"] += "/" + loc.root + metaVariables["PATH_TRANSLATED"];
+    if(metaVariables["PATH_TRANSLATED"] != "")
+        metaVariables["PATH_TRANSLATED"] = "/" + loc.root + metaVariables["PATH_TRANSLATED"];
     return;
 }
 
@@ -159,7 +239,7 @@ void	CgiHandler::parseCONTENT_TYPE(void){
 }
 
 void	CgiHandler::parseGATEWAY_INTERFACE(void){
-    metaVariables["GATEWAY_INTERFACE"] = "CGI / 1.1";
+    metaVariables["GATEWAY_INTERFACE"] = "CGI/1.1";
     return;
 }
 

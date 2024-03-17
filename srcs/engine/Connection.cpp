@@ -70,7 +70,6 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			std::string port = "8080";
 			std::string querystring = "arguentosRararos=1";
 			CgiHandler newCgi = CgiHandler(loc, CGITokenSelected, port, *req, req->uri, querystring);
-
 		}
 		//DELETE##################################################################################
 		std::cout << "pollout" << std::endl;
