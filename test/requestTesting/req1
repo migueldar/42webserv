@@ -1,1 +1,1 @@
-GET /patata/cgi.py HTTP/1.1\r\nHost:'PATATA'\r\n\r\n
+GET /patata/test.py HTTP/1.1\r\nHost:'PATATA'\r\n\r\n
