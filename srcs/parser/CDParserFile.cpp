@@ -319,7 +319,8 @@ void ParserFile::fillServers() {
                 if(wordLines.size() == 2 && brace == 2){
                     if(wordLines[1][0] != '/')
                         throw runtime_error("Error line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
-
+                    if(wordLines[1][(wordLines[1]).length() - 1] != '/')
+                        wordLines[1] += "/";
                     location.root = wordLines[1];
                 }
                 else
@@ -374,6 +375,8 @@ void ParserFile::fillServers() {
                         throw runtime_error("Error line " + toString(lineNum) + ": CGI error, not valid extension: " + wordLines[1]);
                     if(wordLines[2][0] != '/')
                         throw runtime_error("Error line " + toString(lineNum) + ": CGI error, invalid executable route: " + wordLines[2]);
+                    if(wordLines[2][(wordLines[2]).length() - 1] != '/')
+                        wordLines[2] += "/";
                     if(location.cgi[wordLines[1]] == ""){
                         location.cgi[wordLines[1]] = wordLines[2];
                     }

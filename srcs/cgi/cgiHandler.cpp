@@ -26,6 +26,7 @@ CgiHandler::CgiHandler(Location &loc, std::string &tokenCGI, std::string &port, 
 
     env[numVariables] = NULL;
 
+    script = loc.root + script;
 }
 
 int CgiHandler::handleCgiEvent() {
@@ -37,19 +38,23 @@ int CgiHandler::handleCgiEvent() {
     switch (stages) {
         case BEGIN_CGI_EXEC:
             if (pipe(infd) < 0 || pipe(outfd) < 0) {
+                perror("Error al crear las tuberías");
                 //throw
             }
             pid = fork();
             if (pid < 0) {
+                perror("Error al crear el proceso hijo");
                 //throw
             }
             if (pid == 0) { 
                 close(infd[1]);
                 close(outfd[0]);
                 dup2(infd[0], STDIN_FILENO); 
-                dup2(outfd[1], STDOUT_FILENO); 
+                dup2(outfd[1], STDOUT_FILENO);
 
-                if (execvp(to_exec, env) < 0) {
+                const char* args[] = { (loc.cgi[tokenCGI]).c_str(), script.c_str(), NULL };
+                if (execve(args[0], (char* const*)args, (char* const*)env) < 0) {
+                    perror("Error al ejecutar el script CGI");
                     exit(EXIT_FAILURE);
                 }
             } else { 
@@ -59,25 +64,46 @@ int CgiHandler::handleCgiEvent() {
                 return infd[1];
             }
         case WRITE_CGI_EXEC:
-            write()
+            write(infd[1], body.c_str(), body.length());
             stages = READ_CGI_EXEC;
             return outfd[0]; 
         case READ_CGI_EXEC:
-            read()
-            if (!EOF EN STRING)
-                return outfd[0]; 
-            else {
+            char buffer[SIZE_READ];
+            ssize_t bytesRead;
+            std::string aux = "err";
+
+            bytesRead = read(outfd[0], buffer, SIZE_READ);
+            if (bytesRead > 0){
+                aux = std::string(buffer, bytesRead);
+                respounse += aux;
+            } else {
+                perror("Error al leer la salida del script CGI");
+                // throw
+            }
+
+            size_t index = aux.find("EOF");
+            if (index != std::string::npos && index == aux.size() - 4){
                 int status;
                 waitpid(pid, &status, 0);
                 if (WIFEXITED(status)) {
                     int exit_status = WEXITSTATUS(status);
+                    if (exit_status != EXIT_SUCCESS){
+                        perror("El proceso hijo terminó con éxito");
+                        //throw
+                    }
                 } else {
-                    printf("El proceso hijo terminó de forma anormal\n");
+                    std::cout << "El proceso hijo terminó de forma anormal" << std::endl;
                 }
-                close(infd[1]); 
+                index = respounse.find("EOF");
+                respounse = respounse.substr(0, index);
+                close(infd[1]);
                 close(outfd[0]);
                 return -1;
             }
+            else{
+                return outfd[0];
+            }
+
     }
     return -1;
 }

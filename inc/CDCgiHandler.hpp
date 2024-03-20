@@ -13,9 +13,9 @@ class CgiHandler {
 	public:
 
 		enum CGI_STAGES {
-			WRITE_CGI_EXEC  = 0,
+			BEGIN_CGI_EXEC = 0,
+			WRITE_CGI_EXEC,
 			READ_CGI_EXEC,
-			FINAL_CGI_EXEC,
 		};
 		enum metaVariables{
 			LOCATION = 0,
