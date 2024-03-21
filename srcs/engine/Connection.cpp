@@ -64,6 +64,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	//si hay un error en la request (4xx, 5xx) devolvemos Connection: close y cerramos conexion
 	else if (pollfd.revents & POLLOUT) {
 		//DELETE################################CGI_TESTING########################################
+		std::cout << *req << std::endl;
 		if(CGITokenSelected != ""){
 			Location loc("/Users/jsanfeli/Desktop/PROYECTOS_C++_STUDENT/42webserv/test/python/");
 			loc.cgi[CGITokenSelected] = "/usr/bin/python3";
@@ -71,10 +72,8 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			std::string port = "8080";
 			std::string querystring = "arguentosRararos=1";
 			CgiHandler newCgi = CgiHandler(loc, CGITokenSelected, port, *req, req->uri, querystring);
-			newCgi.handleCgiEvent();
-			newCgi.handleCgiEvent();
-			newCgi.handleCgiEvent();
-			std::cout << newCgi.getCgiRespounse() << std::endl;
+			while(newCgi.handleCgiEvent() != -1);
+			std::cout << newCgi.getCgiResponse() << std::endl;
 		}
 		//DELETE##################################################################################
 		std::cout << "pollout" << std::endl;

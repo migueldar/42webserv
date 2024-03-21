@@ -61,7 +61,7 @@ class CgiHandler {
 		void	parseREMOTE_IDENT(void);
 		void	parseREMOTE_USER(void);
 
-		std::string getCgiRespounse() const ;
+		std::string getCgiResponse() const ;
 		
 	private:
 		CgiHandler();
@@ -77,7 +77,7 @@ class CgiHandler {
 		Location 												&loc;
 		char 													**env;
 
-		std::string 											respounse;
+		std::string 											response;
 };
 
 #endif

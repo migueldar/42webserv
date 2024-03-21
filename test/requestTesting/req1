@@ -1,1 +1,1 @@
-GET /patata/test.py HTTP/1.1\r\nHost:'PATATA'\r\n\r\n
+POST /patata/test.py HTTP/1.1\r\nHost:'PATATA'\r\nContent-Length:41\r\n\r\nPTATATATATATTATATATTATATTAHOLAMIGUEPATAAT

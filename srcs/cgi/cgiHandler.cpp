@@ -33,20 +33,21 @@ int CgiHandler::handleCgiEvent() {
     static enum CGI_STAGES stages = BEGIN_CGI_EXEC;
     static int infd[2], outfd[2];
     static int pid;
-
+    ssize_t bytesWritten;
+    ssize_t bytesRead;
 
     switch (stages) {
         case BEGIN_CGI_EXEC:
             if (pipe(infd) < 0 || pipe(outfd) < 0) {
                 perror("Error al crear las tuberías");
-                //throw
+                return -1;
             }
             pid = fork();
             if (pid < 0) {
                 perror("Error al crear el proceso hijo");
-                //throw
+                return -1;
             }
-            if (pid == 0) { 
+            if (pid == 0) {
                 close(infd[1]);
                 close(outfd[0]);
                 dup2(infd[0], STDIN_FILENO); 
@@ -57,59 +58,65 @@ int CgiHandler::handleCgiEvent() {
                     perror("Error al ejecutar el script CGI");
                     exit(EXIT_FAILURE);
                 }
-            } else { 
+            } else {
                 close(infd[0]);
                 close(outfd[1]);
                 stages = WRITE_CGI_EXEC;
                 return infd[1];
             }
         case WRITE_CGI_EXEC:
-            write(infd[1], body.c_str(), body.length());
+            bytesWritten = write(infd[1], req.body.c_str(), req.body.length());
+            close(infd[1]);
+            if (bytesWritten < 0) {
+                perror("Error al escribir en el pipe");
+                return -1;
+            }
             stages = READ_CGI_EXEC;
             return outfd[0]; 
         case READ_CGI_EXEC:
             char buffer[SIZE_READ];
-            ssize_t bytesRead;
-            std::string aux = "err";
-
             bytesRead = read(outfd[0], buffer, SIZE_READ);
+            if (bytesRead < 0) {
+                perror("Error al leer la salida del script CGI");
+                return -1;
+            }
             if (bytesRead > 0){
-                aux = std::string(buffer, bytesRead);
-                respounse += aux;
+                std::string aux(buffer, bytesRead);
+                response += aux;
             } else {
                 perror("Error al leer la salida del script CGI");
-                // throw
+                return -1;
             }
 
-            size_t index = aux.find("EOF");
-            if (index != std::string::npos && index == aux.size() - 4){
+            size_t index = response.find("EOF");
+            if (index != std::string::npos && index == response.size() - 4){
                 int status;
                 waitpid(pid, &status, 0);
                 if (WIFEXITED(status)) {
                     int exit_status = WEXITSTATUS(status);
                     if (exit_status != EXIT_SUCCESS){
-                        perror("El proceso hijo terminó con éxito");
-                        //throw
+                        perror("El proceso hijo terminó sin éxito");
+                        return -1;
                     }
                 } else {
                     std::cout << "El proceso hijo terminó de forma anormal" << std::endl;
                 }
-                index = respounse.find("EOF");
-                respounse = respounse.substr(0, index);
-                close(infd[1]);
+                index = response.find("EOF");
+                response = response.substr(0, index);
                 close(outfd[0]);
+                stages = BEGIN_CGI_EXEC;
                 return -1;
             }
             else{
                 return outfd[0];
             }
-
     }
     return -1;
 }
 
-std::string CgiHandler::getCgiRespounse() const {
-    return respounse;
+
+std::string CgiHandler::getCgiResponse() const {
+    return response;
 }
 
 
