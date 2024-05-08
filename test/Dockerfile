@@ -2,7 +2,7 @@ FROM debian:bullseye
 
 WORKDIR /code
 
-RUN apt update && apt install -y build-essential make
-RUN echo 'alias l="ls -la"' >> ~/.bashrc
+RUN apt update && apt install -y build-essential make git golang \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://go.googlesource.com/go goroot
+RUN echo 'alias l="ls -la"' >> ~/.bashrc

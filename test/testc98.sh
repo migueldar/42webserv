@@ -1,4 +1,4 @@
 #!/bin/bash
 
-docker build $(dirname $0) -t pruebas
-docker run -it --rm -v=$PWD:/code pruebas
+docker build . -t pruebas
+docker run -it --network=host --rm -v="$PWD:/code" pruebas
