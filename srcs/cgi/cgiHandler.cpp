@@ -259,7 +259,7 @@ void	CgiHandler::parseAUTH_TYPE(void){
 
 void	CgiHandler::parseCONTENT_LENGTH(void){
     if(req.body != ""){
-        metaVariables["CONTENT_LENGTH"] = std::to_string(req.body.length());
+        metaVariables["CONTENT_LENGTH"] = toString(req.body.length());
     }
     return;
 }
