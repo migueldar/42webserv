@@ -4,10 +4,6 @@ TODO
 
 - gestionar errores en las llamadas al sistema
 
-- mirar tema de reusar sockets
-
-- ver como usar los fds en non-blocking mode
-
 - tengo que bajar el puerto hasta joan                                
 
 - añadir parseo pctEnconded en URI DESPUES de dividir por barras e interrogaciones
@@ -16,7 +12,9 @@ TODO
 
 - reflexionar sobre almacenamiento (particularmente imagenes y videos) en deques, porque gestiona la memoria en bloques de 512
 
+- en el mac hay un buffer de 10000 caracteres por socket al que le puedes escribir por cada socket, si quieres escribir mas tienes que hacer mas de un send
 
+- probablemente lo primero que haya que hacer cuando lancemos el fork sea matar TODOS los fds (para no tener el mismo fd escuchando en dos procesos), pensar en ello
 
 
 CONCLUSIONES

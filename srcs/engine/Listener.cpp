@@ -4,6 +4,16 @@ Listener::Listener(int port, std::vector<Server>& servers): port(port), servers(
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock == -1)
         throw std::runtime_error("socket error: " + std::string(strerror(errno)));
+	
+	int aux = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &aux, 4) == -1)
+		throw std::runtime_error("setsockopt error: " + std::string(strerror(errno)));
+
+	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
+		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
+
+	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
+		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 
 	sockaddr.sin_family = AF_INET;
 	sockaddr.sin_addr.s_addr = INADDR_ANY;
@@ -30,7 +40,7 @@ const Connection Listener::handleEvent(short revents) const {
 	int new_socket = accept(sock, NULL, NULL);
 
 	if (new_socket == -1)
-		perror("accept");
+		throw std::runtime_error("accept error: " + std::string(strerror(errno)));
 
 	return Connection(new_socket, servers);
 }
