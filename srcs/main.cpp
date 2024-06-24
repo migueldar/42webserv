@@ -23,7 +23,6 @@ int main(int argc, char **argv) {
 
 	if (argc > 2)
 		std::cerr << "Usage: ./webserv [configuration ParserFile]" << std::endl;
-
 	if (argc == 2)
 		configRoute = argv[1];
 	try {
@@ -35,11 +34,9 @@ int main(int argc, char **argv) {
 	}
 
 	std::vector<Listener>	listeners = createListeners(config);
-	for (unsigned long i = 0; i < listeners.size(); i++) {
-		std::cout << listeners[i].port << std::endl;
-	}
-	PollHandler	po = createPollHandler(listeners);
-	// while (1)
-	// 	po.pollMode();
+	PollHandler				po = createPollHandler(listeners);
+	po.listenMode();
+	while (1)
+		po.pollMode();
 	return 0;
 }

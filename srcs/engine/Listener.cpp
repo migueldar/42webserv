@@ -2,6 +2,7 @@
 
 Listener::Listener(unsigned port, const std::vector<Server>& servers): port(port), servers(servers) {
 	sock = socket(AF_INET, SOCK_STREAM, 0);
+
 	if (sock == -1)
         throw std::runtime_error("socket error: " + std::string(strerror(errno)));
 	
