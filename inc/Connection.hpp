@@ -13,14 +13,14 @@ class Connection {
 		bool		checkTime;
 
 	public:
-		int					sock;
-		std::vector<Server>	&servers;
+		int							sock;
+		const std::vector<Server>	&servers;
 		//if set to NULL, no request is being parsed currently
-		Request				*req;
+		Request						*req;
 		//saves data which hasnt being processed by a request yet
-		std::string			data;
+		std::string					data;
 
-		Connection(int socket, std::vector<Server> &servers);
+		Connection(int socket, const std::vector<Server> &servers);
 		Connection(const Connection &other);
 		~Connection();
 		void startTimer();
