@@ -12,6 +12,8 @@ bool isRegularFile(const string& filePath) {
     return S_ISREG(fileInfo.st_mode);
 }
 
+ParserFile::ParserFile() {}
+
 ParserFile::~ParserFile() {
     configParserFile.close();
 }
@@ -39,6 +41,10 @@ ParserFile::ParserFile(string routeToParserFile): configParserFile(routeToParser
         printServersByPort(it->first);
 }
 
+ParserFile& ParserFile::operator=(ParserFile const& rhs) {
+	this->serverDefinitions = rhs.serverDefinitions;
+	return *this;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -439,4 +445,8 @@ void ParserFile::fillServers() {
     if(brace != 0){
         throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config: " + wordLines[0]);
     }
+}
+
+const std::map<unsigned int, std::vector<Server> >& ParserFile::getServers() const {
+	return serverDefinitions;
 }

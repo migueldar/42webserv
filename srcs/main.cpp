@@ -1,22 +1,42 @@
 #include "webserv.hpp"
 
+std::vector<Listener> createListeners(const ParserFile& file) {
+	std::vector<Listener>								ret;
+	const std::map<unsigned int, std::vector<Server> >	servers = file.getServers();
+
+	for (std::map<unsigned int, std::vector<Server> >::const_iterator i = servers.begin(); i != servers.end(); i++)
+		ret.push_back(Listener(i->first, i->second));
+	return ret;
+}
+
+PollHandler	createPollHandler(std::vector<Listener>& listeners) {
+	PollHandler	ret;
+
+	for (std::vector<Listener>::iterator i = listeners.begin(); i != listeners.end(); i++)
+		ret.addListener(*i);
+	return ret;
+}
+
 int main(int argc, char **argv) {
-	int ret = 0;
-	std::string configRoute;
+	std::string				configRoute = "";
+	ParserFile				config;
 
 	if (argc > 2)
 		std::cerr << "Usage: ./webserv [configuration ParserFile]" << std::endl;
-
-	if(argc == 2)
+	if (argc == 2)
 		configRoute = argv[1];
-	else
-		configRoute = "";
-	try{
-		ParserFile mainObj(configRoute);
+	try {
+		config = ParserFile(configRoute);
 	}
-	catch(std::exception &e){
-		std::cout << e.what() << std::endl;
-		ret =  1;
+	catch (std::exception &e) {
+		std::cerr << e.what() << std::endl;
+		return 1;
 	}
-	return ret;
+
+	std::vector<Listener>	listeners = createListeners(config);
+	PollHandler				po = createPollHandler(listeners);
+	po.listenMode();
+	while (1)
+		po.pollMode();
+	return 0;
 }

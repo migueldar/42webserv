@@ -14,8 +14,10 @@ class ParserFile {
         //ATRIBUTES------------------------------------------------------------------·#
 
         //METHODS--------------------------------------------------------------------·#
+		ParserFile();
         ParserFile(std::string routeToParserFile);
         ~ParserFile(void);
+		ParserFile &operator=(ParserFile const& rhs);
 
         void addServerDefinition(Server newServer);
 
@@ -27,10 +29,12 @@ class ParserFile {
 
         int checkServerName(const std::vector<Server>& servers, const std::string& keyToFind);
 
+		const std::map<unsigned int, std::vector<Server> >& getServers() const;
+
     private:
         //ATRIBUTES------------------------------------------------------------------·#
         //Server vector
-         std::map<unsigned int, std::vector<Server> > serverDefinitions;
+        std::map<unsigned int, std::vector<Server> > serverDefinitions;
         
 };
 
