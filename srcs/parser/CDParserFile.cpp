@@ -23,17 +23,17 @@ ParserFile::ParserFile(string routeToParserFile): configParserFile(routeToParser
     }
 
     if(!isRegularFile(routeToParserFile)){
-        throw runtime_error("Error: Bad file, file route:" + routeToParserFile);
+        throw runtime_error("[ERROR]: Bad file, file route:" + routeToParserFile);
     }
 
     if (!configParserFile.is_open()) {
-        throw runtime_error("Error: ParserFile couldn't be opened: " + routeToParserFile);
+        throw runtime_error("[ERROR]: ParserFile couldn't be opened: " + routeToParserFile);
     }
 
     fillServers();
 
     if(serverDefinitions.size() == 0)
-        throw runtime_error("Error: no servers defined");
+        throw runtime_error("[ERROR]: no servers defined");
 
     for(map<unsigned int, vector<Server> >::iterator it = serverDefinitions.begin(); it != serverDefinitions.end(); ++it)
         printServersByPort(it->first);
@@ -96,7 +96,14 @@ void ParserFile::printServersByPort(unsigned int targetPort) {
     }
 }
 
-
+int ParserFile::checkServerName(const vector<Server>& servers, const string& keyToFind) {
+    for(vector<Server>::const_iterator iter = servers.begin();  iter != servers.end(); ++iter){
+        if((*iter).serverName == keyToFind){
+            return 1;
+        }
+    }   
+    return 0;
+}
 
 int ParserFile::checkRoutesServer(const map<string, Location>& routes, const string& keyToFind) {
     map<string, Location>::const_iterator iter = routes.find(keyToFind);
@@ -132,7 +139,7 @@ void parseMethods(vector<string> wordLines, int lineNum, bool *aux){
         else if(wordLines[i] == "DELETE" && aux[DELETE] == 0)
             aux[DELETE] = 1;
         else
-            throw runtime_error("Error line " + toString(lineNum) + ": bad config method:" + wordLines[i]);
+            throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config method:" + wordLines[i]);
     }
 }
 
@@ -173,7 +180,7 @@ unsigned long parsePort(string portString){
     }
     
     if(flag == 1)
-        throw runtime_error("Error line: bad config port: " + portString); 
+        throw runtime_error("[ERROR] line: bad config port: " + portString); 
 
     return port;
 }
@@ -235,7 +242,7 @@ void ParserFile::fillServers() {
         removeLastSemicolon(wordLines[wordLines.size() - 1]);
 
         if(wordLines[wordLines.size() - 1] == "")
-            throw runtime_error("Error line " + toString(lineNum) + ": bad config no input: ';'");
+            throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config no input: ';'");
 
         ConfigType configType = stringToConfigType(wordLines[0], configTypeMap);
 
@@ -246,7 +253,7 @@ void ParserFile::fillServers() {
                     ++brace;
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config server:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config server:" + *(--wordLines.end()));
                 break;
 
             //(server_name)
@@ -256,7 +263,7 @@ void ParserFile::fillServers() {
                     server.serverName = wordLines[1];
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config server_name:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config server_name:" + *(--wordLines.end()));
                 break;
 
             //(port)
@@ -266,7 +273,7 @@ void ParserFile::fillServers() {
                     port = parsePort(wordLines[1]);
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config port:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config port:" + *(--wordLines.end()));
                 break;
 
             //(location)    
@@ -275,14 +282,14 @@ void ParserFile::fillServers() {
                     setValuesLocation(configTypeMap);
                     location = Location();
                     if(wordLines[1][0] != '/')
-                        throw runtime_error("Error line " + toString(lineNum) + ": not valid location dir:" + wordLines[1]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid location dir:" + wordLines[1]);
                     if(checkRoutesServer(server.getRoutes(), wordLines[1]) == 1)
-                        throw runtime_error("Error line " + toString(lineNum) + ": duplicated location dir:" + wordLines[1]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": duplicated location dir:" + wordLines[1]);
                     routeKey = wordLines[1];
                     ++brace;
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config location:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config location:" + *(--wordLines.end()));
                 break;
 
             //(redirect)    
@@ -290,27 +297,27 @@ void ParserFile::fillServers() {
                 configTypeMap["redirect"] = UNKNOWN;
                 if(wordLines.size() == 2 && brace == 2){
                     if(wordLines[1][0] != '/')
-                        throw runtime_error("Error line " + toString(lineNum) + ": not valid redirect dir:" + wordLines[1]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid redirect dir:" + wordLines[1]);
 
                     location.redirectionUrl = wordLines[1];
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config redirection:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config redirection:" + *(--wordLines.end()));
                 break;
             
             //(error_page)
             case ERROR_PAGE:
                 if(wordLines.size() == 3 && brace == 1){
                     if(!isClientErrorHttpCode(wordLines[1]))
-                        throw runtime_error("Error line " + toString(lineNum) + ": error_page status code error: " + wordLines[1]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": error_page status code error: " + wordLines[1]);
 
                     if(server.getPageStatus(wordLines[1]) != "")
-                        throw runtime_error("Error line " + toString(lineNum) + ": error_page status code already used: " + wordLines[1]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": error_page status code already used: " + wordLines[1]);
 
                     server.addErrorPage(wordLines[1], wordLines[2]);
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config error_page:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config error_page:" + *(--wordLines.end()));
                 break;
             
             //(root)
@@ -318,12 +325,12 @@ void ParserFile::fillServers() {
                 configTypeMap["root"] = UNKNOWN;
                 if(wordLines.size() == 2 && brace == 2){
                     if(wordLines[1][0] != '/')
-                        throw runtime_error("Error line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
 
                     location.root = wordLines[1];
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config root:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config root:" + *(--wordLines.end()));
                 break;
 
             //(index)
@@ -333,7 +340,7 @@ void ParserFile::fillServers() {
                     location.defaultPath = wordLines[1];
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config index:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config index:" + *(--wordLines.end()));
                 break;
 
             //(auto_index)
@@ -345,10 +352,10 @@ void ParserFile::fillServers() {
                     else if(wordLines[1] == "false")
                         location.autoindex = 0;
                     else 
-                        throw runtime_error("Error line " + toString(lineNum) + ": auto_index not valid config " + wordLines[1]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": auto_index not valid config " + wordLines[1]);
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config auto_index:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config auto_index:" + *(--wordLines.end()));
                 break;
             
             //(methods)
@@ -365,24 +372,24 @@ void ParserFile::fillServers() {
                         location.methods[DELETE] = 0;
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config methods:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config methods:" + *(--wordLines.end()));
                 break;
 
             case CGI:
                 if (wordLines.size() == 3 && brace == 2) {
                     if(wordLines[1].find('.') != 0 || wordLines[1].find('.', 1) != std::string::npos)
-                        throw runtime_error("Error line " + toString(lineNum) + ": CGI error, not valid extension: " + wordLines[1]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": CGI error, not valid extension: " + wordLines[1]);
                     if(wordLines[2][0] != '/')
-                        throw runtime_error("Error line " + toString(lineNum) + ": CGI error, invalid executable route: " + wordLines[2]);
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": CGI error, invalid executable route: " + wordLines[2]);
                     if(location.cgi[wordLines[1]] == ""){
                         location.cgi[wordLines[1]] = wordLines[2];
                     }
                     else{
-                        throw runtime_error("Error line " + toString(lineNum) + ": duplicated CGI rule:" + *(--wordLines.end()));
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": duplicated CGI rule:" + *(--wordLines.end()));
                     }
 
                 } else {
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config CGI:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config CGI:" + *(--wordLines.end()));
                 }
                 break;
 
@@ -392,22 +399,26 @@ void ParserFile::fillServers() {
                     --brace;
                     if(brace == 0){
                         if(configTypeMap["port"] != UNKNOWN){
-                            throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing port");
+                            throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config, missing port");
                         }
                         if(!server.getNumRoutes()){
-                            throw runtime_error("Error line " + toString(lineNum) + ": bad config, missing location");
+                            throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config, missing location");
                         }
 
-                        if(checkAllRoutesByServerVec(serverDefinitions[port], server.getKeysRoutes()) == 1){
-                            throw runtime_error("Error line " + toString(lineNum) + ": one route or more is already registered to this port");
+                        if(!serverDefinitions[port].empty() && server.serverName != "" && checkServerName(serverDefinitions[port], server.serverName)){
+                            throw runtime_error("[ERROR] line " + toString(lineNum) + ": one server on this port with this server name");
                         }
+
+                        if(!serverDefinitions[port].empty() && server.serverName == "")
+                            std::cout << "[INFO] line " + toString(lineNum) + ": server no name and not default, this server wont be registered." << std::endl;
                         
-                        serverDefinitions[port].insert(serverDefinitions[port].begin(), server);
+                        if((serverDefinitions[port].empty() && server.serverName == "" )|| server.serverName != "")
+                            serverDefinitions[port].insert(serverDefinitions[port].begin(), server);
                         setValuesConfigTypeMap(configTypeMap, 1);
                     }
                     if(brace == 1){
                         if(configTypeMap["index"] != UNKNOWN && configTypeMap["root"] != UNKNOWN && configTypeMap["redirection"] != UNKNOWN)
-                            throw runtime_error("Error line " + toString(lineNum) + ": invalid location");
+                            throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location");
 
                         server.addLocation(routeKey, location);
                         
@@ -415,17 +426,17 @@ void ParserFile::fillServers() {
                     }
                 }
                 else
-                    throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config: " + wordLines[0]);
                 break;
             default:
-                throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
+                throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config: " + wordLines[0]);
             break;
         }
         if(brace == 0 && configType != BRACE_CLOSE){
-            throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
+            throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config: " + wordLines[0]);
         }            
     }
     if(brace != 0){
-        throw runtime_error("Error line " + toString(lineNum) + ": bad config: " + wordLines[0]);
+        throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config: " + wordLines[0]);
     }
 }
