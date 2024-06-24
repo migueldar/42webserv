@@ -1,6 +1,6 @@
 #include "webserv.hpp"
 
-Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()), serverName("undefinedServerName") {
+Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()), serverName("") {
 }
 
 

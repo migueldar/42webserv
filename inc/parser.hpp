@@ -13,7 +13,7 @@
 #include "CDLocation.hpp"
 #include "CDServer.hpp"
 
-#define DEFAULT_CONFIG_ParserFile "test/nginx/conf/errmaybe1.conf"
+#define DEFAULT_CONFIG_ParserFile "test/nginx/conf/errmaybe2.conf"
 
 enum methodsEnum{
     GET,
