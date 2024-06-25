@@ -33,10 +33,12 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	std::vector<Listener>	listeners = createListeners(config);
-	PollHandler				po = createPollHandler(listeners);
-	po.listenMode();
-	while (1)
-		po.pollMode();
+	#if ONLY_PARSING_CONF == 0
+		std::vector<Listener>	listeners = createListeners(config);
+		PollHandler				po = createPollHandler(listeners);
+		po.listenMode();
+		while (1)
+			po.pollMode();
+	#endif
 	return 0;
 }

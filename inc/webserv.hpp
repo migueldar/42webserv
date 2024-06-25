@@ -24,4 +24,6 @@
 #include "parser.hpp"
 #include "http.hpp"
 
+#define ONLY_PARSING_CONF 0
+
 #endif
