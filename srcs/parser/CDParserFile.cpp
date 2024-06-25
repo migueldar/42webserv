@@ -418,8 +418,9 @@ void ParserFile::fillServers() {
                         if(!serverDefinitions[port].empty() && server.serverName == "")
                             std::cout << "[INFO] line " + toString(lineNum) + ": server no name and not default, this server wont be registered." << std::endl;
                         
-                        if((serverDefinitions[port].empty() && server.serverName == "" )|| server.serverName != "")
+                        if((serverDefinitions[port].empty() && server.serverName == "" ) || server.serverName != "")
                             serverDefinitions[port].insert(serverDefinitions[port].begin(), server);
+
                         setValuesConfigTypeMap(configTypeMap, 1);
                     }
                     if(brace == 1){
