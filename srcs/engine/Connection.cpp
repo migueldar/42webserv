@@ -66,11 +66,12 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		//DELETE################################CGI_TESTING########################################
 		std::cout << *req << std::endl;
 		if(CGITokenSelected != ""){
-			Location loc("/home/jsanfeli/Desktop/PROYECTOS_C++_STUDENT/42webserv/test/python/");
+			Location loc("/home/jsanfeli/sgoinfre/42webserv/test/python/");
 			loc.cgi[CGITokenSelected] = "/usr/bin/python3";
 			req->address = "192.168.4.1";
 			std::string port = "8080";
 			std::string querystring = "arguentosRararos=1";
+			std::cout << "BODY: "<< req->body << std::endl;
 			CgiHandler newCgi = CgiHandler(loc, CGITokenSelected, port, *req, req->uri, querystring);
 			while(newCgi.handleCgiEvent() != -1);
 			std::cout << newCgi.getCgiResponse() << std::endl;
