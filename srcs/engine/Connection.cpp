@@ -1,7 +1,7 @@
 #include "webserv.hpp"
 #include <sys/poll.h>
 
-Connection::Connection(int sock, const std::vector<Server>& servers): sock(sock), servers(servers), req(NULL), data("") {
+Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), data("") {
 	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
@@ -10,7 +10,7 @@ Connection::Connection(int sock, const std::vector<Server>& servers): sock(sock)
 }
 
 //if smt around here fails, check this, bc its not currently a full copy
-Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), sock(other.sock), servers(other.servers), req(other.req), data(other.data) {}
+Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), port(other.port), sock(other.sock), servers(other.servers), req(other.req), data(other.data) {}
 
 Connection::~Connection() {}
 
@@ -64,6 +64,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	//si hay un error en la request (4xx, 5xx) devolvemos Connection: close y cerramos conexion
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
+		std::cout << *req << std::endl;
 
 		//probably have to handle send return value
 		send(sock, "HTTP/1.1 200 OK\r\n\

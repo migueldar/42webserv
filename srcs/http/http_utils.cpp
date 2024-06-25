@@ -43,6 +43,22 @@ bool isFieldLine(std::string& str) {
 	return true;
 }
 
+//defined in RFC 3986
+bool isQuery(std::string str) {
+	for (std::string::const_iterator it = str.begin(); it != str.end(); it++)
+		if (*it == '%') {
+			if (!isxdigit(it[1]) || !isxdigit(it[2]))
+				return false;
+			it++; it++;
+		}
+		else if (!(isalnum(*it) || *it == '-' || *it == '.' || *it == '_' || *it == '~'\
+				|| *it == '!' || *it == '$' || *it == '&' || *it == '\'' || *it == '('\
+				|| *it == ')' || *it == '*' || *it == '+' || *it == ',' || *it == ';'\
+				|| *it == '=' || *it == ':' || *it == '@' || *it == '/' || *it == '?'))
+			return false;
+	return true;
+}
+
 std::string parsePctEncoding(std::string str) {
 	std::string target;
 
@@ -84,10 +100,10 @@ static bool isRegName(std::string& str) {
 		else if (!(isalnum(*it) || *it == '-' || *it == '.' || *it == '_' || *it == '~'\
 				|| *it == '!' || *it == '$' || *it == '&' || *it == '\'' || *it == '('\
 				|| *it == ')' || *it == '*' || *it == '+' || *it == ',' || *it == ';'\
-				|| *it == '=' || *it == ':'))
+				|| *it == '='))
 			return false;
 	return true;
-} 
+}
 
 //defined in RFC 3986, without IP-literal
 bool isHost(std::string str) {

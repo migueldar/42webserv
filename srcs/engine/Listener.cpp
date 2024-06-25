@@ -43,5 +43,5 @@ const Connection Listener::handleEvent(short revents) const {
 	if (new_socket == -1)
 		throw std::runtime_error("accept error: " + std::string(strerror(errno)));
 
-	return Connection(new_socket, servers);
+	return Connection(port, new_socket, servers);
 }

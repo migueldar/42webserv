@@ -6,6 +6,7 @@
 bool		isToken(std::string& str);
 bool		isSegment(std::string& str);
 bool		isFieldLine(std::string& str);
+bool		isQuery(std::string str);
 bool		isIPV4(std::string str);
 bool		isHostHeader(std::string& str);
 bool		isAllDigits(std::string& str);
