@@ -4,10 +4,6 @@ TODO
 
 - gestionar errores en las llamadas al sistema
 
-- tengo que bajar el puerto hasta joan                                
-
-- añadir parseo pctEnconded en URI DESPUES de dividir por barras e interrogaciones
-
 - add goto CGI confirmation (find .py or .go)
 
 - reflexionar sobre almacenamiento (particularmente imagenes y videos) en deques, porque gestiona la memoria en bloques de 512
@@ -16,10 +12,9 @@ TODO
 
 - probablemente lo primero que haya que hacer cuando lancemos el fork sea matar TODOS los fds (para no tener el mismo fd escuchando en dos procesos), pensar en ello
 
-
 CONCLUSIONES
 
-- tanto GET como DELETE, si me metes body la chupas, va para la proxima request
++ tanto GET como DELETE, si me metes body la chupas, va para la proxima request
 
 - reflexionar sobre de cuanto en cuanto leo, y como gestionar la data extra en las conexiones
 + Gestionarlo leyendo de x en x, el metodo addData de la request devuelve la data que no ha usado y la data\
@@ -31,5 +26,6 @@ CONCLUSIONES
   las que nos pueden hacer DDOS.
 
 - reflexionar sobre que pasa cuando el Host es una ip o localhost en vez de un regname, a que server lo mando?? 
-+ Aqui es donde entra el default y nuestra interpretacion primera era correcta, el equipo de pepe
-  interpreta que el "host" del subject es la ip propia, asi que siempre es el mismo, por tanto el default del server_name es a nivel de port
++ Lo mando al default, si hay un servidor con nombre localhost pues lo mando al localhost
+
++ wether the method used is valid should be checked in the Response creation (as it depends on locations, not ports)

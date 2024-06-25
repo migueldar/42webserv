@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 
-Request::Request(): rawData(""), target(""), body(""), parsed(NOTHING) {}
+Request::Request(): rawData(""), queryParams(""), body(""), parsed(NOTHING) {}
 
 Request::~Request() {}
 
@@ -81,22 +81,42 @@ void Request::parseMethod(std::string& str) {
 }
 
 void Request::parseRequestTarget(std::string& str) {
-	std::string::const_iterator it = str.begin();
-	std::string aux;
+	std::string::const_iterator it;
+	std::string 				aux;
+	std::string					queryString, targetString;
+	size_t						positionQuery;
 
-	while (it != str.end()) {
+	positionQuery = str.find("?");
+	if (positionQuery == std::string::npos)
+		targetString = str;
+	else
+	{
+		targetString = str.substr(0, positionQuery);
+		queryString = str.substr(positionQuery + 1);
+	}
+	it = targetString.begin();
+
+	//check target
+	while (it != targetString.end()) {
 		if (*it != '/')
 			throw BadRequest();
 		it++;
 		aux.clear();
-		while (it != str.end() && *it != '/') {
+		while (it != targetString.end() && *it != '/') {
 			aux += *it;
 			it++;
 		}
+		if (aux == "" && it == targetString.end())
+			break;
 		if (!isSegment(aux))
 			throw BadRequest();
+		target.push_back(parsePctEncoding(aux));
 	}
-	target = str;
+
+	//check query
+	if (!isQuery(queryString.substr(0, queryString.find('#'))))
+		throw BadRequest();
+	queryParams = parsePctEncoding(queryString.substr(0, queryString.find('#')));
 }
 
 void Request::parseVersion(std::string& str) {
@@ -270,7 +290,11 @@ std::ostream& operator<<(std::ostream& o, Request const& prt) {
 			break ;
 	}
 	o << std::endl << std::endl;
-	o << "Target: " << prt.target << std::endl << std::endl;
+	o << "Target: ";
+	for (std::vector<std::string>::const_iterator it = prt.target.begin(); it != prt.target.end(); it++)
+		o << *it << ' '; 
+	o << std::endl;
+	o << "Query: " << prt.queryParams << std::endl << std::endl;
 	o << "Headers: " << std::endl;
 	for (std::map<std::string, std::string>::const_iterator it = prt.headers.begin(); it != prt.headers.end(); it++)
 		o << "    " << it->first << ": " << it->second << std::endl; 
