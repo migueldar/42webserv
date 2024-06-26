@@ -151,6 +151,7 @@ void Request::parseRequestLine(std::string line) {
 	}
 	if (it == line.end())
 		throw BadRequest();
+	
 	parseRequestTarget(aux);
 	std::cout << "req target parsed" << std::endl;
 

@@ -16,4 +16,8 @@ std::string	getHTTPLine(std::string::const_iterator& it, std::string::const_iter
 std::string toLower(const std::string &str);
 long		hexStringToLong(std::string str);
 
+const Server &getServerByHost(const std::vector<Server> &servers, std::string host);
+const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
+std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted);
+
 #endif

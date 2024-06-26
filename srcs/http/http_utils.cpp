@@ -1,7 +1,9 @@
 #include <iostream>
 #include <algorithm>
 #include "Request.hpp"
+#include "Response.hpp"
 #include "http.hpp"
+#include "unistd.h"
 
 //defined in RFC 9110
 bool isToken(std::string& str) {
@@ -169,4 +171,57 @@ long hexStringToLong(std::string str) {
     if (!(iss >> std::hex >> ret)) 
 		return ret;
     return ret;
+}
+
+const Server &getServerByHost(const std::vector<Server> &servers, std::string host){
+	for (unsigned long i = 0; i < servers.size(); i++){
+		if(servers[i].serverName == host){
+			return servers[i];
+		}
+	}
+	return *(servers.end());
+}
+
+bool checkAccess(const std::string& path){
+	if (access(path.c_str(), F_OK) != -1 && access(path.c_str(), R_OK) == 0) {
+		return true;
+	}
+	return false;
+}
+
+std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted){
+	std::string reconstructedPath = "/";
+
+    if (!pathSplitted.empty()) {
+        for (size_t i = 0; i < pathSplitted.size(); ++i) {
+            reconstructedPath += pathSplitted[i] + "/";
+        }
+    }
+	return(reconstructedPath);
+}
+
+const Location& getLocationByRoute(std::string reconstructedPath, const Server& server) {
+    std::string remainingPath = reconstructedPath;
+    while (42) {
+        try {
+            const Location &loc = server.getLocation(remainingPath);
+			std::string auxTest = loc.root + reconstructedPath.substr(remainingPath.size(), reconstructedPath.size());
+            if (checkAccess(auxTest)) {
+                return loc;
+            }
+        } catch (const std::out_of_range&) {
+			//JUST TO CATH WHEN GET LOCATION STD::MAP "AT" METHOD DOESNT FIND REQUESTED LINE 
+        }
+
+		if(remainingPath == "")
+			break;
+
+		size_t lastSlashPos = remainingPath.rfind('/');
+		if (lastSlashPos == std::string::npos)
+			remainingPath = "";
+		else
+			remainingPath = remainingPath.substr(0, lastSlashPos);
+    }
+
+    throw Response::NotFoundException();
 }

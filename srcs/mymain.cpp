@@ -105,7 +105,7 @@ int main() {
 		testReq("POST /%20data/miau/ HTTP/1.9\r\nHost:''\r\n\r\n");
 		testReq("POST /%20data/miau/ HTTP/1.9\r\nHost:''\r\n\r\n");
 		testReq("POST /%20data/miau/?mifgata=?tum#dre%21 HTTP/1.9\r\nHost:''\r\n\r\n");
-		testReq("POST /%20data/miau/?mifgata=?tum%21 HTTP/1.9\r\nHost:''\r\n\r\n");
+		testReq("POST /%20data/miau/a?mifgata=?tum%21 HTTP/1.9\r\nHost:''\r\n\r\n");
 	}
 	////////////
 

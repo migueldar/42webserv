@@ -17,12 +17,14 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 #include "Connection.hpp"
 #include "Listener.hpp"
 #include "PollHandler.hpp"
 #include "parser.hpp"
 #include "http.hpp"
+#include "CDCgiHandler.hpp"
 
 #define ONLY_PARSING_CONF 0
 

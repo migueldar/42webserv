@@ -32,6 +32,10 @@ bool Connection::operator==(const Connection& other) const {
 
 //0 means ok, 1 means remove
 int Connection::handleEvent(struct pollfd& pollfd) {
+	//DELETE################################CGI_TESTING########################################
+	std::string CGITokenSelected = ".py";
+	//DELETE###################################################################################
+
 	if (pollfd.revents & POLLERR) {
 		std::cout << "pollerr" << std::endl;
 		return 1;
@@ -65,13 +69,15 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
 		std::cout << *req << std::endl;
+		
+		Response res(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 
+		res.prepareResponse();
+
+		std::string httpResponse = res.getHttpResponse();
+		
 		//probably have to handle send return value
-		send(sock, "HTTP/1.1 200 OK\r\n\
-Content-Length: 0\r\n\
-Connection: keep-alive\r\n\
-Content-Type: text/plain; charset=utf-8\r\n\
-\r\n", 104, 0);
+		send(sock, httpResponse.c_str(), httpResponse.length(), 0);
 		//call Response constructor, we pass request
 
 		pollfd.events = POLLIN;
@@ -86,7 +92,6 @@ Content-Type: text/plain; charset=utf-8\r\n\
 			req = new Request();
 
 		data = req->addData(data);
-
 		if (req->parsed == Request::ALL) {
 			pollfd.events = POLLOUT;
 			checkTime = false;

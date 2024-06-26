@@ -3,6 +3,7 @@
 
 #include "parser.hpp"
 #include "Request.hpp"
+#include "Response.hpp"
 
 #define SIZE_READ 0x1000
 
