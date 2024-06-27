@@ -173,13 +173,17 @@ long hexStringToLong(std::string str) {
     return ret;
 }
 
-const Server &getServerByHost(const std::vector<Server> &servers, std::string host){
-	for (unsigned long i = 0; i < servers.size(); i++){
-		if(servers[i].serverName == host){
-			return servers[i];
-		}
-	}
-	return *(servers.end());
+const Server& getServerByHost(const std::vector<Server>& servers, std::string host) {
+    std::vector<Server>::const_iterator it;
+
+    for (it = servers.begin(); it != servers.end(); ++it) {
+		std::cout << it->serverName << std::endl;
+        if (it->serverName == host) {
+			std::cout << "entro" << std::endl;
+            return *it;
+        }
+    }
+    return *(servers.end());
 }
 
 bool checkAccess(const std::string& path){

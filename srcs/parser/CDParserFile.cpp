@@ -336,11 +336,13 @@ void ParserFile::fillServers() {
                         throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
                     if(wordLines[1][(wordLines[1]).length() - 1] != '/')
                         wordLines[1] += "/";
-
+                    // TODO: reflexionar si en el parseo una vez un root es encontrado ha de ser confirmado el acceso. Si es que si cabiar check access para revisar mas tippos de accesos de forma singular
+                    // if(!checkAccess(wordLines[1]))
+                    //     throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
                     location.root = wordLines[1];
                 }
                 else
-                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config root:" + *(--wordLines.end()));
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config root not accesible or not enought perms:" + *(--wordLines.end()));
                 break;
 
             //(index)

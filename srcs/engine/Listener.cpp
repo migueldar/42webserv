@@ -1,6 +1,9 @@
 #include "webserv.hpp"
 
 Listener::Listener(unsigned port, const std::vector<Server>& servers): port(port), servers(servers) {
+	std::cout << "LLEGO" << std::endl;
+	std::cout << servers[0].serverName << std::endl;
+
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sock == -1)

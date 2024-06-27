@@ -10,6 +10,8 @@ std::string Response::getHttpResponse(){
 // TODO: Store server for errorPages, isnt stored now becouse isnt needed
 Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(reconstructPathFromVec(req.target)), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), cgiToken(""), port(port), status(START_PREPING_RES) {
     // TODO: remove hardcode
+
+    std::cout << "ENtro" << std::endl;
     httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
 }
 
@@ -17,6 +19,7 @@ Response::~Response(){
 }
 
 const Location& Response::getLocationByRoute(std::string reconstructedPath, const Server& server) {
+    
     std::string remainingPath = reconstructedPath;
     while (42) {
         try {
@@ -44,7 +47,7 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
 }
 
 /**
- * @brief Prepares the response based on the current status.
+ * @brief Prepares the response based on the current response status.
  *
  * This function handles the preparation of the response based on the current status
  * of the Response object. It performs different actions depending on the status,
