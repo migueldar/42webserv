@@ -199,29 +199,3 @@ std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted)
     }
 	return(reconstructedPath);
 }
-
-const Location& getLocationByRoute(std::string reconstructedPath, const Server& server) {
-    std::string remainingPath = reconstructedPath;
-    while (42) {
-        try {
-            const Location &loc = server.getLocation(remainingPath);
-			std::string auxTest = loc.root + reconstructedPath.substr(remainingPath.size(), reconstructedPath.size());
-            if (checkAccess(auxTest)) {
-                return loc;
-            }
-        } catch (const std::out_of_range&) {
-			//JUST TO CATH WHEN GET LOCATION STD::MAP "AT" METHOD DOESNT FIND REQUESTED LINE 
-        }
-
-		if(remainingPath == "")
-			break;
-
-		size_t lastSlashPos = remainingPath.rfind('/');
-		if (lastSlashPos == std::string::npos)
-			remainingPath = "";
-		else
-			remainingPath = remainingPath.substr(0, lastSlashPos);
-    }
-
-    throw Response::NotFoundException();
-}

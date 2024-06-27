@@ -19,6 +19,7 @@ class Connection {
 		const std::vector<Server>	&servers;
 		//if set to NULL, no request is being parsed currently
 		Request						*req;
+		Response 					*res;
 		//saves data which hasnt being processed by a request yet
 		std::string					data;
 

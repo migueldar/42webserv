@@ -1,7 +1,7 @@
 #include "webserv.hpp"
 #include <sys/poll.h>
 
-Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), data("") {
+Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), res(NULL), data("") {
 	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
@@ -32,10 +32,6 @@ bool Connection::operator==(const Connection& other) const {
 
 //0 means ok, 1 means remove
 int Connection::handleEvent(struct pollfd& pollfd) {
-	//DELETE################################CGI_TESTING########################################
-	std::string CGITokenSelected = ".py";
-	//DELETE###################################################################################
-
 	if (pollfd.revents & POLLERR) {
 		std::cout << "pollerr" << std::endl;
 		return 1;
@@ -70,11 +66,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		std::cout << "pollout" << std::endl;
 		std::cout << *req << std::endl;
 		
-		Response res(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
-
-		res.prepareResponse();
-
-		std::string httpResponse = res.getHttpResponse();
+		std::string httpResponse = res->getHttpResponse();
 		
 		//probably have to handle send return value
 		send(sock, httpResponse.c_str(), httpResponse.length(), 0);
@@ -93,8 +85,20 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 
 		data = req->addData(data);
 		if (req->parsed == Request::ALL) {
-			pollfd.events = POLLOUT;
 			checkTime = false;
+
+			if(res == NULL)
+				res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
+			
+			int fdRet = 0;
+			while(fdRet == 0)
+				fdRet = res->prepareResponse();
+			if(fdRet == -1){
+				pollfd.events = POLLOUT;
+				delete res;
+			}
+
+			//ELSE INSERT FDRET AL POLL COMPLEJO, POR QUE CUANDO LEEMOS EL CONTENIDO DE UN ARCHIVO ES DISTINTO QUE CUANDO PROCESAMOS UN CGI
 		}
 	}
 

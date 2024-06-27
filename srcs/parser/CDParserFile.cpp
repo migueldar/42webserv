@@ -429,9 +429,13 @@ void ParserFile::fillServers() {
 
                         setValuesConfigTypeMap(configTypeMap, 1);
                     }
-                    if(brace == 1){
+                    if(brace == 1){ 
                         if(configTypeMap["index"] != UNKNOWN && configTypeMap["root"] != UNKNOWN && configTypeMap["redirection"] != UNKNOWN)
                             throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location");
+                        
+                        // TODO: Stablish if this condition should be set only to root and redirect becouse if we only have an index we do nothing
+                        // if(configTypeMap["root"] == ROOT && configTypeMap["redirection"] == REDIRECT)
+                        //     throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location");
 
                         server.addLocation(routeKey, location);
                         

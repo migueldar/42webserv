@@ -38,6 +38,7 @@ class CgiHandler {
 		
 		
 		CgiHandler(const Location &loc, std::string &tokenCGI, std::string &port, Request &req, std::vector<std::string> &uri, std::string &query_string);
+		CgiHandler(const CgiHandler& other);
 		~CgiHandler();
 		void 	initDictParser(void);
 		int 	handleCgiEvent();
@@ -64,7 +65,6 @@ class CgiHandler {
 		std::string getCgiResponse() const ;
 		
 	private:
-		CgiHandler();
 		std::string												tokenCGI;
 		std::map<enum metaVariables, void(CgiHandler::*)()> 	methodMap;
 		std::string 											body;

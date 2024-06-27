@@ -19,5 +19,6 @@ long		hexStringToLong(std::string str);
 const Server &getServerByHost(const std::vector<Server> &servers, std::string host);
 const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted);
+bool checkAccess(const std::string& path);
 
 #endif

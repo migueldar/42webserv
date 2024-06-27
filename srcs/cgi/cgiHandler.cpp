@@ -29,6 +29,14 @@ CgiHandler::CgiHandler(const Location &loc, std::string &tokenCGI, std::string &
     script = loc.root + script;
 }
 
+CgiHandler::~CgiHandler() {
+}
+
+CgiHandler::CgiHandler(const CgiHandler& other)
+    : tokenCGI(other.tokenCGI), port(other.port), req(other.req), uri(other.uri), query_string(other.query_string), loc(other.loc), env(NULL) {
+}
+
+
 int CgiHandler::handleCgiEvent() {
     static enum CGI_STAGES stages = BEGIN_CGI_EXEC;
     static int infd[2], outfd[2], errfd[2]; // Se añade un nuevo pipe para la salida de error
@@ -67,6 +75,7 @@ int CgiHandler::handleCgiEvent() {
                 stages = WRITE_CGI_EXEC;
                 return infd[1];
             }
+            
         case WRITE_CGI_EXEC:
             bytesWritten = write(infd[1], req.body.c_str(), req.body.length());
             close(infd[1]);
@@ -76,6 +85,7 @@ int CgiHandler::handleCgiEvent() {
             }
             stages = READ_CGI_EXEC;
             return outfd[0]; 
+            
         case READ_CGI_EXEC:
             char buffer[SIZE_READ];
             bytesRead = read(outfd[0], buffer, SIZE_READ);
@@ -116,11 +126,6 @@ int CgiHandler::handleCgiEvent() {
 
 std::string CgiHandler::getCgiResponse() const {
     return response;
-}
-
-
-
-CgiHandler::~CgiHandler(){
 }
 
 void CgiHandler::initDictParser(void){
@@ -182,8 +187,6 @@ void CgiHandler::parseSCRIPT_NAME(void) {
     }
     return;
 }
-
-
 
 void	CgiHandler::parsePATH_INFO(void){
     std::string pathinfo = "";

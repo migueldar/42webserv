@@ -3,19 +3,18 @@
 
 #include "parser.hpp"
 #include "Request.hpp"
+#include "CDCgiHandler.hpp"
 
 class Response {
-    private:
-        std::string     header;
-        std::string     body;
-        std::string     httpResponse;
-
-        const Server    &server;
-        Request         req;
-        std::string     reconstructPath;
-        std::string     cgiToken;
-        std::string     port;
     public:
+
+        enum responseStages{
+            START_PREPING_RES = 0,
+            WAITING_FOR_CGI,
+            PROCESSING_RES,
+            GET_RESPONSE,
+        };
+
         //Response();
         class NotFoundException: public std::exception {
 			public:
@@ -27,8 +26,29 @@ class Response {
         Response(std::string port, const Server& server, Request req);
         ~Response();
 
-        void prepareResponse();
+        int prepareResponse();
         std::string getHttpResponse();
+        const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
+
+        int handleStartPrepingRes(const std::string& auxTest);
+        int handleWaitingForCgi();
+        void handleGetResponse();
+    
+        void handleFileNotFound();
+    private:
+        std::string                     header;
+        std::string                     body;
+        std::string                     httpResponse;
+        std::string                     reconstructPath;
+
+        const Location                  &loc;
+        CgiHandler                      *newCgi;
+        Request                         req;
+        std::string                     locationPath;
+        std::string                     cgiToken;
+        std::string                     port;
+
+        enum Response::responseStages   status;
 
 };
 

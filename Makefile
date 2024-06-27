@@ -1,5 +1,5 @@
 NAME := webserv
-SRCS := srcs/mymain.cpp \
+SRCS := srcs/main.cpp \
 		srcs/engine/Connection.cpp \
 		srcs/engine/Listener.cpp \
 		srcs/engine/PollHandler.cpp \
@@ -18,7 +18,7 @@ CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98
 LDFLAGS = -std=c++98
 RM = /bin/rm -rf
 
-ARG = "/test/nginxTesting/conf/ngix0.conf"
+ARG = "test/nginx/conf/nginx1.conf"
 
 all: $(NAME)
 
