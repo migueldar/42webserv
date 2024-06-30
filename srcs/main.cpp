@@ -2,7 +2,7 @@
 
 std::vector<Listener> createListeners(const ParserFile& file) {
 	std::vector<Listener>								ret;
-	const std::map<unsigned int, std::vector<Server> >	servers = file.getServers();
+	const std::map<unsigned int, std::vector<Server> >&	servers = file.getServers();
 
 	for (std::map<unsigned int, std::vector<Server> >::const_iterator i = servers.begin(); i != servers.end(); i++)
 		ret.push_back(Listener(i->first, i->second));
