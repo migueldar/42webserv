@@ -1,0 +1,63 @@
+- poll (pollhandler)
+
+	- EINTR  A signal occurred before any requested event; see signal(7).
+	+ signal .
+
+	- ENOMEM Unable to allocate memory for kernel data structures.
+	+ memory .
+
+
+- accept (listener)
+
+	- ECONNABORTED
+		A connection has been aborted.
+	+ throw, log but not quit .
+
+	- EINTR  The system call was interrupted by a signal that was caught before a valid connection arrived; see signal(7).
+	+ signal .
+
+	- EMFILE The per-process limit on the number of open file descriptors has been reached. 
+	+ throw, log but not quit .
+
+	- ENFILE The system-wide limit on the total number of open files has been reached.
+	+ throw, log but not quit .
+
+	- ENOBUFS, ENOMEM
+			Not enough free memory.  This often means that the memory allocation is limited by the socket buffer limits, not by  the  system
+			memory.
+	+ throw, log but not quit .
+
+
+- recv (connect)
+
+	- ECONNREFUSED
+		A remote host refused to allow the network connection (typically because it is not running the requested service).
+	+ remove the connection .
+
+	- EINTR  The receive was interrupted by delivery of a signal before any data was available; see signal(7).
+	+ remove the connection .
+
+	- ENOMEM Could not allocate memory for recvmsg().
+	+ memory
+
+
+- send (connect)
+
+	- ECONNRESET
+		Connection reset by peer.
+	+ remove the connection .
+
+	- EINTR  A signal occurred before any data was transmitted; see signal(7).
+	+ signal .
+
+	- ENOMEM No memory available.
+	+ remove the connection .
+
+	ENOTCONN
+			The socket is not connected, and no target has been given.
+	+ remove the connection .
+
+	EPIPE  The local end has been shut down on a connection oriented socket.  In this case, the process will also receive a SIGPIPE unless MSG_NOSIGNAL is set.
+	+ remove the connection .
+
+

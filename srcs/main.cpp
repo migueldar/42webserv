@@ -17,10 +17,16 @@ PollHandler	createPollHandler(std::vector<Listener>& listeners) {
 	return ret;
 }
 
+void signalHandler(int a) {
+	(void) a;
+	exit(0);
+}
+
 int main(int argc, char **argv) {
 	std::string				configRoute = "";
 	ParserFile				config;
 
+	signal(SIGINT, signalHandler);
 	if (argc > 2)
 		std::cerr << "Usage: ./webserv [configuration ParserFile]" << std::endl;
 	if (argc == 2)
@@ -34,11 +40,17 @@ int main(int argc, char **argv) {
 	}
 
 	#if ONLY_PARSING_CONF == 0
-		std::vector<Listener>	listeners = createListeners(config);
-		PollHandler				po = createPollHandler(listeners);
-		po.listenMode();
-		while (1)
-			po.pollMode();
+		try {
+			std::vector<Listener>	listeners = createListeners(config);
+			PollHandler				po = createPollHandler(listeners);
+			po.listenMode();
+			while (1)
+				po.pollMode();	
+		}
+		catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+			return 1;
+		}
 	#endif
 	return 0;
 }
