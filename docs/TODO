@@ -12,6 +12,8 @@ TODO
 
 - probablemente lo primero que haya que hacer cuando lancemos el fork sea matar TODOS los fds (para no tener el mismo fd escuchando en dos procesos), pensar en ello
 
+- para respuestas de entorno a 5*10^6 caracteres el send no da error, pero salta pollerr, se manda bastante parte del mensaje pero no todo, hay que ver como fragmentamos archivos grandes
+
 CONCLUSIONES
 
 + tanto GET como DELETE, si me metes body la chupas, va para la proxima request
