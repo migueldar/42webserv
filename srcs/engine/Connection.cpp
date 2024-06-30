@@ -46,7 +46,6 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	else if (pollfd.revents & POLLIN) {
 		std::cout << "pollin" << std::endl;
 
-
 		int read_res;
 		char *read_buff = new char[SIZE_READ];
 
@@ -72,7 +71,14 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		std::string httpResponse = res->getHttpResponse();
 		
 		//probably have to handle send return value
-		send(sock, httpResponse.c_str(), httpResponse.length(), 0);
+		std::string s = "HTTP/1.1 200 OK\r\n\
+Content-Length: 0\r\n\
+Connection: keep-alive\r\n\
+Content-Type: text/plain; charset=utf-8\r\n\
+\r\n";
+
+		if (send(sock, s.c_str(), 103, 0) <= 0)
+			return 1;
 		//call Response constructor, we pass request
 
 		pollfd.events = POLLIN;

@@ -63,17 +63,23 @@ void PollHandler::removeFromFds(int fd) {
 }
 
 int PollHandler::pollMode() {
-	//must check poll error
 	int	status = poll(fds, listeners.size() + connections.size(), 1000);
 	int	i = 0;
+
+	if (status < 0)
+		throw std::runtime_error("poll error: " + std::string(strerror(errno)));
 
 	//check listeners
 	if (status > 0) {
 		std::cout << "Checking listeners" << std::endl;
 		for (std::vector<Listener>::const_iterator it = listeners.begin(); it != listeners.end(); it++) {
 			if (fds[i].revents) {
-				Connection c(it->handleEvent(fds[i].revents));
-				addConnection(c);
+				try {
+					Connection c(it->handleEvent(fds[i].revents));
+					addConnection(c);
+				} catch (std::exception& e) {
+					std::cerr << e.what() << std::endl;
+				}
 			}
 			i++;
 		}
