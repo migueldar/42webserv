@@ -393,8 +393,7 @@ void ParserFile::fillServers() {
                         throw runtime_error("[ERROR] line " + toString(lineNum) + ": CGI error, not valid extension: " + wordLines[1]);
                     if(wordLines[2][0] != '/')
                         throw runtime_error("[ERROR] line " + toString(lineNum) + ": CGI error, invalid executable route: " + wordLines[2]);
-                    if(wordLines[2][(wordLines[2]).length() - 1] != '/')
-                        wordLines[2] += "/";
+                    
                     if(location.cgi[wordLines[1]] == ""){
                         location.cgi[wordLines[1]] = wordLines[2];
                     }

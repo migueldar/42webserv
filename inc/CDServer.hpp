@@ -17,6 +17,8 @@ class Server {
         //METHODS--------------------------------------------------------------------·#
         Server();
         Server(std::vector<std::string>& s, std::vector<Location>& l);
+        Server(const Server &other);
+        Server& operator=(const Server& other);
 
         void addErrorPage(const std::string& statusCode, const std::string& htmlRoute);
 

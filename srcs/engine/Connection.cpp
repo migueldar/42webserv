@@ -2,9 +2,7 @@
 #include <sys/poll.h>
 
 Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), res(NULL), data("") {
-	std::cout << "AQUI YA SE PIERDE LA REFERENCIA O ALGO PASA" << std::endl;
-	std::cout << servers[0].serverName << std::endl;
-	
+
 	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
@@ -66,7 +64,6 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	//si hay un error en la request (4xx, 5xx) devolvemos Connection: close y cerramos conexion
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
-		std::cout << *req << std::endl;
 		
 		std::string httpResponse = res->getHttpResponse();
 		
@@ -96,15 +93,15 @@ Content-Type: text/plain; charset=utf-8\r\n\
 		if (req->parsed == Request::ALL) {
 			checkTime = false;
 			if(res == NULL){ // AQUI NO LLEGA EL VECTOR DE SERVIDORES Y NO ENCUENTRO DONDE SE LOCALIZA LA CONSTRUCCION DE LA CONNECTION PARA VER QUE OCURRE
-				std::cout << "ENtro" << std::endl;
-				std::cout << servers[0].serverName << std::endl;
-				std::cout << "NO PASO" << std::endl;
+				std::cout << *req << std::endl;
 				res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 			}
 			
 			int fdRet = 0;
-			while(fdRet == 0)
+			//TODO CHANGE THIS CONDITION BACK TO fdRet == 0
+			while(fdRet != -1)
 				fdRet = res->prepareResponse();
+			
 			if(fdRet == -1){
 				pollfd.events = POLLOUT;
 				delete res;

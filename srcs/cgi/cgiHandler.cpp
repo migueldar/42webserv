@@ -63,6 +63,7 @@ int CgiHandler::handleCgiEvent() {
                 dup2(outfd[1], STDOUT_FILENO);
                 dup2(errfd[1], STDERR_FILENO);
 
+                std::cout << "EXEC:" << loc.cgi.at(tokenCGI) << " SCRIPT: " << script << std::endl;
                 const char* args[] = { (loc.cgi.at(tokenCGI)).c_str(), script.c_str(), NULL };
                 if (execve(args[0], (char* const*)args, (char* const*)env) < 0) {
                     std::cerr << "Error al ejecutar el script CGI: " << strerror(errno) << std::endl;
@@ -114,6 +115,7 @@ int CgiHandler::handleCgiEvent() {
                 response = response.substr(0, index);
                 close(outfd[0]);
                 stages = BEGIN_CGI_EXEC;
+                std::cout <<  "FINISH: " <<  status << std::endl;
                 return -1;
             }
             else{

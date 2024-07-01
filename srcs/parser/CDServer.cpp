@@ -3,6 +3,25 @@
 Server::Server(): maxBodySize(std::numeric_limits<unsigned long>::max()), serverName("") {
 }
 
+Server::Server(const Server &other){
+    *this = other;
+}
+
+Server& Server::operator=(const Server& other) {
+    if (this != &other) {
+        maxBodySize = other.maxBodySize;
+        serverName = other.serverName;
+
+        routes.clear();
+        routes = other.getLocations();
+        for (std::map<std::string, Location>::const_iterator it = routes.begin(); it != routes.end(); ++it) {
+            std::cout << "Ruta: " << it->first << ", Root: " << it->second.root << std::endl;
+        }
+
+        errPages = other.errPages;
+    }
+    return *this;
+}
 
 Server::Server(std::vector<std::string>& s, std::vector<Location>& l) {
 	for (size_t i = 0; i < s.size(); i++) {
@@ -25,8 +44,10 @@ void Server::addErrorPage(const std::string& statusCode, const std::string& html
 }
 
 void Server::addLocation(const std::string& path, const Location& location) {
-    routes[path] = location;
+    Location locationCopy(location);
+    routes.insert(std::make_pair(path, locationCopy));
 }
+
 
 long Server::getNumRoutes(void){
     return(routes.size());
@@ -47,17 +68,17 @@ std::vector<std::string> Server::getKeysRoutes() const {
 }
 
 bool Server::existsLocationByRoute(const std::string& path) const {
-    static const Location emptyLocation; 
-
-    std::map<std::string, Location>::const_iterator locationIter = routes.find(path);
-    if (locationIter != routes.end()) {
-        return true;
-    } else {
-        return false;
+    for (std::map<std::string, Location>::const_iterator it = routes.begin(); it != routes.end(); ++it) {
+        if (it->first == path) {
+            return true;
+        }
     }
+
+    return false;
 }
 
 const std::map<std::string, Location>& Server::getRoutes() const {
+    //std::cout << routes.at("'localhost'").root << std::endl;
     return routes;
 }
 
@@ -67,6 +88,15 @@ const std::map<std::string, std::string>& Server::getErrPages() const {
 
 
 //handle route doesnt exist
-const Location& Server::getLocation(std::string locationName) const {
-	return (routes.at(locationName));
+const Location& Server::getLocation( std::string locationName) const {
+    std::map<std::string, Location>::const_iterator it = routes.find(locationName);
+
+    if (it != routes.end()) {
+        const Location& ret = it->second;
+        
+        return ret;
+    } else {
+        static const Location defaultLocation;
+        return defaultLocation;
+    }
 }

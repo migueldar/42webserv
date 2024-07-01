@@ -40,11 +40,11 @@ class Response {
         std::string                     body;
         std::string                     httpResponse;
         std::string                     reconstructPath;
-
+        std::string                     locationPath;
         const Location                  &loc;
+
         CgiHandler                      *newCgi;
         Request                         req;
-        std::string                     locationPath;
         std::string                     cgiToken;
         std::string                     port;
 

@@ -177,9 +177,7 @@ const Server& getServerByHost(const std::vector<Server>& servers, std::string ho
     std::vector<Server>::const_iterator it;
 
     for (it = servers.begin(); it != servers.end(); ++it) {
-		std::cout << it->serverName << std::endl;
         if (it->serverName == host) {
-			std::cout << "entro" << std::endl;
             return *it;
         }
     }
@@ -198,8 +196,10 @@ std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted)
 
     if (!pathSplitted.empty()) {
         for (size_t i = 0; i < pathSplitted.size(); ++i) {
-            reconstructedPath += pathSplitted[i] + "/";
-        }
+            reconstructedPath += pathSplitted[i];
+			if(i < pathSplitted.size() - 1)
+				reconstructedPath += "/";
+		}
     }
 	return(reconstructedPath);
 }
