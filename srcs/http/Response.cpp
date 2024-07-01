@@ -22,6 +22,7 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
     while (42) {
         try {
 			if(server.existsLocationByRoute(remainingPath + "/")){
+                
                 this->locationPath = remainingPath + "/";
             	return server.getLocation(remainingPath + "/");
             }
@@ -29,11 +30,10 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
             std::cout << "NOT FOUND LOCATION " << std::endl; 
 			//JUST TO CATH WHEN GET LOCATION STD::MAP "AT" METHOD DOESNT FIND REQUESTED LINE 
         }
-
 		if(remainingPath == "")
 			break;
 
-
+        
         // BREAKING PATHS BY '/'
 		size_t lastSlashPos = remainingPath.rfind('/');
 		if (lastSlashPos == std::string::npos)
@@ -61,8 +61,13 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
  */
 int Response::prepareResponse() {
     int ret;
+    std::string auxTest = "";
+    if (reconstructPath.size() > 0 && reconstructPath[reconstructPath.size() - 1] == '/') {
+        auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
+    } else {
+        auxTest = loc.root;
+    }
 
-    std::string auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size());
                 
     switch (status) {
     case START_PREPING_RES:
@@ -103,6 +108,7 @@ int Response::handleStartPrepingRes(const std::string& auxTest) {
     status = PROCESSING_RES;
 
     // Check access to file and non-default location
+    std::cout << "LOOKING3 " << std::endl; 
     if (checkAccess(auxTest) && (!loc.root.empty() || !loc.redirectionUrl.empty())) {
         
         // Check for CGI tokens in the path
@@ -118,9 +124,9 @@ int Response::handleStartPrepingRes(const std::string& auxTest) {
             newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
             status = WAITING_FOR_CGI;
         }
-        else {
-            // TODO: Open the file and return the file descriptor for poll insertion
-        }
+        // else {
+        //     // TODO: Open the file and return the file descriptor for poll insertion
+        // }
     } else {
         handleFileNotFound();
     }
@@ -172,7 +178,7 @@ void Response::handleGetResponse() {
  */
 void Response::handleFileNotFound() {
     // TODO: Add checking of default pages here
-    
+    std::cout << "ENTRO" << std::endl;
     httpResponse = "HTTP/1.1 404 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
     status = GET_RESPONSE;
 }

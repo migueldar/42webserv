@@ -68,13 +68,8 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		std::string httpResponse = res->getHttpResponse();
 		
 		//probably have to handle send return value
-		std::string s = "HTTP/1.1 200 OK\r\n\
-Content-Length: 0\r\n\
-Connection: keep-alive\r\n\
-Content-Type: text/plain; charset=utf-8\r\n\
-\r\n";
-
-		if (send(sock, s.c_str(), 103, 0) <= 0)
+		
+		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0)
 			return 1;
 		//call Response constructor, we pass request
 

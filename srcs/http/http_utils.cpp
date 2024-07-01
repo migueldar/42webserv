@@ -3,6 +3,9 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include "http.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "unistd.h"
 
 //defined in RFC 9110
@@ -184,7 +187,26 @@ const Server& getServerByHost(const std::vector<Server>& servers, std::string ho
     return *(servers.end());
 }
 
-bool checkAccess(const std::string& path){
+//TODO SET MASK TO PERMS
+bool checkAccess(const std::string& path) {
+    struct stat fileStat;
+    
+    if (stat(path.c_str(), &fileStat) != 0) {
+        return false; 
+    }
+    
+    if (S_ISDIR(fileStat.st_mode)) {
+        return false; 
+
+    if (S_ISREG(fileStat.st_mode)) {
+        if (access(path.c_str(), R_OK) == 0) {
+            return true; 
+        }
+    }
+
+    return false; // No es un archivo regular o no se puede leer
+}
+
 	if (access(path.c_str(), F_OK) != -1 && access(path.c_str(), R_OK) == 0) {
 		return true;
 	}
