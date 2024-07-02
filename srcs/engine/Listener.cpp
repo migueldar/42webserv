@@ -1,7 +1,6 @@
 #include "webserv.hpp"
 
 Listener::Listener(unsigned port, const std::vector<Server>& servers): port(port), servers(servers) {
-
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (sock == -1)
@@ -44,7 +43,7 @@ const Connection Listener::handleEvent(short revents) const {
 	if (new_socket == -1)
 		throw std::runtime_error("accept error: " + std::string(strerror(errno)));
 
-	std::cout << "LOCATION: " <<  servers[0].getLocation("/patata/").root << std::endl;
+	std::cout << "LOCATION: " <<  servers[0].getLocation("/testCGI/").root << std::endl;
 
 	return Connection(port, new_socket, servers);
 }

@@ -184,7 +184,7 @@ const Server& getServerByHost(const std::vector<Server>& servers, std::string ho
             return *it;
         }
     }
-    return *(servers.end());
+	throw(Response::NotFoundException());
 }
 
 //TODO SET MASK TO PERMS
@@ -215,7 +215,6 @@ bool checkAccess(const std::string& path) {
 
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted){
 	std::string reconstructedPath = "/";
-
     if (!pathSplitted.empty()) {
         for (size_t i = 0; i < pathSplitted.size(); ++i) {
             reconstructedPath += pathSplitted[i];
@@ -223,5 +222,6 @@ std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted)
 				reconstructedPath += "/";
 		}
     }
+	 
 	return(reconstructedPath);
 }

@@ -1,1 +1,1 @@
-POST /patata/?papa=tata HTTP/1.1\r\nHost:'localhost'\r\nContent-Length:12\r\n\r\nHOLA CANARIO
+POST /testCGI/test.py?papa=tata HTTP/1.1\r\nHost:localhost\r\nContent-Length:12\r\n\r\nHOLA CANARIO

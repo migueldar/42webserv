@@ -2,7 +2,6 @@
 #include <sys/poll.h>
 
 Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), res(NULL), data("") {
-
 	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
@@ -64,8 +63,11 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	//si hay un error en la request (4xx, 5xx) devolvemos Connection: close y cerramos conexion
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
-		
-		std::string httpResponse = res->getHttpResponse();
+		std::string httpResponse;
+		if(res != NULL)
+			httpResponse = res->getHttpResponse();
+		else //TODO Set variable 404 error response
+			httpResponse = "HTTP/1.1 404 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";;
 		
 		//probably have to handle send return value
 		
@@ -77,6 +79,8 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		//after send
 		startTimer();
 		delete req;
+		delete res;
+		res = NULL;
 		req = NULL;
 	}
 
@@ -87,19 +91,26 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		data = req->addData(data);
 		if (req->parsed == Request::ALL) {
 			checkTime = false;
+			int fdRet = 0;
+			
 			if(res == NULL){ // AQUI NO LLEGA EL VECTOR DE SERVIDORES Y NO ENCUENTRO DONDE SE LOCALIZA LA CONSTRUCCION DE LA CONNECTION PARA VER QUE OCURRE
 				std::cout << *req << std::endl;
-				res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
+				std::cout << "ENTRO" << std::endl;
+				try{
+					res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
+				}
+				catch(Response::NotFoundException &e){
+					fdRet = -1;
+					std::cout << "ERR" << std::endl;
+				}
 			}
 			
-			int fdRet = 0;
 			//TODO CHANGE THIS CONDITION BACK TO fdRet == 0
 			while(fdRet != -1)
 				fdRet = res->prepareResponse();
 			
 			if(fdRet == -1){
 				pollfd.events = POLLOUT;
-				delete res;
 			}
 
 			//ELSE INSERT FDRET AL POLL COMPLEJO, POR QUE CUANDO LEEMOS EL CONTENIDO DE UN ARCHIVO ES DISTINTO QUE CUANDO PROCESAMOS UN CGI

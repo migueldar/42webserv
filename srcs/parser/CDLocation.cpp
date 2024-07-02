@@ -19,7 +19,9 @@ Location& Location::operator=(Location const& other) {
         root = other.root;
         defaultPath = other.defaultPath;
         redirectionUrl = other.redirectionUrl;
-        std::copy(other.methods, other.methods + METHODS_NUM, methods);
+        methods[GET] = other.methods[GET];
+        methods[POST] = other.methods[POST];
+        methods[DELETE] = other.methods[DELETE];
         autoindex = other.autoindex;
         cgi = other.cgi; 
     }

@@ -19,10 +19,10 @@ Response::~Response(){
 const Location& Response::getLocationByRoute(std::string reconstructedPath, const Server& server) {
     
     std::string remainingPath = reconstructedPath;
+
     while (42) {
         try {
 			if(server.existsLocationByRoute(remainingPath + "/")){
-                
                 this->locationPath = remainingPath + "/";
             	return server.getLocation(remainingPath + "/");
             }
@@ -62,13 +62,13 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
 int Response::prepareResponse() {
     int ret;
     std::string auxTest = "";
-    if (reconstructPath.size() > 0 && reconstructPath[reconstructPath.size() - 1] == '/') {
+
+    if (locationPath != (reconstructPath + '/') ) {
         auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
     } else {
         auxTest = loc.root;
     }
-
-                
+            
     switch (status) {
     case START_PREPING_RES:
         return handleStartPrepingRes(auxTest);
@@ -108,17 +108,17 @@ int Response::handleStartPrepingRes(const std::string& auxTest) {
     status = PROCESSING_RES;
 
     // Check access to file and non-default location
-    std::cout << "LOOKING3 " << std::endl; 
+    std::cout << "AUX TEST TO CHECK ROUTE: " << auxTest << std::endl; 
     if (checkAccess(auxTest) && (!loc.root.empty() || !loc.redirectionUrl.empty())) {
         
         // Check for CGI tokens in the path
         for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
             if (req.target[req.target.size() - 1].find(it->first) != std::string::npos) {
+                std::cout << "LOOKING3 " << std::endl; 
                 cgiToken = it->first;
                 break;
             }
         }
-
         // Create CGI handler if CGI token found
         if (!cgiToken.empty()) {
             newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
