@@ -2,6 +2,8 @@
 #include "webserv.hpp"
 
 CgiHandler::CgiHandler(const Location &loc, std::string &tokenCGI, std::string &port, Request &req, std::vector<std::string> &uri, std::string &query_string): tokenCGI(tokenCGI), port(port), req(req), uri(uri), query_string(query_string), loc(loc){
+    response = "";
+    
     initDictParser();
     for (enum metaVariables x = LOCATION; x < METAVARIABLES_LENGTH; x = static_cast<enum metaVariables>(x + 1)) {
         (this->*methodMap[x])();
@@ -48,12 +50,12 @@ int CgiHandler::handleCgiEvent() {
         case BEGIN_CGI_EXEC:
             if (pipe(infd) < 0 || pipe(outfd) < 0 || pipe(errfd) < 0) {
                 std::cerr << "Error al crear las tuberías: " << strerror(errno) << std::endl;
-                return -1;
+                return -2;
             }
             pid = fork();
             if (pid < 0) {
                 std::cerr << "Error al crear el proceso hijo: " << strerror(errno) << std::endl;
-                return -1;
+                return -2;
             }
             if (pid == 0) {
                 close(infd[1]);
@@ -80,9 +82,11 @@ int CgiHandler::handleCgiEvent() {
         case WRITE_CGI_EXEC:
             bytesWritten = write(infd[1], req.body.c_str(), req.body.length());
             close(infd[1]);
+            // TODO TEST THIS
+            delete[] env;
             if (bytesWritten < 0) {
                 std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
-                return -1;
+                return -2;
             }
             stages = READ_CGI_EXEC;
             return outfd[0]; 
@@ -92,7 +96,7 @@ int CgiHandler::handleCgiEvent() {
             bytesRead = read(outfd[0], buffer, SIZE_READ);
             if (bytesRead <= 0) {
                 std::cerr << "Error del script CGI" << std::endl;
-                return -1;
+                return -2;
             }
             if (bytesRead > 0){
                 std::string aux(buffer, bytesRead);
@@ -106,7 +110,7 @@ int CgiHandler::handleCgiEvent() {
                     int exit_status = WEXITSTATUS(status);
                     if (exit_status != EXIT_SUCCESS){
                         std::cerr << "El proceso hijo terminó sin éxito" << std::endl;
-                        return -1;
+                        return -2;
                     }
                 } else {
                     std::cerr << "El proceso hijo terminó de forma anormal" << std::endl;
@@ -122,7 +126,7 @@ int CgiHandler::handleCgiEvent() {
                 return outfd[0];
             }
     }
-    return -1;
+    return -2;
 }
 
 

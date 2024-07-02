@@ -24,6 +24,7 @@ class Response {
 		};
 
         Response(std::string port, const Server& server, Request req);
+        // Response(const Response& other);
         ~Response();
 
         int prepareResponse();
@@ -34,7 +35,9 @@ class Response {
         int handleWaitingForCgi();
         void handleGetResponse();
     
-        void handleFileNotFound();
+        void handleBadResponse();
+
+        // Response& operator=(const Response& other);
     private:
         std::string                     header;
         std::string                     body;

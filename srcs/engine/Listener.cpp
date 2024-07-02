@@ -43,7 +43,5 @@ const Connection Listener::handleEvent(short revents) const {
 	if (new_socket == -1)
 		throw std::runtime_error("accept error: " + std::string(strerror(errno)));
 
-	std::cout << "LOCATION: " <<  servers[0].getLocation("/testCGI/").root << std::endl;
-
 	return Connection(port, new_socket, servers);
 }

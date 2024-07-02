@@ -13,17 +13,53 @@ Response::Response(std::string port, const Server& server, Request req): header(
     httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
 }
 
+// Response::Response(const Response& other)
+//     : header(other.header), body(other.body), httpResponse(other.httpResponse), reconstructPath(other.reconstructPath), locationPath(other.locationPath), loc(other.loc), newCgi(NULL), req(other.req), cgiToken(other.cgiToken), port(other.port), status(other.status) {
+//     if (other.newCgi != NULL) {
+//         newCgi = new CgiHandler(*other.newCgi);
+//     }
+// }
+
+// Response& Response::operator=(const Response& other) {
+//     if (this != &other) {
+//         // Liberar recursos existentes
+//         if (newCgi != NULL) {
+//             delete newCgi;
+//             newCgi = NULL;
+//         }
+
+//         // Copiar los recursos del objeto other
+//         header = other.header;
+//         body = other.body;
+//         httpResponse = other.httpResponse;
+//         reconstructPath = other.reconstructPath;
+//         locationPath = other.locationPath;
+//         req = other.req;
+//         cgiToken = other.cgiToken;
+//         port = other.port;
+//         status = other.status;
+
+//         if (other.newCgi != NULL) {
+//             newCgi = new CgiHandler(*other.newCgi);
+//         } else {
+//             newCgi = NULL;
+//         }
+//     }
+//     return *this;
+// }
+
 Response::~Response(){
 }
 
 const Location& Response::getLocationByRoute(std::string reconstructedPath, const Server& server) {
     
     std::string remainingPath = reconstructedPath;
-
+    std::cout << "ENTRO??? "  << std::endl;
     while (42) {
         try {
 			if(server.existsLocationByRoute(remainingPath + "/")){
-                this->locationPath = remainingPath + "/";
+                this->locationPath = std::string(remainingPath + "/");
+                std::cout << "LLEGO " << locationPath << std::endl;
             	return server.getLocation(remainingPath + "/");
             }
         } catch (const std::out_of_range&) {
@@ -43,6 +79,7 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
 
     }
     //EMPTY LOCATION TO RETURN 404 ERROR, STATIC TO RETURN SAME OBJECT ALWAIS
+    std::cout << "BAD EXIT??" << std::endl;
     static Location locDef;
 	return locDef;
 }
@@ -114,7 +151,6 @@ int Response::handleStartPrepingRes(const std::string& auxTest) {
         // Check for CGI tokens in the path
         for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
             if (req.target[req.target.size() - 1].find(it->first) != std::string::npos) {
-                std::cout << "LOOKING3 " << std::endl; 
                 cgiToken = it->first;
                 break;
             }
@@ -128,7 +164,7 @@ int Response::handleStartPrepingRes(const std::string& auxTest) {
         //     // TODO: Open the file and return the file descriptor for poll insertion
         // }
     } else {
-        handleFileNotFound();
+        handleBadResponse();
     }
 
     return 0;
@@ -145,9 +181,11 @@ int Response::handleStartPrepingRes(const std::string& auxTest) {
  */
 int Response::handleWaitingForCgi() {
     int fdRet = newCgi->handleCgiEvent();
-    if (fdRet != -1) 
+    if (fdRet > 0) 
         return fdRet;
     status = GET_RESPONSE;
+    if(fdRet == -2) //TODO internal server error
+        handleBadResponse();
     return 0;
 }
 
@@ -176,9 +214,8 @@ void Response::handleGetResponse() {
  * resource could not be found. It sets the httpResponse string accordingly and updates
  * the status to GET_RESPONSE for further response handling.
  */
-void Response::handleFileNotFound() {
+void Response::handleBadResponse() {
     // TODO: Add checking of default pages here
-    std::cout << "ENTRO" << std::endl;
     httpResponse = "HTTP/1.1 404 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
     status = GET_RESPONSE;
 }

@@ -10,7 +10,7 @@ Connection::Connection(int port, int sock, const std::vector<Server>& servers): 
 }
 
 //if smt around here fails, check this, bc its not currently a full copy
-Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), port(other.port), sock(other.sock), servers(other.servers), req(other.req), data(other.data) {}
+Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), port(other.port), sock(other.sock), servers(other.servers), req(other.req), res(other.res), data(other.data) {}
 
 Connection::~Connection() {}
 
@@ -66,7 +66,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		std::string httpResponse;
 		if(res != NULL)
 			httpResponse = res->getHttpResponse();
-		else //TODO Set variable 404 error response
+		else //TODO THIS IS DEFAULTEST RESPONSE WHEN NO SERVER NAME MATCHES
 			httpResponse = "HTTP/1.1 404 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";;
 		
 		//probably have to handle send return value
@@ -92,10 +92,9 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		if (req->parsed == Request::ALL) {
 			checkTime = false;
 			int fdRet = 0;
-			
-			if(res == NULL){ // AQUI NO LLEGA EL VECTOR DE SERVIDORES Y NO ENCUENTRO DONDE SE LOCALIZA LA CONSTRUCCION DE LA CONNECTION PARA VER QUE OCURRE
+
+			if(res == NULL){ 
 				std::cout << *req << std::endl;
-				std::cout << "ENTRO" << std::endl;
 				try{
 					res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 				}
