@@ -82,7 +82,8 @@ int CgiHandler::handleCgiEvent() {
         case WRITE_CGI_EXEC:
             bytesWritten = write(infd[1], req.body.c_str(), req.body.length());
             close(infd[1]);
-            // TODO TEST THIS
+            for (unsigned long i = 0; i < metaVariables.size(); i++)
+                delete[] env[i];
             delete[] env;
             if (bytesWritten < 0) {
                 std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
@@ -119,7 +120,7 @@ int CgiHandler::handleCgiEvent() {
                 response = response.substr(0, index);
                 close(outfd[0]);
                 stages = BEGIN_CGI_EXEC;
-                std::cout <<  "FINISH: " <<  status << std::endl;
+                std::cout <<  "FINISH CGI: " <<  status << std::endl;
                 return -1;
             }
             else{

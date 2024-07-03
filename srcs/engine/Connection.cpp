@@ -71,6 +71,11 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		
 		//probably have to handle send return value
 		
+		delete req;
+		delete res;
+		res = NULL;
+		req = NULL;
+		
 		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0)
 			return 1;
 		//call Response constructor, we pass request
@@ -78,10 +83,6 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		pollfd.events = POLLIN;
 		//after send
 		startTimer();
-		delete req;
-		delete res;
-		res = NULL;
-		req = NULL;
 	}
 
 	if (data != "") {
@@ -100,7 +101,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 				}
 				catch(Response::NotFoundException &e){
 					fdRet = -1;
-					std::cout << "ERR" << std::endl;
+					std::cout << "ERR SERVER NAME NOT FOUND" << std::endl;
 				}
 			}
 			

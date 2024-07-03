@@ -105,7 +105,7 @@ int Response::prepareResponse() {
     } else {
         auxTest = loc.root;
     }
-            
+    std::cout << "LLEGO" << std::endl;
     switch (status) {
     case START_PREPING_RES:
         return handleStartPrepingRes(auxTest);
