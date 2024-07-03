@@ -54,12 +54,10 @@ Response::~Response(){
 const Location& Response::getLocationByRoute(std::string reconstructedPath, const Server& server) {
     
     std::string remainingPath = reconstructedPath;
-    std::cout << "ENTRO??? "  << std::endl;
     while (42) {
         try {
 			if(server.existsLocationByRoute(remainingPath + "/")){
                 this->locationPath = std::string(remainingPath + "/");
-                std::cout << "LLEGO " << locationPath << std::endl;
             	return server.getLocation(remainingPath + "/");
             }
         } catch (const std::out_of_range&) {
@@ -79,7 +77,6 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
 
     }
     //EMPTY LOCATION TO RETURN 404 ERROR, STATIC TO RETURN SAME OBJECT ALWAIS
-    std::cout << "BAD EXIT??" << std::endl;
     static Location locDef;
 	return locDef;
 }

@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 
-Request::Request(): rawData(""), queryParams(""), body(""), parsed(NOTHING) {}
+Request::Request(): rawData(""), queryParams(""), body(""), parsed(NOTHING), errorStatus("") {}
 
 Request::~Request() {}
 
@@ -70,6 +70,7 @@ std::string Request::addData(std::string data) {
 void Request::parseMethod(std::string& str) {
 	if (!isToken(str))
 		throw BadRequest();
+	std::cout << "DAAFUCK: " <<  str << std::endl;
 	if (str == "GET")
 		method = GET;
 	else if (str == "POST")

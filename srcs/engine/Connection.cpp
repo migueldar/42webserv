@@ -64,20 +64,24 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
 		std::string httpResponse;
-		if(res != NULL)
+		if(res != NULL){
 			httpResponse = res->getHttpResponse();
-		else //TODO THIS IS DEFAULTEST RESPONSE WHEN NO SERVER NAME MATCHES
-			httpResponse = "HTTP/1.1 404 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";;
+			delete res;
+			res = NULL;
+		}
+		else //TODO THIS IS DEFAULTEST RESPONSE WHEN NO SERVER NAME MATCHES OR REQUEST IS BAD
+			httpResponse = "HTTP/1.1 " + (req->errorStatus != "" ? req->errorStatus : "404 OK" ) + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";;
 		
 		//probably have to handle send return value
 		
+			
 		delete req;
-		delete res;
-		res = NULL;
 		req = NULL;
+		data = "";
 		
-		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0)
+		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0){
 			return 1;
+		}
 		//call Response constructor, we pass request
 
 		pollfd.events = POLLIN;
@@ -86,25 +90,38 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	}
 
 	if (data != "") {
-		if (!req)
+		if (!req){
 			req = new Request();
+		}
 
 		data = req->addData(data);
 		if (req->parsed == Request::ALL) {
+			std::cout << *req << std::endl;
 			checkTime = false;
+
 			int fdRet = 0;
 
-			if(res == NULL){ 
-				std::cout << *req << std::endl;
+			//IF REQ IS ALREADY BAD JUST RETURN IT
+			if(req->errorStatus != ""){
+				fdRet = -1;
+			}
+
+			if(res == NULL && fdRet != -1){ 
+				//SERVER SELECTION
+				const Server *server = NULL;
 				try{
-					res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
+					server = &getServerByHost(servers, req->headers.at("Host"));
 				}
 				catch(Response::NotFoundException &e){
 					fdRet = -1;
 					std::cout << "ERR SERVER NAME NOT FOUND" << std::endl;
 				}
+				//RESPONSE CREATION
+				if(server != NULL)
+					res = new Response(toString(port), *server, *req);
 			}
 			
+			//RESPONSE PROCESSING
 			//TODO CHANGE THIS CONDITION BACK TO fdRet == 0
 			while(fdRet != -1)
 				fdRet = res->prepareResponse();
