@@ -103,7 +103,6 @@ int Response::prepareResponse() {
     std::string auxTest = "";
 
 
-    std::cout << locationPath << " " << reconstructPath << std::endl;
     if (locationPath != reconstructPath ) {
         auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
     } else if(loc.defaultPath != "" && reconstructPath == "/") {
