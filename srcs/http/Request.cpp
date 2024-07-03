@@ -84,7 +84,7 @@ void Request::parseMethod(std::string& str) {
 void Request::parseRequestTarget(std::string& str) {
 	std::string::const_iterator it;
 	std::string 				aux;
-	std::string					queryString, targetString;
+	std::string					queryString;
 	size_t						positionQuery;
 
 	positionQuery = str.find("?");

@@ -8,7 +8,7 @@ std::string Response::getHttpResponse(){
 }
 
 // TODO: Store server for errorPages, isnt stored now becouse isnt needed
-Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(reconstructPathFromVec(req.target)), locationPath(""), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), cgiToken(""), port(port), status(START_PREPING_RES) {
+Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(req.targetString), locationPath(""), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), cgiToken(""), port(port), status(START_PREPING_RES) {
     // TODO: remove hardcode
     httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
 }
@@ -54,26 +54,31 @@ Response::~Response(){
 const Location& Response::getLocationByRoute(std::string reconstructedPath, const Server& server) {
     
     std::string remainingPath = reconstructedPath;
+    size_t lastSlashPos = remainingPath.size();
+    bool token = 1;
     while (42) {
+        // BREAKING PATHS BY '/'
+
         try {
-			if(server.existsLocationByRoute(remainingPath + "/")){
-                this->locationPath = std::string(remainingPath + "/");
-            	return server.getLocation(remainingPath + "/");
+			if(server.existsLocationByRoute(remainingPath)){
+                this->locationPath = std::string(remainingPath);
+            	return server.getLocation(remainingPath);
             }
         } catch (const std::out_of_range&) {
             std::cout << "NOT FOUND LOCATION " << std::endl; 
 			//JUST TO CATH WHEN GET LOCATION STD::MAP "AT" METHOD DOESNT FIND REQUESTED LINE 
         }
-		if(remainingPath == "")
+
+		if(remainingPath == "/")
 			break;
 
-        
-        // BREAKING PATHS BY '/'
-		size_t lastSlashPos = remainingPath.rfind('/');
-		if (lastSlashPos == std::string::npos)
-			remainingPath = "";
-		else
-			remainingPath = remainingPath.substr(0, lastSlashPos);
+		lastSlashPos = remainingPath.rfind('/');
+        remainingPath = remainingPath.substr(0, lastSlashPos + token);
+
+        if(!token)
+            token = 1;
+        else
+            token = 0;
 
     }
     //EMPTY LOCATION TO RETURN 404 ERROR, STATIC TO RETURN SAME OBJECT ALWAIS
@@ -97,12 +102,17 @@ int Response::prepareResponse() {
     int ret;
     std::string auxTest = "";
 
-    if (locationPath != (reconstructPath + '/') ) {
+
+    std::cout << locationPath << " " << reconstructPath << std::endl;
+    if (locationPath != reconstructPath ) {
         auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
-    } else {
+    } else if(loc.defaultPath != "" && reconstructPath == "/") {
+        auxTest = loc.root + loc.defaultPath;
+    }
+    else{
         auxTest = loc.root;
     }
-    std::cout << "LLEGO" << std::endl;
+
     switch (status) {
     case START_PREPING_RES:
         return handleStartPrepingRes(auxTest);
@@ -142,7 +152,6 @@ int Response::handleStartPrepingRes(const std::string& auxTest) {
     status = PROCESSING_RES;
 
     // Check access to file and non-default location
-    std::cout << "AUX TEST TO CHECK ROUTE: " << auxTest << std::endl; 
     if (checkAccess(auxTest) && (!loc.root.empty() || !loc.redirectionUrl.empty())) {
         
         // Check for CGI tokens in the path

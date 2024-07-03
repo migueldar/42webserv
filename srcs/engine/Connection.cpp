@@ -64,6 +64,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
 		std::string httpResponse;
+		//STANDAR RES CONSTRUCTION
 		if(res != NULL){
 			httpResponse = res->getHttpResponse();
 			delete res;
@@ -72,13 +73,11 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		else //TODO THIS IS DEFAULTEST RESPONSE WHEN NO SERVER NAME MATCHES OR REQUEST IS BAD
 			httpResponse = "HTTP/1.1 " + (req->errorStatus != "" ? req->errorStatus : "404 OK" ) + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";;
 		
-		//probably have to handle send return value
-		
-			
 		delete req;
 		req = NULL;
 		data = "";
 		
+		std::cout << "RESPOSE: " << httpResponse << std::endl;
 		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0){
 			return 1;
 		}
