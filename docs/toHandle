@@ -16,6 +16,7 @@ LEFT
 - RESPONSE:
     - Redirect
     - Autoindex
+    - Error pages
     - The Response itself
 
 NOTES

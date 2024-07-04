@@ -8,7 +8,7 @@ std::string Response::getHttpResponse(){
 }
 
 // TODO: Store server for errorPages, isnt stored now becouse isnt needed
-Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(req.targetString), locationPath(""), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), cgiToken(""), port(port), status(START_PREPING_RES) {
+Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(req.targetString), locationPath(""),  cgiToken(""), port(port), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), status(START_PREPING_RES) {
     // TODO: remove hardcode
     httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
 }
@@ -122,6 +122,22 @@ int Response::prepareResponse() {
     return -1;
 }
 
+Response::statusCode Response::filterResponseCode(const std::string& path, methodsEnum method) {
+    if (checkAccess(path, method) != Response::_2XX) {
+        return Response::_4XX;
+    }
+    if (loc.root.empty() && loc.redirectionUrl.empty()) {
+        return Response::_4XX;
+    }
+    if (!loc.methods[method]) {
+        return Response::_4XX;
+    }
+    if(req.measure != Request::NO_BODY && maxBodySizeReq > req.body.size()){
+        return Response::_4XX;
+    }
+    return Response::_2XX;
+}
+
 /**
  * @brief Handles the start of preparing the response.
  *
@@ -148,10 +164,12 @@ int Response::handleStartPrepingRes() {
     }
 
     status = PROCESSING_RES;
+
+    Response::statusCode responseAproxCode = filterResponseCode(auxTest, req.method);
     // TODO filter ResponseCode of checkAccess for some bad responses
     // Check access to file and non-default location
-    if (checkAccess(auxTest, req.method) == Response::_2XX && loc.methods[req.method] == true && (!loc.root.empty() || !loc.redirectionUrl.empty())) {
-        
+
+    if (responseAproxCode == Response::_2XX) {
         // Check for CGI tokens in the path
         for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
             if (req.target[req.target.size() - 1].find(it->first) != std::string::npos) {
@@ -168,6 +186,7 @@ int Response::handleStartPrepingRes() {
         //     // TODO: Open the file and return the file descriptor for poll insertion and use sign byte to mark read/write
         // }
     } else {
+        /*responseAproxCode*/
         handleBadResponse();
     }
 

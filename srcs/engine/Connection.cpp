@@ -116,8 +116,9 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 					std::cout << "ERR SERVER NAME NOT FOUND" << std::endl;
 				}
 				//RESPONSE CREATION
-				if(server != NULL)
+				if(server != NULL){
 					res = new Response(toString(port), *server, *req);
+				}
 			}
 			
 			//RESPONSE PROCESSING

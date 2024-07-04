@@ -36,6 +36,8 @@ class Response {
         std::string getHttpResponse();
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
+        Response::statusCode filterResponseCode(const std::string& path, methodsEnum method);
+
         int handleStartPrepingRes();
         int handleWaitingForCgi();
         void handleGetResponse();
@@ -49,12 +51,14 @@ class Response {
         std::string                     httpResponse;
         std::string                     reconstructPath;
         std::string                     locationPath;
-        const Location                  &loc;
-
-        CgiHandler                      *newCgi;
-        Request                         req;
         std::string                     cgiToken;
         std::string                     port;
+
+        unsigned long                   maxBodySizeReq; 
+
+        const Location                  &loc;
+        CgiHandler                      *newCgi;
+        Request                         req;
 
         enum Response::responseStages   status;
 
