@@ -45,3 +45,6 @@ CONCLUSIONES
 - reflexionar si en el parseo una vez un root es encontrado ha de ser confirmado el acceso
 
 - refelexionar si el cgi admite cualquier tipo de request (GET; POST; DELETE)
+
+- reflexionar como hacer la interactuacion con un redirect en una location, hay dos caminos posibles, cuando el handler de la respuesta encuentre la location target, antes de returnear dicha location, volvemos a meter el path target con el path y encuentre el path nuevo, el problema es que si se linkean 3 locations con redirects entras  en un bucle infinito. Esto genera dudas ya que planteas, hago un max de redirects o solo dejo 1.
+Nginx crea lo que volveria a ser una request, pero muy simple. Esto elimina el problema comentado previamente. De esta forma ganamos que una location en un host pueda redirigir la request a una ruta en un host distinto

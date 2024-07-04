@@ -76,6 +76,7 @@ int CgiHandler::handleCgiEvent() {
                 close(outfd[1]);
                 close(errfd[1]);
                 stages = WRITE_CGI_EXEC;
+                //TODO set in infd write on sing bit
                 return infd[1];
             }
             
@@ -90,6 +91,7 @@ int CgiHandler::handleCgiEvent() {
                 return -2;
             }
             stages = READ_CGI_EXEC;
+            //TODO set in outfd read on sing bit
             return outfd[0]; 
             
         case READ_CGI_EXEC:
@@ -124,6 +126,7 @@ int CgiHandler::handleCgiEvent() {
                 return -1;
             }
             else{
+                //TODO set in outfd read on sing bit
                 return outfd[0];
             }
     }

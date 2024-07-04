@@ -187,30 +187,39 @@ const Server& getServerByHost(const std::vector<Server>& servers, std::string ho
 	throw(Response::NotFoundException());
 }
 
-//TODO SET MASK TO PERMS
-bool checkAccess(const std::string& path) {
+
+Response::statusCode checkAccess(const std::string& path, enum methodsEnum method) {
     struct stat fileStat;
     
     if (stat(path.c_str(), &fileStat) != 0) {
-        return false; 
+        return Response::_4XX; 
     }
     
     if (S_ISDIR(fileStat.st_mode)) {
-        return false; 
+        return Response::_4XX;
+	}	
 
     if (S_ISREG(fileStat.st_mode)) {
-        if (access(path.c_str(), R_OK) == 0) {
-            return true; 
-        }
+		switch (method){
+			case GET:
+				if (access(path.c_str(), R_OK) == 0) {
+					return Response::_2XX; 
+				}
+				return Response::_4XX;
+			case POST:
+				if (access(path.c_str(), W_OK) == 0) {
+					return Response::_2XX; 
+				}
+				return Response::_4XX;
+			case DELETE:
+				if (access(path.c_str(), W_OK) == 0) {
+					return Response::_2XX; 
+				}
+				return Response::_4XX;
+		}
     }
+	return Response::_4XX;
 
-    return false; // No es un archivo regular o no se puede leer
-}
-
-	if (access(path.c_str(), F_OK) != -1 && access(path.c_str(), R_OK) == 0) {
-		return true;
-	}
-	return false;
 }
 
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted){

@@ -15,6 +15,11 @@ class Response {
             GET_RESPONSE,
         };
 
+        enum statusCode{
+            _2XX = 0,
+            _4XX = -1,
+        };
+
         //Response();
         class NotFoundException: public std::exception {
 			public:

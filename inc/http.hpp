@@ -2,6 +2,7 @@
 #define HTTP_HPP
 
 #include "Request.hpp"
+#include "Response.hpp"
 
 bool		isToken(std::string& str);
 bool		isSegment(std::string& str);
@@ -19,6 +20,6 @@ long		hexStringToLong(std::string str);
 const Server &getServerByHost(const std::vector<Server> &servers, std::string host);
 const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted);
-bool checkAccess(const std::string& path);
+Response::statusCode checkAccess(const std::string& path, enum methodsEnum method);
 
 #endif
