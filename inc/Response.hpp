@@ -36,7 +36,7 @@ class Response {
         std::string getHttpResponse();
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
-        int handleStartPrepingRes(const std::string& auxTest);
+        int handleStartPrepingRes();
         int handleWaitingForCgi();
         void handleGetResponse();
     

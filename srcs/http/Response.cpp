@@ -59,11 +59,9 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
     while (42) {
         // BREAKING PATHS BY '/'
         try {
-			if(server.existsLocationByRoute(remainingPath)){
-                if(){
-                    this->locationPath = std::string(remainingPath);
-            	    return server.getLocation(remainingPath);
-                }
+            if(server.existsLocationByRoute(remainingPath)){
+                this->locationPath = std::string(remainingPath);
+                return server.getLocation(remainingPath);
             }
         } catch (const std::out_of_range&) {
             std::cout << "NOT FOUND LOCATION " << std::endl; 
@@ -101,11 +99,10 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
  */
 int Response::prepareResponse() {
     int ret;
-    std::string auxTest = "";
 
     switch (status) {
     case START_PREPING_RES:
-        return handleStartPrepingRes(auxTest);
+        return handleStartPrepingRes();
 
     case WAITING_FOR_CGI:
         ret = handleWaitingForCgi();
@@ -138,9 +135,9 @@ int Response::prepareResponse() {
  * @param auxTest The auxiliary test string used to check machine route to request target.
  * @return Always returns 0 to continue state machine (indicators for future implementation).
  */
-int Response::handleStartPrepingRes(const std::string& auxTest) {
-    status = PROCESSING_RES;
-
+int Response::handleStartPrepingRes() {
+    std::string auxTest;
+    
     if (locationPath != reconstructPath ) {
         auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
     } else if(loc.defaultPath != "" && reconstructPath == "/") {
@@ -150,6 +147,7 @@ int Response::handleStartPrepingRes(const std::string& auxTest) {
         auxTest = loc.root;
     }
 
+    status = PROCESSING_RES;
     // TODO filter ResponseCode of checkAccess for some bad responses
     // Check access to file and non-default location
     if (checkAccess(auxTest, req.method) == Response::_2XX && loc.methods[req.method] == true && (!loc.root.empty() || !loc.redirectionUrl.empty())) {
