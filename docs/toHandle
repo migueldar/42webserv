@@ -14,7 +14,7 @@ LEFT
 - PARSER:
     - WTF is autoindex
 - HANDLER COMUNNICATIION
-    - send badLocationFolder req, it explodes
+    - send badLocationFolder req, it explodes (maybe)
 - RESPONSE:
     - Redirect
     - Autoindex
