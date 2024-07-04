@@ -13,6 +13,8 @@ BEHAVIOUR
 LEFT
 - PARSER:
     - WTF is autoindex
+- HANDLER COMUNNICATIION
+    - send badLocationFolder req, it explodes
 - RESPONSE:
     - Redirect
     - Autoindex
