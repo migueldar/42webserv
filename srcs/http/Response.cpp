@@ -167,7 +167,7 @@ Response::statusCode Response::filterResponseCode(const std::string& path, metho
  */
 long Response::handleStartPrepingRes() {
     std::string auxTest;
-    int fd = 0;
+    int fd = -1;
     
     if (locationPath != reconstructPath ) {
         auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
@@ -210,24 +210,24 @@ long Response::handleStartPrepingRes() {
             status = WAITING_FOR_CGI;
         }
         else {
+            //DEFAULT fd constructor
             if(req.method == GET){
                 fd = open(auxTest.c_str(), O_RDONLY);
             }
             else{
                 fd = open(auxTest.c_str(), O_WRONLY);
             }
-            if (fd == -1) {
+            if(fd == -1){
                 statusCodeVar = Response::_4XX;
-                status = ERROR_RESPONSE;
-                return 0;
             }
         }
-    } else {
-        /*responseAproxCode*/
-        statusCodeVar = Response::_4XX;
+    } else{
+        statusCodeVar = responseAproxCode;
+    }
+    if (fd == -1) {
+        fd = 0;
         status = ERROR_RESPONSE;
     }
-
     return (long)fd;
 }
 
