@@ -2,7 +2,9 @@
 
 PollHandler::PollHandler(): fds(NULL) {}
 
-PollHandler::~PollHandler() {}
+PollHandler::~PollHandler() { 
+	if (fds) delete[] fds;
+}
 
 void PollHandler::addListener(Listener &l) {
 	std::cout << "Listener Added" << std::endl;
@@ -26,6 +28,14 @@ void PollHandler::removeConnection(Connection &c) {
 	close(c.sock);
 	removeFromFds(c.sock);
 	connections.erase(std::find(connections.begin(), connections.end(), c));
+	close(c.secFd.fd);
+	secFds.erase(std::find(secFds.begin(), secFds.end(), c.secFd));
+}
+
+void PollHandler::removeSecondary(Connection::secondaryFd &f) {
+	std::cout << "Secondary Removed" << std::endl;
+	close(f.fd);
+	secFds.erase(std::find(secFds.begin(), secFds.end(), f));
 }
 
 void PollHandler::addToFds(int fd, fdType type) {
@@ -62,8 +72,45 @@ void PollHandler::removeFromFds(int fd) {
 	fds = aux_ptr;
 }
 
+struct pollfd* PollHandler::createFdsExtra() {
+	struct pollfd* ret = new struct pollfd[listeners.size() + connections.size() + secFds.size()];
+
+	for (size_t i = 0; i < listeners.size() + connections.size(); i++)
+		ret[i] = fds[i];
+	for (size_t i = 0; i < secFds.size(); i++) {
+		ret[i + listeners.size() + connections.size()].fd = secFds[i].fd;
+		if (secFds[i].rw == 0) 
+			ret[i + listeners.size() + connections.size()].events = POLLIN;
+		else
+			ret[i + listeners.size() + connections.size()].events = POLLOUT;
+	}
+	return ret;
+}
+
+Connection&	PollHandler::findConnection(const Connection::secondaryFd& secFd) {
+	for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++)
+		if (it->secFd == secFd)
+			return *it;
+	//safeguard, will never happen
+	return connections.front();
+}
+
+int PollHandler::findConnectionIndex(const Connection& con) const {
+	int i = 0;
+
+	for (std::list<Connection>::const_iterator it = connections.begin(); it != connections.end(); it++) {
+		if (*it == con)
+			return i;
+		i++;
+	}
+	//safeguard, will never happen
+	return -1;
+}
+
 int PollHandler::pollMode() {
-	int	status = poll(fds, listeners.size() + connections.size(), 1000);
+	struct pollfd* fdsExtra = createFdsExtra();
+
+	int	status = poll(fdsExtra, listeners.size() + connections.size() + secFds.size(), 1000);
 	int	i = 0;
 
 	if (status < 0)
@@ -86,6 +133,7 @@ int PollHandler::pollMode() {
 	}
 
 	//check connections, also timeouts
+	//check if request fully parsed and make first call to handle secondary event, maybe keep an array of which secondary fds should be added
 	std::cout << "Checking connections and timeouts" << std::endl;
 	std::vector<Connection> toRemove;
 	for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++) {
@@ -97,9 +145,37 @@ int PollHandler::pollMode() {
 		i++;
 	}
 
+
+	//check secondary
+	std::vector<Connection::secondaryFd> toRemoveSecondary;
+	std::vector<Connection::secondaryFd> toAddSecondary;
+	if (status > 0) {
+		std::cout << "Checking secondary fds" << std::endl;
+		for (std::vector<Connection::secondaryFd>::const_iterator it = secFds.begin(); it != secFds.end(); it++) {
+			if (fdsExtra[i].revents) {
+				Connection& con = findConnection(*it);
+				//check wether connection is being removed due to some error
+				if (std::count(toRemove.begin(), toRemove.end(), con) == 0) {
+					Connection::secondaryFd auxS = con.handleSecondaryEvent(fds[findConnectionIndex(con) + listeners.size()]);
+					toRemoveSecondary.push_back(*it);
+					if (auxS.fd > 0)
+						toAddSecondary.push_back(auxS);
+				}
+			}
+			i++;
+		}
+	}
+
 	for (std::vector<Connection>::iterator it = toRemove.begin(); it != toRemove.end(); it++)
 		removeConnection(*it);
+	
+	for (std::vector<Connection::secondaryFd>::iterator it = toRemoveSecondary.begin(); it != toRemoveSecondary.end(); it++)
+		removeSecondary(*it);
 
+	for (std::vector<Connection::secondaryFd>::iterator it = toAddSecondary.begin(); it != toAddSecondary.end(); it++)
+		secFds.push_back(*it);
+
+	delete[] fdsExtra;
 	return 1;
 }
 

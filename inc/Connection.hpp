@@ -14,8 +14,18 @@ class Connection {
 		bool		checkTime;
 
 	public:
+		//read 0, write 1
+		class secondaryFd {
+			public:
+				int	fd;
+				int	rw;
+				bool operator==(const secondaryFd &other) const {
+					return (fd == other.fd) && (rw == other.rw);
+				}
+		};
 		int							port;
 		int							sock;
+		secondaryFd					secFd;
 		const std::vector<Server>	&servers;
 		//if set to NULL, no request is being parsed currently
 		Request						*req;
@@ -30,6 +40,8 @@ class Connection {
 		bool checkTimer() const;
 		bool operator==(const Connection &other) const;
 		int handleEvent(struct pollfd &pollfd);
+		//if nothing wants to be returned, just return fd == -1
+		secondaryFd	handleSecondaryEvent(struct pollfd &pollfd);
 };
 
 #endif

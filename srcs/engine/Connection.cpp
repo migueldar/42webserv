@@ -137,3 +137,12 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 
 	return 0;
 }
+
+Connection::secondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd) {
+	secondaryFd ret;
+
+	
+
+	(void) pollfd;
+	return a;
+}
