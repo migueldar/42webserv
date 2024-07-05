@@ -3,6 +3,9 @@
 #include "http.hpp"
 #include "CDCgiHandler.hpp"
 #include <fcntl.h>
+#include <sstream>
+#include <dirent.h>
+#include <sys/types.h>
 
 std::string Response::getHttpResponse(){
     return httpResponse;
@@ -112,7 +115,7 @@ long Response::prepareResponse(int err) {
         if(ret != 0)
             return ret;
     }
-
+    
     if(status == WAITING_FOR_CGI){
         ret = handleWaitingForCgi();
 
@@ -121,6 +124,10 @@ long Response::prepareResponse(int err) {
 
     } else if(status == PROCESSING_RES){
         status = GET_RESPONSE;
+    }
+    if(status == GET_AUTO_INDEX){
+        status = GET_RESPONSE;
+        handleGetAutoIndex();
     }
 
     if(status == GET_RESPONSE){
@@ -137,6 +144,7 @@ long Response::prepareResponse(int err) {
 }
 
 Response::statusCode Response::filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex) {
+    std::cout << autoIndex << std::endl;
     if (checkAccess(path, method, autoIndex) != Response::_2XX) {
         return Response::_4XX;
     }
@@ -162,41 +170,37 @@ Response::statusCode Response::filterResponseCode(const std::string& path, metho
  * If no CGI token is found, it may open the file and return the file descriptor
  * for poll insertion in future implementations.
  *
- * @param auxTest The auxiliary test string used to check machine route to request target.
  * @return Always returns 0 to continue state machine (indicators for future implementation).
  */
 long Response::handleStartPrepingRes() {
-    std::string auxTest;
     int fd = -1;
     
     if (locationPath != reconstructPath ) {
-        auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
+        localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
     } else if(loc.defaultPath != "") {
-        auxTest = loc.root + loc.defaultPath;
+        localFilePath = loc.root + loc.defaultPath;
     }
     else{
-        auxTest = loc.root;
+        localFilePath = loc.root;
     }
     status = PROCESSING_RES;
 
-    std::cout << auxTest << std::endl;
-    Response::statusCode responseAproxCode = filterResponseCode(auxTest, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
+    std::cout << localFilePath << std::endl;
+    Response::statusCode responseAproxCode = filterResponseCode(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
     // TODO filter ResponseCode of checkAccess for some bad responses
     // Check access to file and non-default location
 
     if (responseAproxCode == Response::_2XX) {
-        if(loc.autoindex == true && loc.defaultPath != "" && auxTest == loc.root)
-        {
-            //FILL BODY
-            status = GET_RESPONSE;
-            return 0;
+        if(loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root){
+            status = GET_AUTO_INDEX;
+            fd = 0;
         }
 
         // Check for CGI tokens in the path
         if(req.method != DELETE){
             for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
-                size_t lastSlashPos = auxTest.rfind('/');
-                std::string file = auxTest.substr(lastSlashPos + 1, auxTest.size());
+                size_t lastSlashPos = localFilePath.rfind('/');
+                std::string file = localFilePath.substr(lastSlashPos + 1, localFilePath.size());
                 if (file.find(it->first) != std::string::npos) {
                     req.target.push_back(file);
                     cgiToken = it->first;
@@ -207,15 +211,15 @@ long Response::handleStartPrepingRes() {
         // Create CGI handler if CGI token found
         if (!cgiToken.empty()) {
             newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
+            fd = 0;
             status = WAITING_FOR_CGI;
         }
-        else {
-            //DEFAULT fd constructor
+        else if(status == PROCESSING_RES) {
             if(req.method == GET){
-                fd = open(auxTest.c_str(), O_RDONLY);
+                fd = open(localFilePath.c_str(), O_RDONLY);
             }
             else{
-                fd = open(auxTest.c_str(), O_WRONLY);
+                fd = open(localFilePath.c_str(), O_WRONLY);
             }
             if(fd == -1){
                 statusCodeVar = Response::_4XX;
@@ -249,6 +253,33 @@ long Response::handleWaitingForCgi() {
         statusCodeVar = Response::_4XX;
         status = ERROR_RESPONSE;
     }
+    return 0;
+}
+
+long Response::handleGetAutoIndex() {
+    std::ostringstream streamBody;
+    streamBody << "<html><head><title>Index of " << localFilePath << "</title></head><body>";
+    streamBody << "<h1>Index of " << localFilePath << "</h1>";
+    streamBody << "<ul>";
+
+    DIR *dir;
+    struct dirent *entry;
+
+    if ((dir = opendir(localFilePath.c_str())) != NULL) {
+        while ((entry = readdir(dir)) != NULL) {
+            std::string fileName = entry->d_name;
+            if (fileName != "." && fileName != "..") {
+                streamBody << "<li><a href=\"" << fileName << "\">" << fileName << "</a></li>";
+            }
+        }
+        closedir(dir);
+    } else {
+        streamBody << "<li>Error: unable to open directory " << localFilePath << "</li>";
+    }
+
+    streamBody << "</ul></body></html>";
+    body = streamBody.str();
+    std::cout << body << std::endl;
     return 0;
 }
 

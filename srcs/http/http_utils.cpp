@@ -202,25 +202,23 @@ Response::statusCode checkAccess(const std::string& path, enum methodsEnum metho
 			return Response::_4XX;
 	}	
 
-    if (S_ISREG(fileStat.st_mode)) {
-		switch (method){
-			case GET:
-				if (access(path.c_str(), R_OK) == 0) {
-					return Response::_2XX; 
-				}
-				return Response::_4XX;
-			case POST:
-				if (access(path.c_str(), W_OK) == 0) {
-					return Response::_2XX; 
-				}
-				return Response::_4XX;
-			case DELETE:
-				if (access(path.c_str(), W_OK) == 0) {
-					return Response::_2XX; 
-				}
-				return Response::_4XX;
-		}
-    }
+	switch (method){
+		case GET:
+			if (access(path.c_str(), R_OK) == 0) {
+				return Response::_2XX; 
+			}
+			return Response::_4XX;
+		case POST:
+			if (access(path.c_str(), W_OK) == 0) {
+				return Response::_2XX; 
+			}
+			return Response::_4XX;
+		case DELETE:
+			if (access(path.c_str(), W_OK) == 0) {
+				return Response::_2XX; 
+			}
+			return Response::_4XX;
+	}
 	return Response::_4XX;
 
 }

@@ -12,6 +12,7 @@ class Response {
             START_PREPING_RES = 0,
             WAITING_FOR_CGI,
             PROCESSING_RES,
+            GET_AUTO_INDEX,
             ERROR_RESPONSE,
             GET_RESPONSE,
         };
@@ -42,6 +43,7 @@ class Response {
         long handleStartPrepingRes();
         long handleWaitingForCgi();
         void handleGetResponse();
+        long handleGetAutoIndex();
     
         long handleBadResponse();
 
@@ -52,6 +54,7 @@ class Response {
         std::string                     httpResponse;
         std::string                     reconstructPath;
         std::string                     locationPath;
+        std::string                     localFilePath;
         std::string                     cgiToken;
         std::string                     port;
 
