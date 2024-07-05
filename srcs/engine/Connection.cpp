@@ -97,52 +97,39 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		if (req->parsed == Request::ALL) {
 			std::cout << *req << std::endl;
 			checkTime = false;
-
-			int fdRet = 0;
-
-			//IF REQ IS ALREADY BAD JUST RETURN IT
-			if(req->errorStatus != ""){
-				fdRet = -1;
-			}
-
-			if(res == NULL && fdRet != -1){ 
-				//SERVER SELECTION
-				const Server *server = NULL;
-				try{
-					server = &getServerByHost(servers, req->headers.at("Host"));
-				}
-				catch(Response::NotFoundException &e){
-					fdRet = -1;
-					std::cout << "ERR SERVER NAME NOT FOUND" << std::endl;
-				}
-				//RESPONSE CREATION
-				if(server != NULL){
-					res = new Response(toString(port), *server, *req);
-				}
-			}
-			
-			//RESPONSE PROCESSING
-			//TODO CHANGE THIS CONDITION BACK TO fdRet == 0
-			while(fdRet != -1)
-				fdRet = res->prepareResponse(0);
-			
-			if(fdRet == -1){
-				pollfd.events = POLLOUT;
-			}
-			// else if(/*INSERT POLL IF FDRET > 0*/){
-			// 	//KK///////////////////////
-			// }
 		}
 	}
 
 	return 0;
 }
 
-Connection::secondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd) {
+Connection::secondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) {
 	secondaryFd ret;
 
+	if (res == NULL) {
+		if (req->errorStatus != "")
+			ret.fd = -1;
+		else {
+			const Server *server = NULL;
+			try {
+				server = &getServerByHost(servers, req->headers.at("Host"));
+				res = new Response(toString(port), *server, *req);
+			}
+			catch (Response::NotFoundException &e){
+				ret.fd = -1;
+				std::cerr << "ERR SERVER NAME NOT FOUND" << std::endl;
+			}
+		}
+	}
 	
-
-	(void) pollfd;
-	return a;
+	if (ret.fd != -1) {
+		long aux = res->prepareResponse((revent & POLLERR) || (revent & POLLHUP));
+		ret.fd = aux;
+		ret.rw = aux >> 32;
+	}
+	
+	if (ret.fd == -1)
+		pollfd.events = POLLOUT;
+	
+	return ret;
 }

@@ -27,6 +27,7 @@ class PollHandler {
 		void 			removeFromFds(int fd);
 		int 			pollMode();
 		struct pollfd*	createFdsExtra();
+		void			recoverFds(struct pollfd* fdsExtra);
 		//returns connection position in list
 		Connection&		findConnection(const Connection::secondaryFd& secFd);
 		int				findConnectionIndex(const Connection& con) const;

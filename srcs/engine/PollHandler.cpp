@@ -28,14 +28,15 @@ void PollHandler::removeConnection(Connection &c) {
 	close(c.sock);
 	removeFromFds(c.sock);
 	connections.erase(std::find(connections.begin(), connections.end(), c));
-	close(c.secFd.fd);
-	secFds.erase(std::find(secFds.begin(), secFds.end(), c.secFd));
+	removeSecondary(c.secFd);
 }
 
 void PollHandler::removeSecondary(Connection::secondaryFd &f) {
 	std::cout << "Secondary Removed" << std::endl;
-	close(f.fd);
-	secFds.erase(std::find(secFds.begin(), secFds.end(), f));
+	if (f.fd > 0) {
+		close(f.fd);
+		secFds.erase(std::find(secFds.begin(), secFds.end(), f));
+	}
 }
 
 void PollHandler::addToFds(int fd, fdType type) {
@@ -87,6 +88,11 @@ struct pollfd* PollHandler::createFdsExtra() {
 	return ret;
 }
 
+void PollHandler::recoverFds(struct pollfd* fdsExtra) {
+	for (size_t i = 0; i < listeners.size() + connections.size(); i++)
+		fds[i] = fdsExtra[i];
+}
+
 Connection&	PollHandler::findConnection(const Connection::secondaryFd& secFd) {
 	for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++)
 		if (it->secFd == secFd)
@@ -117,13 +123,14 @@ int PollHandler::pollMode() {
 		throw std::runtime_error("poll error: " + std::string(strerror(errno)));
 
 	//check listeners
+	std::vector<Connection> toAdd;
 	if (status > 0) {
 		std::cout << "Checking listeners" << std::endl;
 		for (std::vector<Listener>::const_iterator it = listeners.begin(); it != listeners.end(); it++) {
-			if (fds[i].revents) {
+			if (fdsExtra[i].revents) {
 				try {
-					Connection c(it->handleEvent(fds[i].revents));
-					addConnection(c);
+					Connection c(it->handleEvent(fdsExtra[i].revents));
+					toAdd.push_back(c);
 				} catch (std::exception& e) {
 					std::cerr << e.what() << std::endl;
 				}
@@ -133,13 +140,19 @@ int PollHandler::pollMode() {
 	}
 
 	//check connections, also timeouts
-	//check if request fully parsed and make first call to handle secondary event, maybe keep an array of which secondary fds should be added
 	std::cout << "Checking connections and timeouts" << std::endl;
 	std::vector<Connection> toRemove;
+	std::vector<Connection::secondaryFd> toAddSecondary;
 	for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++) {
-		if (fds[i].revents)
-			if (it->handleEvent(fds[i]))
+		if (fdsExtra[i].revents) {
+			if (it->handleEvent(fdsExtra[i]))
 				toRemove.push_back(*it);
+			else if (it->req && it->req->parsed == Request::ALL) {
+				Connection::secondaryFd auxS = it->handleSecondaryEvent(fdsExtra[i], 0);
+				if (auxS.fd > 0)
+					toAddSecondary.push_back(auxS);
+			}
+		}
 		if (it->checkTimer())
 			toRemove.push_back(*it);
 		i++;
@@ -148,7 +161,6 @@ int PollHandler::pollMode() {
 
 	//check secondary
 	std::vector<Connection::secondaryFd> toRemoveSecondary;
-	std::vector<Connection::secondaryFd> toAddSecondary;
 	if (status > 0) {
 		std::cout << "Checking secondary fds" << std::endl;
 		for (std::vector<Connection::secondaryFd>::const_iterator it = secFds.begin(); it != secFds.end(); it++) {
@@ -156,7 +168,7 @@ int PollHandler::pollMode() {
 				Connection& con = findConnection(*it);
 				//check wether connection is being removed due to some error
 				if (std::count(toRemove.begin(), toRemove.end(), con) == 0) {
-					Connection::secondaryFd auxS = con.handleSecondaryEvent(fds[findConnectionIndex(con) + listeners.size()]);
+					Connection::secondaryFd auxS = con.handleSecondaryEvent(fdsExtra[findConnectionIndex(con) + listeners.size()], fdsExtra[i].revents);
 					toRemoveSecondary.push_back(*it);
 					if (auxS.fd > 0)
 						toAddSecondary.push_back(auxS);
@@ -166,8 +178,14 @@ int PollHandler::pollMode() {
 		}
 	}
 
+	recoverFds(fdsExtra);
+	delete[] fdsExtra;
+
 	for (std::vector<Connection>::iterator it = toRemove.begin(); it != toRemove.end(); it++)
 		removeConnection(*it);
+
+	for (std::vector<Connection>::iterator it = toAdd.begin(); it != toAdd.end(); it++)
+		addConnection(*it);
 	
 	for (std::vector<Connection::secondaryFd>::iterator it = toRemoveSecondary.begin(); it != toRemoveSecondary.end(); it++)
 		removeSecondary(*it);
@@ -175,7 +193,6 @@ int PollHandler::pollMode() {
 	for (std::vector<Connection::secondaryFd>::iterator it = toAddSecondary.begin(); it != toAddSecondary.end(); it++)
 		secFds.push_back(*it);
 
-	delete[] fdsExtra;
 	return 1;
 }
 

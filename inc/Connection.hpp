@@ -41,7 +41,7 @@ class Connection {
 		bool operator==(const Connection &other) const;
 		int handleEvent(struct pollfd &pollfd);
 		//if nothing wants to be returned, just return fd == -1
-		secondaryFd	handleSecondaryEvent(struct pollfd &pollfd);
+		secondaryFd	handleSecondaryEvent(struct pollfd &pollfd, int revent);
 };
 
 #endif

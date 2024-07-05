@@ -184,7 +184,7 @@ const Server& getServerByHost(const std::vector<Server>& servers, std::string ho
             return *it;
         }
     }
-	throw(Response::NotFoundException());
+	throw (Response::NotFoundException());
 }
 
 
