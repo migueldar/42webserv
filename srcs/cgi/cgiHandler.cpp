@@ -12,22 +12,6 @@ CgiHandler::CgiHandler(const Location &loc, std::string &tokenCGI, std::string &
         std::cout << it->first << "=" << it->second << std::endl;
     }
 
-    size_t numVariables = metaVariables.size();
-
-    env = new char *[numVariables + 1];
-
-    size_t i = 0;
-    
-    for (std::map<std::string, std::string>::const_iterator iter= metaVariables.begin(); iter != metaVariables.end(); ++iter) {
-        std::string envVar = iter->first + "=" + iter->second;
-
-        env[i] = new char[envVar.length() + 1]; 
-        strcpy(env[i], envVar.c_str()); 
-        ++i;
-    }
-
-    env[numVariables] = NULL;
-
     script = loc.root + script;
 }
 
@@ -50,12 +34,12 @@ int CgiHandler::handleCgiEvent() {
         case BEGIN_CGI_EXEC:
             if (pipe(infd) < 0 || pipe(outfd) < 0 || pipe(errfd) < 0) {
                 std::cerr << "Error al crear las tuberías: " << strerror(errno) << std::endl;
-                return -2;
+                return -1;
             }
             pid = fork();
             if (pid < 0) {
                 std::cerr << "Error al crear el proceso hijo: " << strerror(errno) << std::endl;
-                return -2;
+                return -1;
             }
             if (pid == 0) {
                 close(infd[1]);
@@ -65,10 +49,29 @@ int CgiHandler::handleCgiEvent() {
                 dup2(outfd[1], STDOUT_FILENO);
                 dup2(errfd[1], STDERR_FILENO);
 
+                size_t numVariables = metaVariables.size();
+    
+                env = new char *[numVariables + 1];
+
+                size_t i = 0;
+                
+                for (std::map<std::string, std::string>::const_iterator iter= metaVariables.begin(); iter != metaVariables.end(); ++iter) {
+                    std::string envVar = iter->first + "=" + iter->second;
+
+                    env[i] = new char[envVar.length() + 1]; 
+                    strcpy(env[i], envVar.c_str()); 
+                    ++i;
+                }
+
+                env[numVariables] = NULL;
+
                 std::cout << "EXEC:" << loc.cgi.at(tokenCGI) << " SCRIPT: " << script << std::endl;
                 const char* args[] = { (loc.cgi.at(tokenCGI)).c_str(), script.c_str(), NULL };
                 if (execve(args[0], (char* const*)args, (char* const*)env) < 0) {
                     std::cerr << "Error al ejecutar el script CGI: " << strerror(errno) << std::endl;
+                    for (unsigned long i = 0; i < metaVariables.size(); i++)
+                        delete[] env[i];
+                    delete[] env;
                     exit(EXIT_FAILURE);
                 }
             } else {
@@ -79,16 +82,13 @@ int CgiHandler::handleCgiEvent() {
                 //TODO set in infd write on sing bit
                 return infd[1];
             }
-            
+            break;
         case WRITE_CGI_EXEC:
             bytesWritten = write(infd[1], req.body.c_str(), req.body.length());
             close(infd[1]);
-            for (unsigned long i = 0; i < metaVariables.size(); i++)
-                delete[] env[i];
-            delete[] env;
             if (bytesWritten < 0) {
                 std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
-                return -2;
+                return -1;
             }
             stages = READ_CGI_EXEC;
             //TODO set in outfd read on sing bit
@@ -99,7 +99,7 @@ int CgiHandler::handleCgiEvent() {
             bytesRead = read(outfd[0], buffer, SIZE_READ);
             if (bytesRead <= 0) {
                 std::cerr << "Error del script CGI" << std::endl;
-                return -2;
+                return -1;
             }
             if (bytesRead > 0){
                 std::string aux(buffer, bytesRead);
@@ -113,7 +113,7 @@ int CgiHandler::handleCgiEvent() {
                     int exit_status = WEXITSTATUS(status);
                     if (exit_status != EXIT_SUCCESS){
                         std::cerr << "El proceso hijo terminó sin éxito" << std::endl;
-                        return -2;
+                        return -1;
                     }
                 } else {
                     std::cerr << "El proceso hijo terminó de forma anormal" << std::endl;
@@ -123,14 +123,14 @@ int CgiHandler::handleCgiEvent() {
                 close(outfd[0]);
                 stages = BEGIN_CGI_EXEC;
                 std::cout <<  "FINISH CGI: " <<  status << std::endl;
-                return -1;
+                return 0;
             }
             else{
                 //TODO set in outfd read on sing bit
                 return outfd[0];
             }
     }
-    return -2;
+    return -1;
 }
 
 

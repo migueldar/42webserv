@@ -188,7 +188,7 @@ const Server& getServerByHost(const std::vector<Server>& servers, std::string ho
 }
 
 
-Response::statusCode checkAccess(const std::string& path, enum methodsEnum method) {
+Response::statusCode checkAccess(const std::string& path, enum methodsEnum method, bool autoIndex) {
     struct stat fileStat;
     
     if (stat(path.c_str(), &fileStat) != 0) {
@@ -196,7 +196,10 @@ Response::statusCode checkAccess(const std::string& path, enum methodsEnum metho
     }
     
     if (S_ISDIR(fileStat.st_mode)) {
-        return Response::_4XX;
+		if(!autoIndex)
+        	return Response::_4XX;
+		else if(method != GET)
+			return Response::_4XX;
 	}	
 
     if (S_ISREG(fileStat.st_mode)) {

@@ -20,6 +20,6 @@ long		hexStringToLong(std::string str);
 const Server &getServerByHost(const std::vector<Server> &servers, std::string host);
 const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted);
-Response::statusCode checkAccess(const std::string& path, enum methodsEnum method);
+Response::statusCode checkAccess(const std::string& path, enum methodsEnum method, bool autoIndex);
 
 #endif

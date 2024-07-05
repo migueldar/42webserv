@@ -8,7 +8,7 @@ std::string Response::getHttpResponse(){
 }
 
 // TODO: Store server for errorPages, isnt stored now becouse isnt needed
-Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(req.targetString), locationPath(""),  cgiToken(""), port(port), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), status(START_PREPING_RES) {
+Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(req.targetString), locationPath(""),  cgiToken(""), port(port), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), status(START_PREPING_RES), statusCodeVar(Response::_2XX) {
     // TODO: remove hardcode
     httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
 }
@@ -97,33 +97,46 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
  *
  * @return 0 if can continue to the next stage, -1 if finishes processing, anything else are fds to be imputed into poll
  */
-int Response::prepareResponse() {
+int Response::prepareResponse(int err) {
     int ret;
 
-    switch (status) {
-    case START_PREPING_RES:
-        return handleStartPrepingRes();
+    if(err){
+        statusCodeVar = Response::_4XX; //INTERNAL SERVER ERROR
+        status = ERROR_RESPONSE;
+    }
 
-    case WAITING_FOR_CGI:
+    if(status == START_PREPING_RES){
+        ret = handleStartPrepingRes();
+        
+        if(ret != 0)
+            return ret;
+    }
+
+    if(status == WAITING_FOR_CGI){
         ret = handleWaitingForCgi();
-        if (ret == -1)
-            return 0;
-        return ret;
 
-    case PROCESSING_RES: // TODO: Read from file opened and storage
+        if (ret != 0)
+            return ret;
+
+    } else if(status == PROCESSING_RES){
         status = GET_RESPONSE;
-        return 0;
+    }
 
-    case GET_RESPONSE:
+    if(status == GET_RESPONSE){
         handleGetResponse();
-        break;
+
+    } else if(status == ERROR_RESPONSE){
+        ret = handleBadResponse();
+
+        if (ret != 0)
+            return ret;
     }
 
     return -1;
 }
 
-Response::statusCode Response::filterResponseCode(const std::string& path, methodsEnum method) {
-    if (checkAccess(path, method) != Response::_2XX) {
+Response::statusCode Response::filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex) {
+    if (checkAccess(path, method, autoIndex) != Response::_2XX) {
         return Response::_4XX;
     }
     if (loc.root.empty() && loc.redirectionUrl.empty()) {
@@ -156,23 +169,33 @@ int Response::handleStartPrepingRes() {
     
     if (locationPath != reconstructPath ) {
         auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
-    } else if(loc.defaultPath != "" && reconstructPath == "/") {
+    } else if(loc.defaultPath != "") {
         auxTest = loc.root + loc.defaultPath;
     }
     else{
         auxTest = loc.root;
     }
-
     status = PROCESSING_RES;
 
-    Response::statusCode responseAproxCode = filterResponseCode(auxTest, req.method);
+    std::cout << auxTest << std::endl;
+    Response::statusCode responseAproxCode = filterResponseCode(auxTest, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
     // TODO filter ResponseCode of checkAccess for some bad responses
     // Check access to file and non-default location
 
     if (responseAproxCode == Response::_2XX) {
+        if(loc.autoindex == true && loc.defaultPath != "" && auxTest == loc.root)
+        {
+            //FILL BODY
+            status = GET_RESPONSE;
+            return 0;
+        }
+
         // Check for CGI tokens in the path
         for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
-            if (req.target[req.target.size() - 1].find(it->first) != std::string::npos) {
+            size_t lastSlashPos = auxTest.rfind('/');
+            std::string file = auxTest.substr(lastSlashPos, auxTest.size());
+            if (file.find(it->first) != std::string::npos) {
+                req.target.push_back(file);
                 cgiToken = it->first;
                 break;
             }
@@ -187,7 +210,8 @@ int Response::handleStartPrepingRes() {
         // }
     } else {
         /*responseAproxCode*/
-        handleBadResponse();
+        statusCodeVar = Response::_4XX;
+        status = ERROR_RESPONSE;
     }
 
     return 0;
@@ -207,8 +231,10 @@ int Response::handleWaitingForCgi() {
     if (fdRet > 0) 
         return fdRet;
     status = GET_RESPONSE;
-    if(fdRet == -2) //TODO internal server error
-        handleBadResponse();
+    if(fdRet == -1){ //TODO internal server error
+        statusCodeVar = Response::_4XX;
+        status = ERROR_RESPONSE;
+    }
     return 0;
 }
 
@@ -237,8 +263,10 @@ void Response::handleGetResponse() {
  * resource could not be found. It sets the httpResponse string accordingly and updates
  * the status to GET_RESPONSE for further response handling.
  */
-void Response::handleBadResponse() {
-    // TODO: Add checking of default pages here
+int Response::handleBadResponse() {
+
+    // TODO: Add checking of default pages here and statusCodeVar
     httpResponse = "HTTP/1.1 404 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
     status = GET_RESPONSE;
+    return 0;
 }

@@ -350,6 +350,8 @@ void ParserFile::fillServers() {
                 configTypeMap["index"] = UNKNOWN;
                 if(wordLines.size() == 2 && brace == 2){
                     location.defaultPath = wordLines[1];
+                    if(location.defaultPath[0] == '/')
+                        location.defaultPath = location.defaultPath.substr(1, location.defaultPath.size());
                 }
                 else
                     throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config index:" + *(--wordLines.end()));
@@ -431,12 +433,11 @@ void ParserFile::fillServers() {
                         setValuesConfigTypeMap(configTypeMap, 1);
                     }
                     if(brace == 1){ 
-                        if(configTypeMap["index"] != UNKNOWN && configTypeMap["root"] != UNKNOWN && configTypeMap["redirection"] != UNKNOWN)
+                        if(configTypeMap["root"] != UNKNOWN && configTypeMap["redirect"] != UNKNOWN)
                             throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location");
                         
-                        // TODO: Stablish if this condition should be set only to root and redirect becouse if we only have an index we do nothing
-                        // if(configTypeMap["root"] == ROOT && configTypeMap["redirection"] == REDIRECT)
-                        //     throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location");
+                        if(configTypeMap["root"] != UNKNOWN && configTypeMap["index"] != INDEX)
+                            throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location, index but no root");
 
                         server.addLocation(routeKey, location);
                         

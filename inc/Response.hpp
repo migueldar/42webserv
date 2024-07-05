@@ -12,6 +12,7 @@ class Response {
             START_PREPING_RES = 0,
             WAITING_FOR_CGI,
             PROCESSING_RES,
+            ERROR_RESPONSE,
             GET_RESPONSE,
         };
 
@@ -32,17 +33,17 @@ class Response {
         // Response(const Response& other);
         ~Response();
 
-        int prepareResponse();
+        int prepareResponse(int err);
         std::string getHttpResponse();
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
-        Response::statusCode filterResponseCode(const std::string& path, methodsEnum method);
+        Response::statusCode filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex);
 
         int handleStartPrepingRes();
         int handleWaitingForCgi();
         void handleGetResponse();
     
-        void handleBadResponse();
+        int handleBadResponse();
 
         // Response& operator=(const Response& other);
     private:
@@ -54,13 +55,14 @@ class Response {
         std::string                     cgiToken;
         std::string                     port;
 
-        unsigned long                   maxBodySizeReq; 
+        unsigned long                   maxBodySizeReq;
 
         const Location                  &loc;
         CgiHandler                      *newCgi;
         Request                         req;
 
         enum Response::responseStages   status;
+        enum Response::statusCode       statusCodeVar;
 
 };
 

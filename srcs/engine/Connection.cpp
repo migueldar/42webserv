@@ -44,9 +44,9 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		std::cout << "pollin" << std::endl;
 
 		int read_res;
-		char *read_buff = new char[SIZE_READ];
+		char *read_buff = new char[SIZE_READ + 1];
 
-		memset(read_buff, 0, SIZE_READ);
+		memset(read_buff, 0, SIZE_READ + 1);
 		read_res = recv(sock, read_buff, SIZE_READ, 0);
 		std::cout << read_buff << std::endl;
 
@@ -75,7 +75,6 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		
 		delete req;
 		req = NULL;
-		data = "";
 		
 		std::cout << "RESPOSE: " << httpResponse << std::endl;
 		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0){
@@ -86,6 +85,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		pollfd.events = POLLIN;
 		//after send
 		startTimer();
+		return 0;
 	}
 
 	if (data != "") {
@@ -124,13 +124,14 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			//RESPONSE PROCESSING
 			//TODO CHANGE THIS CONDITION BACK TO fdRet == 0
 			while(fdRet != -1)
-				fdRet = res->prepareResponse();
+				fdRet = res->prepareResponse(0);
 			
 			if(fdRet == -1){
 				pollfd.events = POLLOUT;
 			}
-
-			//ELSE INSERT FDRET AL POLL COMPLEJO, POR QUE CUANDO LEEMOS EL CONTENIDO DE UN ARCHIVO ES DISTINTO QUE CUANDO PROCESAMOS UN CGI
+			// else if(/*INSERT POLL IF FDRET > 0*/){
+			// 	//KK///////////////////////
+			// }
 		}
 	}
 
