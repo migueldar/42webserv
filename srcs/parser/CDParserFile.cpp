@@ -306,7 +306,8 @@ void ParserFile::fillServers() {
                 if(wordLines.size() == 2 && brace == 2){
                     if(wordLines[1][0] != '/')
                         throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid redirect dir:" + wordLines[1]);
-
+                    if(wordLines[1][wordLines[1].size()-1] != '/')
+                        wordLines[1] += "/";
                     location.redirectionUrl = wordLines[1];
                 }
                 else

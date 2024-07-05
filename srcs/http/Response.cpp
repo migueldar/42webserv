@@ -55,33 +55,41 @@ Response::Response(std::string port, const Server& server, Request req): header(
 Response::~Response(){
 }
 
-const Location& Response::getLocationByRoute(std::string reconstructedPath, const Server& server) {
+const Location& Response::getLocationByRoute(std::string enterPath, const Server& server) {
     
-    std::string remainingPath = reconstructedPath;
+    std::string remainingPath = enterPath;
     size_t lastSlashPos = remainingPath.size();
-    bool token = 1;
+    bool token = 0;
     while (42) {
         // BREAKING PATHS BY '/'
         try {
             if(server.existsLocationByRoute(remainingPath)){
+                const Location *loc = &server.getLocation(remainingPath);
                 this->locationPath = std::string(remainingPath);
-                return server.getLocation(remainingPath);
+                if(loc->redirectionUrl != ""){
+                    token = 0;
+                    remainingPath = loc->redirectionUrl + enterPath.substr(lastSlashPos + !token, enterPath.length());
+                    reconstructPath = remainingPath;
+                }
+                else 
+                    return *loc;
             }
         } catch (const std::out_of_range&) {
             std::cout << "NOT FOUND LOCATION " << std::endl; 
 			//JUST TO CATH WHEN GET LOCATION STD::MAP "AT" METHOD DOESNT FIND REQUESTED LINE 
         }
-
-		if(remainingPath == "/")
-			break;
-
-		lastSlashPos = remainingPath.rfind('/');
-        remainingPath = remainingPath.substr(0, lastSlashPos + token);
-
         if(!token)
             token = 1;
         else
             token = 0;
+
+		if(remainingPath == "/")
+			break;
+
+        std::cout << remainingPath << std::endl;
+		lastSlashPos = remainingPath.rfind('/');
+        remainingPath = remainingPath.substr(0, lastSlashPos + token);
+
 
     }
     //EMPTY LOCATION TO RETURN 404 ERROR, STATIC TO RETURN SAME OBJECT ALWAIS
