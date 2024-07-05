@@ -32,18 +32,6 @@ CONCLUSIONES
 
 + wether the method used is valid should be checked in the Response creation (as it depends on locations, not ports)
 
-- reflexionar sobre la coincidencia de un path de una location, si tengo un servidor con locations definidas de esta forma:
-                            location /kk2/kk {
-                              root /root/; 
-                            }
-                            location /kk2/ {
-                              root /root2/; 
-                            }
-
-  Como es el curso de accion cuando una request con este path llega "/kk/kk2/app.py". Lo que ocurre es que vas desglosando por '/' de tal forma que confirmas primero "/kk2/kk" y tienes una coincidencia, lo que ocurre es que al revisar "/root/app".py en tu local encuentras que no es accesible. Aqui hay dos cursos de accion, el primero seria devolver un 404 y ya esta, otra seria continuar desglosando por '/' de forma que confirmarias "/kk2" en el path y obtendrias una nueva coincidencia. Bajo esta coincidencia la confirmacion de acceso seria "/root2/app.py" y al revisar resulta que si tienes acceso. CONCLUSION: Nginx hace por defecto el primer approach pero esto es asi ya que tiene una regla exacta para esta interactuacion.
-
-- reflexionar si en el parseo una vez un root es encontrado ha de ser confirmado el acceso
-
 - refelexionar si el cgi admite cualquier tipo de request (GET; POST; DELETE)
 
 - reflexionar como hacer la interactuacion con un redirect en una location, hay dos caminos posibles, cuando el handler de la respuesta encuentre la location target, antes de returnear dicha location, volvemos a meter el path target con el path y encuentre el path nuevo, el problema es que si se linkean 3 locations con redirects entras  en un bucle infinito. Esto genera dudas ya que planteas, hago un max de redirects o solo dejo 1.

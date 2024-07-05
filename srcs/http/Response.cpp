@@ -2,6 +2,7 @@
 #include "Response.hpp"
 #include "http.hpp"
 #include "CDCgiHandler.hpp"
+#include <fcntl.h>
 
 std::string Response::getHttpResponse(){
     return httpResponse;
@@ -166,6 +167,7 @@ Response::statusCode Response::filterResponseCode(const std::string& path, metho
  */
 long Response::handleStartPrepingRes() {
     std::string auxTest;
+    int fd = 0;
     
     if (locationPath != reconstructPath ) {
         auxTest = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
@@ -191,13 +193,15 @@ long Response::handleStartPrepingRes() {
         }
 
         // Check for CGI tokens in the path
-        for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
-            size_t lastSlashPos = auxTest.rfind('/');
-            std::string file = auxTest.substr(lastSlashPos + 1, auxTest.size());
-            if (file.find(it->first) != std::string::npos) {
-                req.target.push_back(file);
-                cgiToken = it->first;
-                break;
+        if(req.method != DELETE){
+            for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
+                size_t lastSlashPos = auxTest.rfind('/');
+                std::string file = auxTest.substr(lastSlashPos + 1, auxTest.size());
+                if (file.find(it->first) != std::string::npos) {
+                    req.target.push_back(file);
+                    cgiToken = it->first;
+                    break;
+                }
             }
         }
         // Create CGI handler if CGI token found
@@ -205,16 +209,26 @@ long Response::handleStartPrepingRes() {
             newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
             status = WAITING_FOR_CGI;
         }
-        // else {
-        //     // TODO: Open the file and return the file descriptor for poll insertion and use sign byte to mark read/write
-        // }
+        else {
+            if(req.method == GET){
+                fd = open(auxTest.c_str(), O_RDONLY);
+            }
+            else{
+                fd = open(auxTest.c_str(), O_WRONLY);
+            }
+            if (fd == -1) {
+                statusCodeVar = Response::_4XX;
+                status = ERROR_RESPONSE;
+                return 0;
+            }
+        }
     } else {
         /*responseAproxCode*/
         statusCodeVar = Response::_4XX;
         status = ERROR_RESPONSE;
     }
 
-    return 0;
+    return (long)fd;
 }
 
 /**
