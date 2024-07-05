@@ -33,17 +33,17 @@ class Response {
         // Response(const Response& other);
         ~Response();
 
-        int prepareResponse(int err);
+        long prepareResponse(int err);
         std::string getHttpResponse();
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
         Response::statusCode filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex);
 
-        int handleStartPrepingRes();
-        int handleWaitingForCgi();
+        long handleStartPrepingRes();
+        long handleWaitingForCgi();
         void handleGetResponse();
     
-        int handleBadResponse();
+        long handleBadResponse();
 
         // Response& operator=(const Response& other);
     private:

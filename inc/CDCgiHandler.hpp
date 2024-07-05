@@ -41,7 +41,7 @@ class CgiHandler {
 		CgiHandler(const CgiHandler& other);
 		~CgiHandler();
 		void 	initDictParser(void);
-		int 	handleCgiEvent();
+		long 	handleCgiEvent();
 		int 	executeCgi(int &fd);
 
 		void	parseLOCATION(void);

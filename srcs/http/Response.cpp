@@ -97,8 +97,8 @@ const Location& Response::getLocationByRoute(std::string reconstructedPath, cons
  *
  * @return 0 if can continue to the next stage, -1 if finishes processing, anything else are fds to be imputed into poll
  */
-int Response::prepareResponse(int err) {
-    int ret;
+long Response::prepareResponse(int err) {
+    long ret;
 
     if(err){
         statusCodeVar = Response::_4XX; //INTERNAL SERVER ERROR
@@ -164,7 +164,7 @@ Response::statusCode Response::filterResponseCode(const std::string& path, metho
  * @param auxTest The auxiliary test string used to check machine route to request target.
  * @return Always returns 0 to continue state machine (indicators for future implementation).
  */
-int Response::handleStartPrepingRes() {
+long Response::handleStartPrepingRes() {
     std::string auxTest;
     
     if (locationPath != reconstructPath ) {
@@ -193,7 +193,7 @@ int Response::handleStartPrepingRes() {
         // Check for CGI tokens in the path
         for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
             size_t lastSlashPos = auxTest.rfind('/');
-            std::string file = auxTest.substr(lastSlashPos, auxTest.size());
+            std::string file = auxTest.substr(lastSlashPos + 1, auxTest.size());
             if (file.find(it->first) != std::string::npos) {
                 req.target.push_back(file);
                 cgiToken = it->first;
@@ -226,8 +226,8 @@ int Response::handleStartPrepingRes() {
  *
  * @return File descriptor returned by CGI event handling, or -1 if finished.
  */
-int Response::handleWaitingForCgi() {
-    int fdRet = newCgi->handleCgiEvent();
+long Response::handleWaitingForCgi() {
+    long fdRet = newCgi->handleCgiEvent();
     if (fdRet > 0) 
         return fdRet;
     status = GET_RESPONSE;
@@ -263,7 +263,7 @@ void Response::handleGetResponse() {
  * resource could not be found. It sets the httpResponse string accordingly and updates
  * the status to GET_RESPONSE for further response handling.
  */
-int Response::handleBadResponse() {
+long Response::handleBadResponse() {
 
     // TODO: Add checking of default pages here and statusCodeVar
     httpResponse = "HTTP/1.1 404 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";

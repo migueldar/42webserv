@@ -23,7 +23,7 @@ CgiHandler::CgiHandler(const CgiHandler& other)
 }
 
 
-int CgiHandler::handleCgiEvent() {
+long CgiHandler::handleCgiEvent() {
     static enum CGI_STAGES stages = BEGIN_CGI_EXEC;
     static int infd[2], outfd[2], errfd[2]; // Se añade un nuevo pipe para la salida de error
     static int pid;
@@ -80,7 +80,8 @@ int CgiHandler::handleCgiEvent() {
                 close(errfd[1]);
                 stages = WRITE_CGI_EXEC;
                 //TODO set in infd write on sing bit
-                return infd[1];
+                long ret = infd[1] | ((long)1 << 32);
+                return ret;
             }
             break;
         case WRITE_CGI_EXEC:
@@ -92,7 +93,7 @@ int CgiHandler::handleCgiEvent() {
             }
             stages = READ_CGI_EXEC;
             //TODO set in outfd read on sing bit
-            return outfd[0]; 
+            return (long)outfd[0]; 
             
         case READ_CGI_EXEC:
             char buffer[SIZE_READ];
@@ -127,7 +128,7 @@ int CgiHandler::handleCgiEvent() {
             }
             else{
                 //TODO set in outfd read on sing bit
-                return outfd[0];
+                return (long)outfd[0];
             }
     }
     return -1;
@@ -183,7 +184,8 @@ void CgiHandler::parseSCRIPT_NAME(void) {
         if (found != std::string::npos) {
             bad += 1;
             script = uri[i];
-            metaVariables["SCRIPT_NAME"] = metaVariables["LOCATION"] + "/" + script;
+            
+            metaVariables["SCRIPT_NAME"] = metaVariables["LOCATION"] + script;
             uri.erase(uri.begin());
             if(!uri.empty()){
                 metaVariables["PATH_INFO"] = "/" + script;
