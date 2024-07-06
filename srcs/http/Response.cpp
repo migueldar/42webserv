@@ -169,7 +169,7 @@ Response::statusCode Response::filterResponseCode(const std::string& path, metho
 }
 
 // TODO change parameters to be more specific
-void Response::checkCgiTokens(const std::string &localFilePath) {
+bool Response::checkCgiTokens(const std::string &localFilePath) {
     if (req.method != DELETE) {
         for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
             size_t lastSlashPos = localFilePath.rfind('/');
@@ -177,10 +177,11 @@ void Response::checkCgiTokens(const std::string &localFilePath) {
             if (file.find(it->first) != std::string::npos) {
                 req.target.push_back(file);
                 cgiToken = it->first;
-                break;
+                return true;
             }
         }
     }
+    return false;
 }
 
 /**
@@ -198,6 +199,7 @@ void Response::checkCgiTokens(const std::string &localFilePath) {
 long Response::handleStartPrepingRes() {
     int fd = -1;
     
+    // Getting final path for searching in local machine 
     if (locationPath != reconstructPath) {
         localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
     } else if (loc.defaultPath != "") {
@@ -217,10 +219,7 @@ long Response::handleStartPrepingRes() {
             fd = 0;
         }
 
-        checkCgiTokens(localFilePath);
-
-        // Create CGI handler if CGI token found
-        if (!cgiToken.empty()) {
+        if (checkCgiTokens(localFilePath)) {
             newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
             fd = 0;
             status = WAITING_FOR_CGI;
