@@ -38,6 +38,7 @@ class Response {
         std::string getHttpResponse();
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
+        bool checkCgiTokens(const std::string &localFilePath);
         Response::statusCode filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex);
 
         long handleStartPrepingRes();
