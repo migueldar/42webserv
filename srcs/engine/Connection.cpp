@@ -2,6 +2,7 @@
 #include <sys/poll.h>
 
 Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), res(NULL), data("") {
+	secFd.fd = -1;
 	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
@@ -9,8 +10,9 @@ Connection::Connection(int port, int sock, const std::vector<Server>& servers): 
 	startTimer();
 }
 
-//if smt around here fails, check this, bc its not currently a full copy
-Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), port(other.port), sock(other.sock), servers(other.servers), req(other.req), res(other.res), data(other.data) {}
+Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), port(other.port), sock(other.sock), servers(other.servers), req(other.req), res(other.res), data(other.data) {
+	secFd = other.secFd;
+}
 
 Connection::~Connection() {}
 
@@ -59,47 +61,42 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		delete[] read_buff;
 	}
 
-	//response handling should be done here, not in pollin
-	//si hay un error en la request (4xx, 5xx) devolvemos Connection: close y cerramos conexion
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
 		std::string httpResponse;
-		//STANDAR RES CONSTRUCTION
-		if(res != NULL){
+		if (res != NULL) {
 			httpResponse = res->getHttpResponse();
 			delete res;
 			res = NULL;
 		}
-		else //TODO THIS IS DEFAULTEST RESPONSE WHEN NO SERVER NAME MATCHES OR REQUEST IS BAD
-			httpResponse = "HTTP/1.1 " + (req->errorStatus != "" ? req->errorStatus : "404 OK" ) + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";;
+		else //TODO THIS IS DEFAULTEST RESPONSE WHEN NO SERVER NAME MATCHES OR REQUEST IS BAD //ESTO SOLO DEBERIA PASAR CUANDO HAY ERROR STATUS
+			httpResponse = "HTTP/1.1 " + (req->errorStatus != "" ? req->errorStatus : "404 NOT FOUND" ) + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";;
 		
 		delete req;
 		req = NULL;
 		
 		std::cout << "RESPOSE: " << httpResponse << std::endl;
+		//TODO si la respuesta a mandar es muy grande (~10^6 caracteres), mandarla en cachos, a traves de varios pollin
 		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0){
 			return 1;
 		}
-		//call Response constructor, we pass request
 
 		pollfd.events = POLLIN;
-		//after send
 		startTimer();
 		return 0;
 	}
 
 	if (data != "") {
-		if (!req){
+		if (!req) {
 			req = new Request();
 		}
 
 		data = req->addData(data);
+		//probablemente aqui tambien haga falta poner a 0 los events del fd
 		if (req->parsed == Request::ALL) {
-			std::cout << *req << std::endl;
 			checkTime = false;
 		}
 	}
-
 	return 0;
 }
 
@@ -107,26 +104,25 @@ Connection::secondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, 
 	secondaryFd ret;
 
 	if (res == NULL) {
-		if (req->errorStatus != "")
+		if (req->errorStatus != "") {
 			ret.fd = -1;
+			return ret;
+		}
 		else {
-			const Server *server = NULL;
 			try {
-				server = &getServerByHost(servers, req->headers.at("Host"));
-				res = new Response(toString(port), *server, *req);
+				res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 			}
 			catch (Response::NotFoundException &e){
 				ret.fd = -1;
 				std::cerr << "ERR SERVER NAME NOT FOUND" << std::endl;
+				return ret;
 			}
 		}
 	}
 	
-	if (ret.fd != -1) {
-		long aux = res->prepareResponse((revent & POLLERR) || (revent & POLLHUP));
-		ret.fd = aux;
-		ret.rw = aux >> 32;
-	}
+	long aux = res->prepareResponse((revent & POLLERR) || (revent & POLLHUP));
+	ret.fd = aux;
+	ret.rw = aux >> 32;
 	
 	if (ret.fd == -1)
 		pollfd.events = POLLOUT;

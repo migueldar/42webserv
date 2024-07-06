@@ -32,8 +32,8 @@ void PollHandler::removeConnection(Connection &c) {
 }
 
 void PollHandler::removeSecondary(Connection::secondaryFd &f) {
-	std::cout << "Secondary Removed" << std::endl;
 	if (f.fd > 0) {
+		std::cout << "Secondary Removed" << std::endl;
 		close(f.fd);
 		secFds.erase(std::find(secFds.begin(), secFds.end(), f));
 	}
@@ -213,14 +213,3 @@ int PollHandler::pollMode() {
 // 	*this = other;
 // }
 
-
-// PollHandler& PollHandler::operator=(PollHandler const& rhs) {
-// 	(void) rhs;
-// 	std::cout << "PollHandler assignment operator called" << std::endl;
-// 	return (*this);
-// }
-
-// std::ostream& operator<<(std::ostream& o, PollHandler const& prt) {
-// 	(void) prt;
-// 	return (o);
-// }		

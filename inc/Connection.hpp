@@ -22,6 +22,11 @@ class Connection {
 				bool operator==(const secondaryFd &other) const {
 					return (fd == other.fd) && (rw == other.rw);
 				}
+				secondaryFd& operator=(secondaryFd const& rhs) {
+					fd = rhs.fd;
+					rw = rhs.rw;
+					return *this;
+				}
 		};
 		int							port;
 		int							sock;
