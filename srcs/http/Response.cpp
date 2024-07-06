@@ -168,6 +168,21 @@ Response::statusCode Response::filterResponseCode(const std::string& path, metho
     return Response::_2XX;
 }
 
+// TODO change parameters to be more specific
+void Response::checkCgiTokens(const std::string &localFilePath) {
+    if (req.method != DELETE) {
+        for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
+            size_t lastSlashPos = localFilePath.rfind('/');
+            std::string file = localFilePath.substr(lastSlashPos + 1, localFilePath.size());
+            if (file.find(it->first) != std::string::npos) {
+                req.target.push_back(file);
+                cgiToken = it->first;
+                break;
+            }
+        }
+    }
+}
+
 /**
  * @brief Handles the start of preparing the response.
  *
@@ -183,15 +198,13 @@ Response::statusCode Response::filterResponseCode(const std::string& path, metho
 long Response::handleStartPrepingRes() {
     int fd = -1;
     
-    if (locationPath != reconstructPath ) {
+    if (locationPath != reconstructPath) {
         localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
-    } else if(loc.defaultPath != "") {
+    } else if (loc.defaultPath != "") {
         localFilePath = loc.root + loc.defaultPath;
-    }
-    else{
+    } else {
         localFilePath = loc.root;
     }
-    status = PROCESSING_RES;
 
     std::cout << localFilePath << std::endl;
     Response::statusCode responseAproxCode = filterResponseCode(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
@@ -199,47 +212,38 @@ long Response::handleStartPrepingRes() {
     // Check access to file and non-default location
 
     if (responseAproxCode == Response::_2XX) {
-        if(loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root){
+        if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
             status = GET_AUTO_INDEX;
             fd = 0;
         }
 
-        // Check for CGI tokens in the path
-        if(req.method != DELETE){
-            for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
-                size_t lastSlashPos = localFilePath.rfind('/');
-                std::string file = localFilePath.substr(lastSlashPos + 1, localFilePath.size());
-                if (file.find(it->first) != std::string::npos) {
-                    req.target.push_back(file);
-                    cgiToken = it->first;
-                    break;
-                }
-            }
-        }
+        checkCgiTokens(localFilePath);
+
         // Create CGI handler if CGI token found
         if (!cgiToken.empty()) {
             newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
             fd = 0;
             status = WAITING_FOR_CGI;
-        }
-        else if(status == PROCESSING_RES) {
-            if(req.method == GET){
+        } else if (status == START_PREPING_RES) {
+            status = PROCESSING_RES;
+            if (req.method == GET) {
                 fd = open(localFilePath.c_str(), O_RDONLY);
-            }
-            else{
+            } else {
                 fd = open(localFilePath.c_str(), O_WRONLY);
             }
-            if(fd == -1){
+            if (fd == -1) {
                 statusCodeVar = Response::_4XX;
             }
         }
-    } else{
+    } else {
         statusCodeVar = responseAproxCode;
     }
+
     if (fd == -1) {
         fd = 0;
         status = ERROR_RESPONSE;
     }
+
     return (long)fd;
 }
 
