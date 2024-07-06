@@ -214,12 +214,11 @@ long Response::handleStartPrepingRes() {
     // Check access to file and non-default location
 
     if (responseAproxCode == Response::_2XX) {
+        fd = 0;
         if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
             status = GET_AUTO_INDEX;
-            fd = 0;
         } else if (checkCgiTokens(localFilePath)) {
             newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
-            fd = 0;
             status = WAITING_FOR_CGI;
         } else {
             status = PROCESSING_RES;
