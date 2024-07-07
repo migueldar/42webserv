@@ -15,6 +15,7 @@ class Response {
             PROCESSING_RES,
             GET_AUTO_INDEX,
             ERROR_RESPONSE,
+			ERROR_RESPONSE_PAGE,
             GET_RESPONSE,
         };
 
@@ -52,6 +53,7 @@ class Response {
         long handleGetAutoIndex();
     
         void handleBadResponse();
+		void handleBadResponsePage();
 
         // Response& operator=(const Response& other);
     private:

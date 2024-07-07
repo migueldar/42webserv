@@ -100,3 +100,9 @@ const Location& Server::getLocation( std::string locationName) const {
         return defaultLocation;
     }
 }
+std::string Server::getErrPage(std::string err) const
+{
+	std::string errnum = err.substr(0, err.find(" "));
+
+	return errPages.at(errnum);
+}

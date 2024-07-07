@@ -8,7 +8,6 @@ std::string Response::getHttpResponse(){
     return httpResponse;
 }
 
-// TODO: Store server for errorPages, isnt stored now becouse isnt needed
 Response::Response(std::string port, const Server& server, Request req): header(""), body(""),\
 	httpResponse(""), reconstructPath(req.targetString), locationPath(""), cgiToken(""), port(port),\
 	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(reconstructPath, server)),\
@@ -72,6 +71,8 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
                 if(loc->redirectionUrl != "") {
                     statusCodeVar = _308;
 					status = ERROR_RESPONSE;
+					token = 0;
+					reconstructPath = loc->redirectionUrl + enterPath.substr(lastSlashPos + !token, enterPath.length());
                 }
                 return *loc;
             }
@@ -109,7 +110,6 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
  * @return 0 if can continue to the next stage, -1 if finishes processing, anything else are fds to be imputed into poll
  */
 SecondaryFd Response::prepareResponse(int err) {
-	(void) server;
     if (err) {
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
@@ -137,8 +137,13 @@ SecondaryFd Response::prepareResponse(int err) {
 
     if (status == GET_RESPONSE) {
         handleGetResponse();
-    } else if (status == ERROR_RESPONSE)
+    } else if (status == ERROR_RESPONSE) {
 		handleBadResponse();
+		if (secFd.fd != 0)
+			return secFd;
+	} else if (status == ERROR_RESPONSE_PAGE) {
+		handleBadResponsePage();
+	}
 
 	secFd.fd = -1;
 	return secFd;
@@ -175,6 +180,7 @@ bool Response::checkCgiTokens(const std::string &localFilePath) {
 void Response::handleStartPrepingRes() {
 	if (!loc.methods[req.method]) {
         statusCodeVar = _405;
+		status = ERROR_RESPONSE;
 		return ;
     }
 
@@ -314,14 +320,15 @@ void Response::handleGetResponse() {
  */
 void Response::handleBadResponse() {
 	std::string err;
-	//err pages
+
+	secFd.fd = 0;
 	switch (statusCodeVar)
 	{
 		case _200:
 			//safeguard, will never run
-			break;
+			return;
 		case _308:
-			httpResponse = "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + loc.redirectionUrl + "\r\nContent-Length: 0 \r\nConnection: keep-alive\r\n\r\n";
+			httpResponse = "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + reconstructPath + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n";
 			return;
 		case _404:
 			err = "404 Not Found";
@@ -337,5 +344,33 @@ void Response::handleBadResponse() {
 			break;
 	}
 
+	try {
+		std::string errPage = server.getErrPage(err);
+		secFd.fd = open(errPage.c_str(), O_RDONLY);
+		if (secFd.fd > 0)
+		{
+			httpResponse = "HTTP/1.1 " + err + "\r\nConnection: close\r\nContent-Length: ";
+			status = ERROR_RESPONSE_PAGE;
+			return ;
+		}
+		else
+			err = "500 Internal Server Error";
+	}
+	catch (std::exception& _) {}
+
+    httpResponse = "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
+}
+
+void Response::handleBadResponsePage() {
+	std::string err;
+
+	try {
+		std::string page = readFile(secFd.fd);
+		httpResponse += toString(page.size()) + "\r\n\r\n" + page;
+		return ;
+	}
+	catch (std::exception& _) {
+		err = "500 Internal Server Error";
+	}
     httpResponse = "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
 }

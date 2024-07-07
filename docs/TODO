@@ -2,10 +2,6 @@ DOING
 
 TODO
 
-- redirecciones
-
-- 
-
 - reflexionar sobre almacenamiento (particularmente imagenes y videos) en deques, porque gestiona la memoria en bloques de 512
 
 - para respuestas de entorno a 5*10^6 caracteres el send no da error, pero salta pollerr, se manda bastante parte del mensaje pero no todo, hay que ver como fragmentamos archivos grandes
@@ -20,18 +16,16 @@ por parsear se guarda en la conexion
 
 - reflexionar sobre como checkear el maxbody size del server, idealmente saberlo antes de parsear el body, asi podremos\
   cortar en cuanto veamos que nos pasan un body length mas grande que el que queramos recibir en vez de parsear todo.
-  + No tiene sentido hacerlo ya que solo valdria para una proteccion contra DDOS, pero podria haber otras muchas formas en\
++ No tiene sentido hacerlo ya que solo valdria para una proteccion contra DDOS, pero podria haber otras muchas formas en\
   las que nos pueden hacer DDOS.
-  
-  - reflexionar sobre que pasa cuando el Host es una ip o localhost en vez de un regname, a que server lo mando?? 
-  + Lo mando al default, si hay un servidor con nombre localhost pues lo mando al localhost
-  
-  + wether the method used is valid should be checked in the Response creation (as it depends on locations, not ports)
-  
-  - refelexionar si el cgi admite cualquier tipo de request (GET; POST; DELETE)
-  
-  - reflexionar como hacer la interactuacion con un redirect en una location, hay dos caminos posibles, cuando el handler de la respuesta encuentre la location target, antes de returnear dicha location, volvemos a meter el path target con el path y encuentre el path nuevo, el problema es que si se linkean 3 locations con redirects entras  en un bucle infinito. Esto genera dudas ya que planteas, hago un max de redirects o solo dejo 1.
-  Nginx crea lo que volveria a ser una request, pero muy simple. Esto elimina el problema comentado previamente. De esta forma ganamos que una location en un host pueda redirigir la request a una ruta en un host distinto
-  
-  - probablemente lo primero que haya que hacer cuando lancemos el fork sea matar TODOS los fds (para no tener el mismo fd escuchando en dos procesos), pensar en ello
-  + joan dice que no pasa nada
+
+- reflexionar sobre que pasa cuando el Host es una ip o localhost en vez de un regname, a que server lo mando?? 
++ Lo mando al default, si hay un servidor con nombre localhost pues lo mando al localhost
+
++ wether the method used is valid should be checked in the Response creation (as it depends on locations, not ports)
+
+- refelexionar si el cgi admite cualquier tipo de request (GET; POST; DELETE)
++ solo admite post y get
+
+- probablemente lo primero que haya que hacer cuando lancemos el fork sea matar TODOS los fds (para no tener el mismo fd escuchando en dos procesos), pensar en ello
++ joan dice que no pasa nada

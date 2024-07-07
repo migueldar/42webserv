@@ -40,6 +40,8 @@ class Server {
 
         const Location& getLocation(std::string locationName) const;
 
+		std::string getErrPage(std::string err) const;
+
     
     private:
         //ATRIBUTES------------------------------------------------------------------·#
