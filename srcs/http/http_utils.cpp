@@ -205,7 +205,7 @@ Response::statusCode checkAccess(const std::string& path, enum methodsEnum metho
 			if (access(path.c_str(), R_OK) == 0)
 				return Response::_200;
 			return Response::_404;
-		case POST:
+		case POST: //TODO check
 			if (access(path.c_str(), W_OK) == 0)
 				return Response::_200;
 			return Response::_404;

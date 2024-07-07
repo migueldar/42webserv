@@ -9,7 +9,10 @@ std::string Response::getHttpResponse(){
 }
 
 // TODO: Store server for errorPages, isnt stored now becouse isnt needed
-Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(req.targetString), locationPath(""),  cgiToken(""), port(port), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), status(START_PREPING_RES), statusCodeVar(Response::_200) {}
+Response::Response(std::string port, const Server& server, Request req): header(""), body(""),\
+	httpResponse(""), reconstructPath(req.targetString), locationPath(""), cgiToken(""), port(port),\
+	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(reconstructPath, server)),\
+	server(server), newCgi(NULL), req(req) {secFd.fd = 0;}
 
 // Response::Response(const Response& other)
 //     : header(other.header), body(other.body), httpResponse(other.httpResponse), reconstructPath(other.reconstructPath), locationPath(other.locationPath), loc(other.loc), newCgi(NULL), req(other.req), cgiToken(other.cgiToken), port(other.port), status(other.status) {
@@ -48,25 +51,29 @@ Response::Response(std::string port, const Server& server, Request req): header(
 
 Response::~Response() {}
 
-//si no encuentro Location tendre que hacer algo
 const Location& Response::getLocationByRoute(std::string enterPath, const Server& server) {
-    
+	static Location locDef;
+
+    if (req.measure != Request::NO_BODY && server.maxBodySize < req.body.size()) {
+		statusCodeVar = _413;
+		status = ERROR_RESPONSE;
+		return locDef;
+	}
+
     std::string remainingPath = enterPath;
     size_t lastSlashPos = remainingPath.size();
     bool token = 0;
     while (42) {
         // BREAKING PATHS BY '/'
         try {
-            if(server.existsLocationByRoute(remainingPath)){
+            if (server.existsLocationByRoute(remainingPath)){
                 const Location *loc = &server.getLocation(remainingPath);
                 this->locationPath = std::string(remainingPath);
-                if(loc->redirectionUrl != ""){
-                    token = 0;
-                    remainingPath = loc->redirectionUrl + enterPath.substr(lastSlashPos + !token, enterPath.length());
-                    reconstructPath = remainingPath;
+                if(loc->redirectionUrl != "") {
+                    statusCodeVar = _308;
+					status = ERROR_RESPONSE;
                 }
-                else 
-                    return *loc;
+                return *loc;
             }
         } catch (const std::out_of_range&) {
             std::cout << "NOT FOUND LOCATION " << std::endl; 
@@ -80,14 +87,12 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
 		if(remainingPath == "/")
 			break;
 
-        std::cout << remainingPath << std::endl;
+        std::cout << "Remaining path: " << remainingPath << std::endl;
 		lastSlashPos = remainingPath.rfind('/');
         remainingPath = remainingPath.substr(0, lastSlashPos + token);
-
-
     }
-    //EMPTY LOCATION TO RETURN 404 ERROR, STATIC TO RETURN SAME OBJECT ALWAIS
-    static Location locDef;
+	statusCodeVar = _404;
+	status = ERROR_RESPONSE;
 	return locDef;
 }
 
@@ -104,11 +109,13 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
  * @return 0 if can continue to the next stage, -1 if finishes processing, anything else are fds to be imputed into poll
  */
 SecondaryFd Response::prepareResponse(int err) {
+	(void) server;
     if (err) {
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
 
+	std::cout << statusCodeVar << std::endl;
     if (status == START_PREPING_RES) {
         handleStartPrepingRes();
         if (secFd.fd != 0)
@@ -135,22 +142,6 @@ SecondaryFd Response::prepareResponse(int err) {
 
 	secFd.fd = -1;
 	return secFd;
-}
-
-Response::statusCode Response::filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex) {
-    if (checkAccess(path, method, autoIndex) != Response::_200) {
-        return Response::_404;
-    }
-    if (loc.root.empty() && loc.redirectionUrl.empty()) {
-        return Response::_404; //este caso nunca deberia poder darse, ya que en el file no debemos permitir algo sin root ni location
-    }
-    if (!loc.methods[method]) {
-        return Response::_405;
-    }
-    if(req.measure != Request::NO_BODY && maxBodySizeReq > req.body.size()){
-        return Response::_413;
-    }
-    return Response::_200;
 }
 
 // TODO change parameters to be more specific
@@ -181,9 +172,14 @@ bool Response::checkCgiTokens(const std::string &localFilePath) {
  *
  * @return Always returns 0 to continue state machine (indicators for future implementation).
  */
-void Response::handleStartPrepingRes() {    
-    // Getting final path for searching in local machine 
-    if (locationPath != reconstructPath) {
+void Response::handleStartPrepingRes() {
+	if (!loc.methods[req.method]) {
+        statusCodeVar = _405;
+		return ;
+    }
+
+    // Getting final path for searching in local machine
+	if (locationPath != reconstructPath) {
         localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
     } else if (loc.defaultPath != "") {
         localFilePath = loc.root + loc.defaultPath;
@@ -192,11 +188,11 @@ void Response::handleStartPrepingRes() {
     }
 
     std::cout << "localfilePath: " << localFilePath << std::endl;
-    statusCodeVar = filterResponseCode(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
-    // TODO filter ResponseCode of checkAccess for some bad responses
-    // Check access to file and non-default location
+	//quiza si el metodo es post ni hay que comprobar nada, o hay comportamiento distinto dependiendo de si va al cgi o no
+	//o si el archivo existe o no
+	statusCodeVar = checkAccess(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
+    // TODO Check access to file and non-default location
 	if (statusCodeVar != Response::_200) {
-		secFd.fd = 0;
 		status = ERROR_RESPONSE;
 		return ;
 	}
@@ -212,7 +208,7 @@ void Response::handleStartPrepingRes() {
 			secFd.fd = open(localFilePath.c_str(), O_RDONLY);
 			secFd.rw = 0;
 		} else {
-			secFd.fd = open(localFilePath.c_str(), O_WRONLY);
+			//TODO post, delete doesnt need fd
 		}
 		if (secFd.fd == -1) {
 			status = ERROR_RESPONSE;
@@ -277,11 +273,17 @@ void Response::handleProcessingRes() {
 				body = readFile(secFd.fd);
 			} catch (std::runtime_error& e) {
 				status = ERROR_RESPONSE;
+				statusCodeVar = _500;
 			}
 		case POST:
-
+			break;
 		case DELETE:
-			
+			std::cout << "handle delete" << std::endl;
+			if (remove(localFilePath.c_str()) != 0) {
+        		status = ERROR_RESPONSE;
+				statusCodeVar = _500;
+			}
+			body = "<p> File: " + localFilePath + " removed</p>";
 	}
 }
 
@@ -312,12 +314,15 @@ void Response::handleGetResponse() {
  */
 void Response::handleBadResponse() {
 	std::string err;
-
+	//err pages
 	switch (statusCodeVar)
 	{
 		case _200:
 			//safeguard, will never run
 			break;
+		case _308:
+			httpResponse = "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + loc.redirectionUrl + "\r\nContent-Length: 0 \r\nConnection: keep-alive\r\n\r\n";
+			return;
 		case _404:
 			err = "404 Not Found";
 			break;

@@ -1,7 +1,10 @@
 - estoy casi seguro de que hay que desactivar el checkeo de los events(poner a 0) mientras se handelea el fd secundario
 - quiza estandanizar las excepciones que tengo creadas en la request, para los errores de la response tambien
-- inicializar maxBodySizeReq
-- loc.root.empty() && loc.redirectionUrl.empty() nunca deberia darse, ya que no lo debe permitir el archivo de configuracion
+- cuando una location tiene redirection, no permitir que haya nada mas
+- maxBodySize > locationNotFound > redir > methods > not found
+- como podria darse el outofrange en el getLocationbyroute (no estoy seguro de si me he adaptado bien a la redireccion)
+- en la config file permitir tabs
+- 
 
 GET
 - devolver el archivo

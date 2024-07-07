@@ -20,6 +20,7 @@ class Response {
 
         enum statusCode{
             _200,
+			_308,
             _404,
 			_405,
 			_413,
@@ -43,7 +44,6 @@ class Response {
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
         bool checkCgiTokens(const std::string &localFilePath);
-        Response::statusCode filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex);
 
         void handleStartPrepingRes();
 		void handleProcessingRes();
@@ -58,20 +58,19 @@ class Response {
         std::string			header;
         std::string			body;
         std::string			httpResponse;
-        std::string			reconstructPath;
+		std::string			reconstructPath;
         std::string			locationPath;
         std::string			localFilePath;
         std::string			cgiToken;
         std::string			port;
 
-        unsigned long  		maxBodySizeReq;
-
-        const Location 		&loc;
-        CgiHandler     		*newCgi;
-        Request        		req;
-
-        responseStages   	status;
 		statusCode			statusCodeVar;						
+        responseStages   	status;
+
+        const Location&		loc;
+		const Server&		server;
+        CgiHandler*			newCgi;
+        Request        		req;
 
 		SecondaryFd			secFd;
 };

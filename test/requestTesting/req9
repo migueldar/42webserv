@@ -1,0 +1,1 @@
+DELETE /req10 HTTP/1.1\r\nHost:localhost\r\nContent-Length:0\r\nConnection: keep-alive\r\n\r\n
