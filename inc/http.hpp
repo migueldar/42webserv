@@ -22,4 +22,6 @@ const Location& getLocationByRoute(std::string reconstructedPath, const Server& 
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted);
 Response::statusCode checkAccess(const std::string& path, enum methodsEnum method, bool autoIndex);
 
+std::string readFile(int fd);
+
 #endif

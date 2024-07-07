@@ -1,8 +1,6 @@
 #include <iostream>
 #include <algorithm>
-#include "Request.hpp"
-#include "Response.hpp"
-#include "http.hpp"
+#include "webserv.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -184,7 +182,7 @@ const Server& getServerByHost(const std::vector<Server>& servers, std::string ho
             return *it;
         }
     }
-	throw (Response::NotFoundException());
+	return servers[servers.size() - 1];
 }
 
 
@@ -192,34 +190,31 @@ Response::statusCode checkAccess(const std::string& path, enum methodsEnum metho
     struct stat fileStat;
     
     if (stat(path.c_str(), &fileStat) != 0) {
-        return Response::_4XX; 
+        return Response::_404; 
     }
     
     if (S_ISDIR(fileStat.st_mode)) {
-		if(!autoIndex)
-        	return Response::_4XX;
-		else if(method != GET)
-			return Response::_4XX;
+		if (!autoIndex)
+        	return Response::_404;
+		else if (method != GET)
+			return Response::_404;
 	}	
 
 	switch (method){
 		case GET:
-			if (access(path.c_str(), R_OK) == 0) {
-				return Response::_2XX; 
-			}
-			return Response::_4XX;
+			if (access(path.c_str(), R_OK) == 0)
+				return Response::_200;
+			return Response::_404;
 		case POST:
-			if (access(path.c_str(), W_OK) == 0) {
-				return Response::_2XX; 
-			}
-			return Response::_4XX;
+			if (access(path.c_str(), W_OK) == 0)
+				return Response::_200;
+			return Response::_404;
 		case DELETE:
-			if (access(path.c_str(), W_OK) == 0) {
-				return Response::_2XX; 
-			}
-			return Response::_4XX;
+			if (access(path.c_str(), W_OK) == 0)
+				return Response::_200;
+			return Response::_404;
 	}
-	return Response::_4XX;
+	return Response::_404;
 
 }
 
@@ -234,4 +229,20 @@ std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted)
     }
 	 
 	return(reconstructedPath);
+}
+
+std::string readFile(int fd) {
+    std::string	ret = "";
+	int			bytesRead;
+    char		read_buff[SIZE_READ + 1];
+
+	memset(read_buff, 0, SIZE_READ + 1);
+    while ((bytesRead = read(fd, read_buff, SIZE_READ)) > 0) {
+        ret += read_buff;
+    }
+
+    if (bytesRead == -1) {
+        throw std::runtime_error("corrupted fd");
+    }
+	return ret;
 }

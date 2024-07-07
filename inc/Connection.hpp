@@ -4,6 +4,7 @@
 #include "parser.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
+#include "SecondaryFd.hpp"
 
 #define SIZE_READ 0x1000
 
@@ -14,23 +15,9 @@ class Connection {
 		bool		checkTime;
 
 	public:
-		//read 0, write 1
-		class secondaryFd {
-			public:
-				int	fd;
-				int	rw;
-				bool operator==(const secondaryFd &other) const {
-					return (fd == other.fd) && (rw == other.rw);
-				}
-				secondaryFd& operator=(secondaryFd const& rhs) {
-					fd = rhs.fd;
-					rw = rhs.rw;
-					return *this;
-				}
-		};
 		int							port;
 		int							sock;
-		secondaryFd					secFd;
+		SecondaryFd					secFd;
 		const std::vector<Server>	&servers;
 		//if set to NULL, no request is being parsed currently
 		Request						*req;
@@ -46,7 +33,7 @@ class Connection {
 		bool operator==(const Connection &other) const;
 		int handleEvent(struct pollfd &pollfd);
 		//if nothing wants to be returned, just return fd == -1
-		secondaryFd	handleSecondaryEvent(struct pollfd &pollfd, int revent);
+		SecondaryFd	handleSecondaryEvent(struct pollfd &pollfd, int revent);
 };
 
 #endif

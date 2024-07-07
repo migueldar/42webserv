@@ -25,6 +25,7 @@
 #include "parser.hpp"
 #include "http.hpp"
 #include "CDCgiHandler.hpp"
+#include "SecondaryFd.hpp"
 
 #define ONLY_PARSING_CONF 0
 

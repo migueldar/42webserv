@@ -1,21 +1,15 @@
-
-#include "Response.hpp"
-#include "http.hpp"
-#include "CDCgiHandler.hpp"
 #include <fcntl.h>
 #include <sstream>
 #include <dirent.h>
 #include <sys/types.h>
+#include "webserv.hpp"
 
 std::string Response::getHttpResponse(){
     return httpResponse;
 }
 
 // TODO: Store server for errorPages, isnt stored now becouse isnt needed
-Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(req.targetString), locationPath(""),  cgiToken(""), port(port), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), status(START_PREPING_RES), statusCodeVar(Response::_2XX) {
-    // TODO: remove hardcode
-    httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
-}
+Response::Response(std::string port, const Server& server, Request req): header(""), body(""), httpResponse(""), reconstructPath(req.targetString), locationPath(""),  cgiToken(""), port(port), loc(getLocationByRoute(reconstructPath, server)), newCgi(NULL), req(req), status(START_PREPING_RES), statusCodeVar(Response::_200) {}
 
 // Response::Response(const Response& other)
 //     : header(other.header), body(other.body), httpResponse(other.httpResponse), reconstructPath(other.reconstructPath), locationPath(other.locationPath), loc(other.loc), newCgi(NULL), req(other.req), cgiToken(other.cgiToken), port(other.port), status(other.status) {
@@ -52,9 +46,9 @@ Response::Response(std::string port, const Server& server, Request req): header(
 //     return *this;
 // }
 
-Response::~Response(){
-}
+Response::~Response() {}
 
+//si no encuentro Location tendre que hacer algo
 const Location& Response::getLocationByRoute(std::string enterPath, const Server& server) {
     
     std::string remainingPath = enterPath;
@@ -109,63 +103,54 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
  *
  * @return 0 if can continue to the next stage, -1 if finishes processing, anything else are fds to be imputed into poll
  */
-long Response::prepareResponse(int err) {
-    long ret;
-
-    if(err){
-        statusCodeVar = Response::_4XX; //INTERNAL SERVER ERROR
+SecondaryFd Response::prepareResponse(int err) {
+    if (err) {
+        statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
 
-    if(status == START_PREPING_RES){
-        ret = handleStartPrepingRes();
-        
-        if(ret != 0)
-            return ret;
+    if (status == START_PREPING_RES) {
+        handleStartPrepingRes();
+        if (secFd.fd != 0)
+            return secFd;
     }
     
-    if(status == WAITING_FOR_CGI){
-        ret = handleWaitingForCgi();
+    if (status == WAITING_FOR_CGI) {
+        // ret = handleWaitingForCgi();
 
-        if (ret != 0)
-            return ret;
-
-    } else if(status == PROCESSING_RES){
+        // if (ret != 0)
+        //     return ret;
+    } else if (status == PROCESSING_RES) {
+		handleProcessingRes();
         status = GET_RESPONSE;
-    }
-    if(status == GET_AUTO_INDEX){
-        status = GET_RESPONSE;
+    } else if (status == GET_AUTO_INDEX) {
         handleGetAutoIndex();
+        status = GET_RESPONSE;
     }
 
-    if(status == GET_RESPONSE){
+    if (status == GET_RESPONSE) {
         handleGetResponse();
+    } else if (status == ERROR_RESPONSE)
+		handleBadResponse();
 
-    } else if(status == ERROR_RESPONSE){
-        ret = handleBadResponse();
-
-        if (ret != 0)
-            return ret;
-    }
-
-    return -1;
+	secFd.fd = -1;
+	return secFd;
 }
 
 Response::statusCode Response::filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex) {
-    std::cout << autoIndex << std::endl;
-    if (checkAccess(path, method, autoIndex) != Response::_2XX) {
-        return Response::_4XX;
+    if (checkAccess(path, method, autoIndex) != Response::_200) {
+        return Response::_404;
     }
     if (loc.root.empty() && loc.redirectionUrl.empty()) {
-        return Response::_4XX;
+        return Response::_404; //este caso nunca deberia poder darse, ya que en el file no debemos permitir algo sin root ni location
     }
     if (!loc.methods[method]) {
-        return Response::_4XX;
+        return Response::_405;
     }
     if(req.measure != Request::NO_BODY && maxBodySizeReq > req.body.size()){
-        return Response::_4XX;
+        return Response::_413;
     }
-    return Response::_2XX;
+    return Response::_200;
 }
 
 // TODO change parameters to be more specific
@@ -196,9 +181,7 @@ bool Response::checkCgiTokens(const std::string &localFilePath) {
  *
  * @return Always returns 0 to continue state machine (indicators for future implementation).
  */
-long Response::handleStartPrepingRes() {
-    int fd = -1;
-    
+void Response::handleStartPrepingRes() {    
     // Getting final path for searching in local machine 
     if (locationPath != reconstructPath) {
         localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
@@ -208,39 +191,35 @@ long Response::handleStartPrepingRes() {
         localFilePath = loc.root;
     }
 
-    std::cout << localFilePath << std::endl;
-    Response::statusCode responseAproxCode = filterResponseCode(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
+    std::cout << "localfilePath: " << localFilePath << std::endl;
+    statusCodeVar = filterResponseCode(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
     // TODO filter ResponseCode of checkAccess for some bad responses
     // Check access to file and non-default location
+	if (statusCodeVar != Response::_200) {
+		secFd.fd = 0;
+		status = ERROR_RESPONSE;
+		return ;
+	}
 
-    if (responseAproxCode == Response::_2XX) {
-        fd = 0;
-        if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
-            status = GET_AUTO_INDEX;
-        } else if (checkCgiTokens(localFilePath)) {
-            newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
-            status = WAITING_FOR_CGI;
-        } else {
-            status = PROCESSING_RES;
-            if (req.method == GET) {
-                fd = open(localFilePath.c_str(), O_RDONLY);
-            } else {
-                fd = open(localFilePath.c_str(), O_WRONLY);
-            }
-            if (fd == -1) {
-                statusCodeVar = Response::_4XX;
-            }
-        }
-    } else {
-        statusCodeVar = responseAproxCode;
-    }
-
-    if (fd == -1) {
-        fd = 0;
-        status = ERROR_RESPONSE;
-    }
-
-    return (long)fd;
+	if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
+		status = GET_AUTO_INDEX;
+	} else if (checkCgiTokens(localFilePath)) {
+		newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
+		status = WAITING_FOR_CGI;
+	} else {
+		status = PROCESSING_RES;
+		if (req.method == GET) {
+			secFd.fd = open(localFilePath.c_str(), O_RDONLY);
+			secFd.rw = 0;
+		} else {
+			secFd.fd = open(localFilePath.c_str(), O_WRONLY);
+		}
+		if (secFd.fd == -1) {
+			status = ERROR_RESPONSE;
+			statusCodeVar = Response::_500; //en caso de darse este error es un 500, ya que ya se ha comprobado el access
+			secFd.fd = 0;
+		}
+	}
 }
 
 /**
@@ -257,8 +236,8 @@ long Response::handleWaitingForCgi() {
     if (fdRet > 0) 
         return fdRet;
     status = GET_RESPONSE;
-    if(fdRet == -1){ //TODO internal server error
-        statusCodeVar = Response::_4XX;
+    if(fdRet == -1){
+        statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
     return 0;
@@ -282,13 +261,28 @@ long Response::handleGetAutoIndex() {
         }
         closedir(dir);
     } else {
-        streamBody << "<li>Error: unable to open directory " << localFilePath << "</li>";
+        streamBody << "<li>Error: unable to open directory " << localFilePath << "</li>"; //should put error status to true maybe instead of writting the error in the html
     }
 
     streamBody << "</ul></body></html>";
     body = streamBody.str();
     std::cout << body << std::endl;
     return 0;
+}
+
+void Response::handleProcessingRes() {
+	switch (req.method) {
+		case GET: 
+			try {
+				body = readFile(secFd.fd);
+			} catch (std::runtime_error& e) {
+				status = ERROR_RESPONSE;
+			}
+		case POST:
+
+		case DELETE:
+			
+	}
 }
 
 /**
@@ -305,8 +299,8 @@ void Response::handleGetResponse() {
         std::cout << body << std::endl;
         delete newCgi;
     }
-    
-    // TODO: Handle all remaining response build tasks
+
+	httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.size()) + "\r\nConnection: keep-alive\r\n\r\n" + body;
 }
 
 /**
@@ -316,10 +310,27 @@ void Response::handleGetResponse() {
  * resource could not be found. It sets the httpResponse string accordingly and updates
  * the status to GET_RESPONSE for further response handling.
  */
-long Response::handleBadResponse() {
+void Response::handleBadResponse() {
+	std::string err;
 
-    // TODO: Add checking of default pages here and statusCodeVar
-    httpResponse = "HTTP/1.1 404 OK\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";
-    status = GET_RESPONSE;
-    return 0;
+	switch (statusCodeVar)
+	{
+		case _200:
+			//safeguard, will never run
+			break;
+		case _404:
+			err = "404 Not Found";
+			break;
+		case _405:
+			err = "405 Method Not Allowed";
+			break;
+		case _413:
+			err = "413 Payload Too Large";
+			break;
+		case _500:
+			err = "500 Internal Server Error";
+			break;
+	}
+
+    httpResponse = "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
 }

@@ -4,6 +4,7 @@
 #include "parser.hpp"
 #include "Request.hpp"
 #include "CDCgiHandler.hpp"
+#include "SecondaryFd.hpp"
 
 class Response {
     public:
@@ -18,8 +19,11 @@ class Response {
         };
 
         enum statusCode{
-            _2XX = 0,
-            _4XX = -1,
+            _200,
+            _404,
+			_405,
+			_413,
+			_500,
         };
 
         //Response();
@@ -34,40 +38,42 @@ class Response {
         // Response(const Response& other);
         ~Response();
 
-        long prepareResponse(int err);
+        SecondaryFd prepareResponse(int err);
         std::string getHttpResponse();
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
         bool checkCgiTokens(const std::string &localFilePath);
         Response::statusCode filterResponseCode(const std::string& path, methodsEnum method, bool autoIndex);
 
-        long handleStartPrepingRes();
+        void handleStartPrepingRes();
+		void handleProcessingRes();
         long handleWaitingForCgi();
         void handleGetResponse();
         long handleGetAutoIndex();
     
-        long handleBadResponse();
+        void handleBadResponse();
 
         // Response& operator=(const Response& other);
     private:
-        std::string                     header;
-        std::string                     body;
-        std::string                     httpResponse;
-        std::string                     reconstructPath;
-        std::string                     locationPath;
-        std::string                     localFilePath;
-        std::string                     cgiToken;
-        std::string                     port;
+        std::string			header;
+        std::string			body;
+        std::string			httpResponse;
+        std::string			reconstructPath;
+        std::string			locationPath;
+        std::string			localFilePath;
+        std::string			cgiToken;
+        std::string			port;
 
-        unsigned long                   maxBodySizeReq;
+        unsigned long  		maxBodySizeReq;
 
-        const Location                  &loc;
-        CgiHandler                      *newCgi;
-        Request                         req;
+        const Location 		&loc;
+        CgiHandler     		*newCgi;
+        Request        		req;
 
-        enum Response::responseStages   status;
-        enum Response::statusCode       statusCodeVar;
+        responseStages   	status;
+		statusCode			statusCodeVar;						
 
+		SecondaryFd			secFd;
 };
 
 #endif

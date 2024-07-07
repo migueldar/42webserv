@@ -46,19 +46,16 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		std::cout << "pollin" << std::endl;
 
 		int read_res;
-		char *read_buff = new char[SIZE_READ + 1];
+		char read_buff[SIZE_READ + 1];
 
 		memset(read_buff, 0, SIZE_READ + 1);
 		read_res = recv(sock, read_buff, SIZE_READ, 0);
 		std::cout << read_buff << std::endl;
 
-		if (read_res <= 0) {
-			delete[] read_buff;
+		if (read_res <= 0)
 			return 1;
-		}
 
 		data += read_buff;
-		delete[] read_buff;
 	}
 
 	else if (pollfd.revents & POLLOUT) {
@@ -69,13 +66,13 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			delete res;
 			res = NULL;
 		}
-		else //TODO THIS IS DEFAULTEST RESPONSE WHEN NO SERVER NAME MATCHES OR REQUEST IS BAD //ESTO SOLO DEBERIA PASAR CUANDO HAY ERROR STATUS
-			httpResponse = "HTTP/1.1 " + (req->errorStatus != "" ? req->errorStatus : "404 NOT FOUND" ) + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n";;
+		else
+			httpResponse = "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
 		
 		delete req;
 		req = NULL;
 		
-		std::cout << "RESPOSE: " << httpResponse << std::endl;
+		std::cout << "RESPONSE: " << httpResponse << std::endl;
 		//TODO si la respuesta a mandar es muy grande (~10^6 caracteres), mandarla en cachos, a traves de varios pollin
 		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0){
 			return 1;
@@ -87,45 +84,33 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 	}
 
 	if (data != "") {
-		if (!req) {
+		if (!req)
 			req = new Request();
-		}
 
 		data = req->addData(data);
 		//probablemente aqui tambien haga falta poner a 0 los events del fd
 		if (req->parsed == Request::ALL) {
 			checkTime = false;
+			pollfd.events = 0;
 		}
 	}
 	return 0;
 }
 
-Connection::secondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) {
-	secondaryFd ret;
-
+SecondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) {
 	if (res == NULL) {
 		if (req->errorStatus != "") {
-			ret.fd = -1;
-			return ret;
+			secFd.fd = -1;
+			return secFd;
 		}
-		else {
-			try {
-				res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
-			}
-			catch (Response::NotFoundException &e){
-				ret.fd = -1;
-				std::cerr << "ERR SERVER NAME NOT FOUND" << std::endl;
-				return ret;
-			}
-		}
+		else
+			res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 	}
 	
-	long aux = res->prepareResponse((revent & POLLERR) || (revent & POLLHUP));
-	ret.fd = aux;
-	ret.rw = aux >> 32;
+	secFd = res->prepareResponse((revent & POLLERR) || (revent & POLLHUP));
 	
-	if (ret.fd == -1)
+	if (secFd.fd == -1)
 		pollfd.events = POLLOUT;
 	
-	return ret;
+	return secFd;
 }

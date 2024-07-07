@@ -1,6 +1,7 @@
-- server default (comprobar que lo has puesto el ultimo) ahora lo arreglo
 - estoy casi seguro de que hay que desactivar el checkeo de los events(poner a 0) mientras se handelea el fd secundario
 - quiza estandanizar las excepciones que tengo creadas en la request, para los errores de la response tambien
+- inicializar maxBodySizeReq
+- loc.root.empty() && loc.redirectionUrl.empty() nunca deberia darse, ya que no lo debe permitir el archivo de configuracion
 
 GET
 - devolver el archivo

@@ -22,14 +22,14 @@ class PollHandler {
 		void 			addListener(Listener& l);
 		void 			addConnection(Connection &c);
 		void 			removeConnection(Connection &c);
-		void			removeSecondary(Connection::secondaryFd &f);
+		void			removeSecondary(SecondaryFd &f);
 		void 			addToFds(int fd, fdType type);
 		void 			removeFromFds(int fd);
 		int 			pollMode();
 		struct pollfd*	createFdsExtra();
 		void			recoverFds(struct pollfd* fdsExtra);
 		//returns connection position in list
-		Connection&		findConnection(const Connection::secondaryFd& secFd);
+		Connection&		findConnection(const SecondaryFd& secFd);
 		int				findConnectionIndex(const Connection& con) const;
 		// void tester();
 
@@ -38,7 +38,7 @@ class PollHandler {
 		struct pollfd*							fds;
 		std::vector<Listener>					listeners;
 		std::list<Connection>					connections;
-		std::vector<Connection::secondaryFd>	secFds;
+		std::vector<SecondaryFd>	secFds;
 };
 
 #endif

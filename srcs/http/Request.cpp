@@ -141,7 +141,7 @@ void Request::parseRequestLine(std::string line) {
 	if (it == line.end())
 		throw BadRequest();
 	parseMethod(aux);
-	std::cout << "method parsed" << std::endl;
+	// std::cout << "method parsed" << std::endl;
 
 	aux.clear();
 	it++;
@@ -153,7 +153,7 @@ void Request::parseRequestLine(std::string line) {
 		throw BadRequest();
 	
 	parseRequestTarget(aux);
-	std::cout << "req target parsed" << std::endl;
+	// std::cout << "req target parsed" << std::endl;
 
 	aux.clear();
 	it++;
@@ -162,7 +162,7 @@ void Request::parseRequestLine(std::string line) {
 		it++;
 	}
 	parseVersion(aux);
-	std::cout << "version parsed" << std::endl;
+	// std::cout << "version parsed" << std::endl;
 }
 
 void Request::parseField(std::string fieldLine) {
@@ -176,7 +176,7 @@ void Request::parseField(std::string fieldLine) {
 	if (*it != ':' || !isToken(fieldName))
 		throw BadRequest();
 	it++;
-	std::cout << "field name parsed" << std::endl;
+	// std::cout << "field name parsed" << std::endl;
 
 	while (it != fieldLine.end() && (*it == ' ' || *it == '\t'))
 		it++;
@@ -190,7 +190,7 @@ void Request::parseField(std::string fieldLine) {
 	}
 	if (!isFieldLine(fieldValue))
 		throw BadRequest();
-	std::cout << "field value parsed" << std::endl;
+	// std::cout << "field value parsed" << std::endl;
 
 	//value is in map
 	if (headers.count(fieldName) == 1)
@@ -212,7 +212,7 @@ void Request::parseFields(std::string fields) {
 }
 
 void Request::checkFields() {
-	std::cout << "start checkFields" << std::endl;
+	// std::cout << "start checkFields" << std::endl;
 	if (headers.count("Host") != 1 || !isHostHeader(headers["Host"]))
 		throw BadRequest();
 	else {
@@ -237,12 +237,12 @@ void Request::checkFields() {
 			throw NotImplemented();
 		measure = CHUNKED;
 	}
-	std::cout << "end checkFields" << std::endl;
+	// std::cout << "end checkFields" << std::endl;
 }
 
 //returns unparsed data
 std::string Request::parseChunkedBody() {
-	std::cout << "parseChunked start" << std::endl;
+	// std::cout << "parseChunked start" << std::endl;
 
 	size_t		counter = 0;
 	size_t		len;
@@ -273,7 +273,7 @@ std::string Request::parseChunkedBody() {
 		return rawData.substr(counter);
 	
 	parsed = ALL;
-	std::cout << "parseChunked end" << std::endl << std::endl;
+	// std::cout << "parseChunked end" << std::endl << std::endl;
 	return rawData.substr(found + 4);
 }
 
