@@ -11,6 +11,7 @@ SRCS := srcs/main.cpp \
 		srcs/parser/CDServer.cpp \
 		srcs/parser/parserUtils.cpp \
 		srcs/cgi/cgiHandler.cpp \
+		srcs/utils/StringWrapper.cpp \
 		
 OBJS := $(SRCS:srcs/%.cpp=objs/%.o)
 CXX = c++
@@ -31,6 +32,7 @@ objs:
 			objs/http \
 			objs/parser \
 			objs/cgi \
+			objs/utils \
 
 objs/%.o: srcs/%.cpp | objs
 	$(CXX) $(CXXFLAGS) -c $< -o $@

@@ -2,6 +2,10 @@ DOING
 
 TODO
 
+- probar ../.. y esas mierdas (deberia 403)
+
+- hacer destroyers con sentido para que no haya leaks
+
 - que funque el post bien
 
 - reflexionar sobre almacenamiento (particularmente imagenes y videos) en deques, porque gestiona la memoria en bloques de 512

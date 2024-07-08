@@ -50,12 +50,11 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 
 		memset(read_buff, 0, SIZE_READ + 1);
 		read_res = recv(sock, read_buff, SIZE_READ, 0);
-		std::cout << read_buff << std::endl;
 
 		if (read_res <= 0)
 			return 1;
 
-		data += read_buff;
+		data.addData(read_buff);
 	}
 
 	else if (pollfd.revents & POLLOUT) {
@@ -83,12 +82,11 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		return 0;
 	}
 
-	if (data != "") {
+	if (!data.empty()) {
 		if (!req)
 			req = new Request();
 
 		data = req->addData(data);
-		//probablemente aqui tambien haga falta poner a 0 los events del fd
 		if (req->parsed == Request::ALL) {
 			checkTime = false;
 			pollfd.events = 0;

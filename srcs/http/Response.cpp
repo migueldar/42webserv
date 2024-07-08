@@ -13,41 +13,6 @@ Response::Response(std::string port, const Server& server, Request& req): req(re
 	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(reconstructPath, server)),\
 	server(server), newCgi(NULL) {secFd.fd = 0;}
 
-// Response::Response(const Response& other)
-//     : header(other.header), body(other.body), httpResponse(other.httpResponse), reconstructPath(other.reconstructPath), locationPath(other.locationPath), loc(other.loc), newCgi(NULL), req(other.req), cgiToken(other.cgiToken), port(other.port), status(other.status) {
-//     if (other.newCgi != NULL) {
-//         newCgi = new CgiHandler(*other.newCgi);
-//     }
-// }
-
-// Response& Response::operator=(const Response& other) {
-//     if (this != &other) {
-//         // Liberar recursos existentes
-//         if (newCgi != NULL) {
-//             delete newCgi;
-//             newCgi = NULL;
-//         }
-
-//         // Copiar los recursos del objeto other
-//         header = other.header;
-//         body = other.body;
-//         httpResponse = other.httpResponse;
-//         reconstructPath = other.reconstructPath;
-//         locationPath = other.locationPath;
-//         req = other.req;
-//         cgiToken = other.cgiToken;
-//         port = other.port;
-//         status = other.status;
-
-//         if (other.newCgi != NULL) {
-//             newCgi = new CgiHandler(*other.newCgi);
-//         } else {
-//             newCgi = NULL;
-//         }
-//     }
-//     return *this;
-// }
-
 Response::~Response() {}
 
 const Location& Response::getLocationByRoute(std::string enterPath, const Server& server) {

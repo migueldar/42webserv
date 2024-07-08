@@ -5,8 +5,9 @@
 #include "Request.hpp"
 #include "Response.hpp"
 #include "SecondaryFd.hpp"
+#include "StringWrapper.hpp"
 
-#define SIZE_READ 0x1000
+#define SIZE_READ 10000
 
 class Connection {
 	private:
@@ -23,7 +24,7 @@ class Connection {
 		Request						*req;
 		Response 					*res;
 		//saves data which hasnt being processed by a request yet
-		std::string					data;
+		stringWrap					data;
 
 		Connection(int port, int socket, const std::vector<Server> &servers);
 		Connection(const Connection &other);
