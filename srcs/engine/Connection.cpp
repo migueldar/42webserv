@@ -108,7 +108,10 @@ SecondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) 
 	}
 	
 	secFd = res->prepareResponse((revent & POLLERR) || (revent & POLLHUP));
+	std::cout << secFd.fd << std::endl;
+	std::cout << secFd.rw << std::endl;
 	
+
 	if (secFd.fd == -1)
 		pollfd.events = POLLOUT;
 	

@@ -65,7 +65,6 @@ long CgiHandler::handleCgiEvent() {
 
                 env[numVariables] = NULL;
 
-                std::cout << "EXEC:" << loc.cgi.at(tokenCGI) << " SCRIPT: " << script << std::endl;
                 const char* args[] = { (loc.cgi.at(tokenCGI)).c_str(), script.c_str(), NULL };
                 if (execve(args[0], (char* const*)args, (char* const*)env) < 0) {
                     std::cerr << "Error al ejecutar el script CGI: " << strerror(errno) << std::endl;
@@ -79,7 +78,6 @@ long CgiHandler::handleCgiEvent() {
                 close(outfd[1]);
                 close(errfd[1]);
                 stages = WRITE_CGI_EXEC;
-                //TODO set in infd write on sing bit
                 long ret = infd[1] | ((long)1 << 32);
                 return ret;
             }
@@ -123,7 +121,6 @@ long CgiHandler::handleCgiEvent() {
                 response = response.substr(0, index);
                 close(outfd[0]);
                 stages = BEGIN_CGI_EXEC;
-                std::cout <<  "FINISH CGI: " <<  status << std::endl;
                 return 0;
             }
             else{
@@ -185,11 +182,10 @@ void CgiHandler::parseSCRIPT_NAME(void) {
             bad += 1;
             script = uri[i];
             
-            metaVariables["SCRIPT_NAME"] = metaVariables["LOCATION"] + script;
+            metaVariables["SCRIPT_NAME"] = metaVariables["LOCATION"] + "/" + script;
             uri.erase(uri.begin());
             if(!uri.empty()){
                 metaVariables["PATH_INFO"] = "/" + script;
-                metaVariables["PATH_TRANSLATED"] = "/" + script;
             }
         }
     }
@@ -204,17 +200,16 @@ void	CgiHandler::parsePATH_INFO(void){
     std::string pathinfo = "";
 
     while (!uri.empty()) {
-        pathinfo += "/" + uri[0];
+        pathinfo += uri[0];
         uri.erase(uri.begin());
     }
-    metaVariables["PATH_INFO"] += pathinfo;
     metaVariables["PATH_TRANSLATED"] += pathinfo;
     return;
 }
 
 void	CgiHandler::parsePATH_TRANSLATED(void){
     if(metaVariables["PATH_TRANSLATED"] != "")
-        metaVariables["PATH_TRANSLATED"] = "/" + loc.root + metaVariables["PATH_TRANSLATED"];
+        metaVariables["PATH_TRANSLATED"] = loc.root + metaVariables["PATH_TRANSLATED"];
     return;
 }
 

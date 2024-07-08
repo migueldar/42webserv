@@ -18,7 +18,7 @@ CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98
 LDFLAGS = -std=c++98
 RM = /bin/rm -rf
 
-ARG = "test/nginx/conf/requestTest2.conf"
+ARG = "test/nginx/conf/requestTest.conf"
 
 all: $(NAME)
 

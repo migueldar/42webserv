@@ -38,7 +38,7 @@ class Response {
                 }
 		};
 
-        Response(std::string port, const Server& server, Request req);
+        Response(std::string port, const Server& server, Request& req);
         // Response(const Response& other);
         ~Response();
 
@@ -51,15 +51,16 @@ class Response {
 
         void handleStartPrepingRes();
 		void handleProcessingRes();
-        long handleWaitingForCgi();
+        void handleWaitingForCgi();
         void handleGetResponse();
-        long handleGetAutoIndex();
+        void handleGetAutoIndex();
     
         void handleBadResponse();
 		void handleBadResponsePage();
 
         // Response& operator=(const Response& other);
     private:
+        Request&       		req;
         std::string			header;
         std::string			body;
         std::string			httpResponse;
@@ -75,7 +76,6 @@ class Response {
         const Location&		loc;
 		const Server&		server;
         CgiHandler*			newCgi;
-        Request        		req;
 
 		SecondaryFd			secFd;
 };

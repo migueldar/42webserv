@@ -8,10 +8,10 @@ std::string Response::getHttpResponse(){
     return httpResponse;
 }
 
-Response::Response(std::string port, const Server& server, Request req): header(""), body(""),\
+Response::Response(std::string port, const Server& server, Request& req): req(req), header(""), body(""),\
 	httpResponse(""), reconstructPath(req.targetString), locationPath(""), cgiToken(""), port(port),\
 	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(reconstructPath, server)),\
-	server(server), newCgi(NULL), req(req) {secFd.fd = 0;}
+	server(server), newCgi(NULL) {secFd.fd = 0;}
 
 // Response::Response(const Response& other)
 //     : header(other.header), body(other.body), httpResponse(other.httpResponse), reconstructPath(other.reconstructPath), locationPath(other.locationPath), loc(other.loc), newCgi(NULL), req(other.req), cgiToken(other.cgiToken), port(other.port), status(other.status) {
@@ -54,6 +54,7 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
 	static Location locDef;
 
     if (req.measure != Request::NO_BODY && server.maxBodySize < req.body.size()) {
+		std::cout << "size: " << req.body.size() << std::endl;
 		statusCodeVar = _413;
 		status = ERROR_RESPONSE;
 		return locDef;
@@ -63,23 +64,18 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
     size_t lastSlashPos = remainingPath.size();
     bool token = 0;
     while (42) {
-        // BREAKING PATHS BY '/'
-        try {
-            if (server.existsLocationByRoute(remainingPath)){
-                const Location *loc = &server.getLocation(remainingPath);
-                this->locationPath = std::string(remainingPath);
-                if(loc->redirectionUrl != "") {
-                    statusCodeVar = _308;
-					status = ERROR_RESPONSE;
-					token = 0;
-					reconstructPath = loc->redirectionUrl + enterPath.substr(lastSlashPos + !token, enterPath.length());
-                }
-                return *loc;
-            }
-        } catch (const std::out_of_range&) {
-            std::cout << "NOT FOUND LOCATION " << std::endl; 
-			//JUST TO CATH WHEN GET LOCATION STD::MAP "AT" METHOD DOESNT FIND REQUESTED LINE 
-        }
+		if (server.existsLocationByRoute(remainingPath)){
+			const Location *loc = &server.getLocation(remainingPath);
+			this->locationPath = std::string(remainingPath);
+			if(loc->redirectionUrl != "") {
+				statusCodeVar = _308;
+				status = ERROR_RESPONSE;
+				token = 0;
+				reconstructPath = loc->redirectionUrl + enterPath.substr(lastSlashPos + !token, enterPath.length());
+			}
+			return *loc;
+		}
+
         if(!token)
             token = 1;
         else
@@ -123,10 +119,11 @@ SecondaryFd Response::prepareResponse(int err) {
     }
     
     if (status == WAITING_FOR_CGI) {
-        // ret = handleWaitingForCgi();
-
-        // if (ret != 0)
-        //     return ret;
+        handleWaitingForCgi();
+		if (secFd.fd != 0){
+			std::cout << "PASO EXIT" << std::endl;
+            return secFd;
+		}
     } else if (status == PROCESSING_RES) {
 		handleProcessingRes();
         status = GET_RESPONSE;
@@ -223,7 +220,7 @@ void Response::handleStartPrepingRes() {
     }
 
     // Getting final path for searching in local machine
-	if (locationPath != reconstructPath) {
+	if (locationPath != reconstructPath) { 
         localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
     } else if (loc.defaultPath != "") {
         localFilePath = loc.root + loc.defaultPath;
@@ -243,24 +240,13 @@ void Response::handleStartPrepingRes() {
 
 	if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
 		status = GET_AUTO_INDEX;
-	} else if (checkCgiTokens(localFilePath)) {
+	} else if (cgiToken != "") {
 		newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
 		status = WAITING_FOR_CGI;
 	} else {
-		status = PROCESSING_RES;
-		if (req.method == GET) {
-			secFd.fd = open(localFilePath.c_str(), O_RDONLY);
-			secFd.rw = 0;
-		} else if (req.method == POST) {
-			//quiza haga falta crear directorios tambien, discutir con joan
-			secFd.fd = open(localFilePath.c_str(), O_APPEND | O_WRONLY);
-			secFd.rw = 1;
-		}
-		if (secFd.fd == -1) {
-			status = ERROR_RESPONSE;
-			statusCodeVar = Response::_500; //en caso de darse este error es un 500, ya que ya se ha comprobado el access
-			secFd.fd = 0;
-		}
+		status = ERROR_RESPONSE;
+		statusCodeVar = Response::_500; //en caso de darse este error es un 500, ya que ya se ha comprobado el access
+		secFd.fd = 0;
 	}
 }
 
@@ -273,19 +259,22 @@ void Response::handleStartPrepingRes() {
  *
  * @return File descriptor returned by CGI event handling, or -1 if finished.
  */
-long Response::handleWaitingForCgi() {
-    long fdRet = newCgi->handleCgiEvent();
-    if (fdRet > 0) 
-        return fdRet;
+void Response::handleWaitingForCgi() {
+	long fdRet = newCgi->handleCgiEvent();
+    if (fdRet > 0){
+		secFd.fd = (int)fdRet;
+		secFd.rw = fdRet >> 32;
+        return ;
+	}
     status = GET_RESPONSE;
     if(fdRet == -1){
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
-    return 0;
+    return ;
 }
 
-long Response::handleGetAutoIndex() {
+void Response::handleGetAutoIndex() {
     std::ostringstream streamBody;
     streamBody << "<html><head><title>Index of " << localFilePath << "</title></head><body>";
     streamBody << "<h1>Index of " << localFilePath << "</h1>";
@@ -309,7 +298,6 @@ long Response::handleGetAutoIndex() {
     streamBody << "</ul></body></html>";
     body = streamBody.str();
     std::cout << body << std::endl;
-    return 0;
 }
 
 void Response::handleProcessingRes() {

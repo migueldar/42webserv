@@ -76,6 +76,8 @@ void ParserFile::printServersByPort(unsigned int targetPort) {
                 ++errorPageIter;
             }
 
+            std::cout << "  MaxBody size: "  << server.maxBodySize << std::endl;
+
             cout << "  Locations:" << endl;
             const map<string, Location>& routes = server.getRoutes();
             for (map<string, Location>::const_iterator locationIter = routes.begin(); locationIter != routes.end(); ++locationIter) {
@@ -176,7 +178,7 @@ unsigned long parsePort(string portString){
     if(portString[0] == '-')
         flag = 1;
     try{
-        port = stringToUnsignedLong(portString);
+        port = stringToShort(portString);
 
         if(port == 0)
             flag = 1; 
@@ -206,6 +208,8 @@ static void setValuesConfigTypeMap(map<string, ConfigType> &configTypeMap, bool 
         configTypeMap["server_name"] = SERVER_NAME;
     configTypeMap["location"] = LOCATION;
     configTypeMap["error_page"] = ERROR_PAGE;
+    if(configTypeMap["max_body_size"] != UNKNOWN || hard == 1)
+        configTypeMap["max_body_size"] = MAX_BODY_SIZE;
     if(configTypeMap["port"] != UNKNOWN || hard == 1)
         configTypeMap["port"] = PORT;
     configTypeMap["}"] = BRACE_CLOSE;
@@ -217,8 +221,7 @@ static void setValuesLocation(map<string, ConfigType> &configTypeMap){
     configTypeMap["index"] = INDEX;
     configTypeMap["methods"] = METHODS;
     configTypeMap["auto_index"] = AUTO_INDEX;
-    configTypeMap["location"] = UNKNOWN;
-    configTypeMap["error_page"] = UNKNOWN;
+    configTypeMap["upload_path"] = UPLOAD_PATH;
     configTypeMap["cgi"] = CGI;
     configTypeMap["}"] = BRACE_CLOSE;
 }
@@ -272,11 +275,31 @@ void ParserFile::fillServers() {
                     throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config server_name:" + *(--wordLines.end()));
                 break;
 
+            //(max_body_size)
+            case MAX_BODY_SIZE:
+                configTypeMap["max_body_size"] = UNKNOWN;
+                if(wordLines.size() == 2 && brace == 1){
+                    try{
+                        server.maxBodySize = stringToUnsignedLong(wordLines[1]);
+                    }
+                    catch(std::invalid_argument &e){
+                       throw runtime_error("[ERROR] line " + toString(lineNum) + ": too high of a body size: " + *(--wordLines.end())); 
+                    } 
+                }
+                else
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config max_body_size:" + *(--wordLines.end()));
+                break;
+
             //(port)
             case PORT:
                 configTypeMap["port"] = UNKNOWN;
                 if(wordLines.size() == 2){
-                    port = parsePort(wordLines[1]);
+                    try{
+                        port = parsePort(wordLines[1]); 
+                    }
+                    catch(std::invalid_argument &e){
+                       throw runtime_error("[ERROR] line " + toString(lineNum) + ": imposible to set port: " + *(--wordLines.end())); 
+                    }
                 }
                 else
                     throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config port:" + *(--wordLines.end()));
@@ -313,6 +336,19 @@ void ParserFile::fillServers() {
                 else
                     throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config redirection:" + *(--wordLines.end()));
                 break;
+
+            case UPLOAD_PATH:
+                configTypeMap["upload_path"] = UNKNOWN;
+                if(wordLines.size() == 2 && brace == 2){
+                    if(wordLines[1][0] != '/')
+                        throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid upload_path dir:" + wordLines[1]);
+                    if(wordLines[1][wordLines[1].size()-1] != '/')
+                        wordLines[1] += "/";
+                    location.uploadPath = wordLines[1];
+                }
+                else
+                    throw runtime_error("[ERROR] line " + toString(lineNum) + ": bad config upload_path:" + *(--wordLines.end()));
+                break;
             
             //(error_page)
             case ERROR_PAGE:
@@ -337,9 +373,6 @@ void ParserFile::fillServers() {
                         throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
                     if(wordLines[1][(wordLines[1]).length() - 1] != '/')
                         wordLines[1] += "/";
-                    // TODO: reflexionar si en el parseo una vez un root es encontrado ha de ser confirmado el acceso. Si es que si cabiar check access para revisar mas tippos de accesos de forma singular
-                    // if(!checkAccess(wordLines[1]))
-                    //     throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid root dir:" + wordLines[1]);
                     location.root = wordLines[1];
                 }
                 else
@@ -434,11 +467,11 @@ void ParserFile::fillServers() {
                         setValuesConfigTypeMap(configTypeMap, 1);
                     }
                     if(brace == 1){ 
-                        if(configTypeMap["root"] != UNKNOWN && configTypeMap["redirect"] != UNKNOWN)
+                        if(configTypeMap["root"] == ROOT && configTypeMap["redirect"] == REDIRECT)
                             throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location");
                         
-                        if(configTypeMap["root"] != UNKNOWN && configTypeMap["index"] != INDEX)
-                            throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location, index but no root");
+                        if(configTypeMap["root"] == ROOT && (configTypeMap["index"] == UNKNOWN || configTypeMap["upload_path"] == UNKNOWN))
+                            throw runtime_error("[ERROR] line " + toString(lineNum) + ": invalid location, index/upload_path but no root");
 
                         server.addLocation(routeKey, location);
                         
