@@ -121,7 +121,6 @@ SecondaryFd Response::prepareResponse(int err) {
     if (status == WAITING_FOR_CGI) {
         handleWaitingForCgi();
 		if (secFd.fd != 0){
-			std::cout << "PASO EXIT" << std::endl;
             return secFd;
 		}
     } else if (status == PROCESSING_RES) {
@@ -177,16 +176,20 @@ Response::statusCode Response::checkAccess(std::string path, enum methodsEnum me
 			return Response::_404;
 		case POST:
 			//este check hace mas cosas asi que rompe
-			if (checkCgiTokens(path) && access(path.c_str(), R_OK) == 0)
-				return Response::_200;
-			else
+			if (checkCgiTokens(path)) {
+				if (access(path.c_str(), R_OK) == 0)
+					return Response::_200;
 				return Response::_404;
+			}
 			if (loc.uploadPath == "")
 				return Response::_403;
-			directory = path.substr(0, path.find_last_of("/"));
+			directory = loc.root + loc.uploadPath;
 			//have to check in the upload path, not here
-			if (stat(directory.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
+			if (stat(directory.c_str(), &fileStat) != 0 || !S_ISDIR(fileStat.st_mode))
 				return Response::_404;
+			directory += path.substr(locationPath.size(), path.size());
+			if (access(directory.c_str(), F_OK) == 0 && access(directory.c_str(), W_OK) != 0)
+                return Response::_403;
 			return Response::_201;
 		case DELETE:
 			if (stat(path.c_str(), &fileStat) != 0)
@@ -220,7 +223,7 @@ void Response::handleStartPrepingRes() {
     }
 
     // Getting final path for searching in local machine
-	if (locationPath != reconstructPath) { 
+	if (locationPath != reconstructPath) {
         localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
     } else if (loc.defaultPath != "") {
         localFilePath = loc.root + loc.defaultPath;
@@ -240,16 +243,25 @@ void Response::handleStartPrepingRes() {
 
 	if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
 		status = GET_AUTO_INDEX;
-	} else if (cgiToken != "") {
+	} else if (checkCgiTokens(localFilePath)) {
 		newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
 		status = WAITING_FOR_CGI;
 	} else {
-		status = ERROR_RESPONSE;
-		statusCodeVar = Response::_500; //en caso de darse este error es un 500, ya que ya se ha comprobado el access
-		secFd.fd = 0;
+		status = PROCESSING_RES;
+		if (req.method == GET) {
+			secFd.fd = open(localFilePath.c_str(), O_RDONLY);
+			secFd.rw = 0;
+		} else if (req.method == POST) {
+			secFd.fd = open(localFilePath.c_str(), O_APPEND | O_WRONLY);
+			secFd.rw = 1;
+		}
+		if (secFd.fd == -1) {
+			status = ERROR_RESPONSE;
+			statusCodeVar = Response::_500; //en caso de darse este error es un 500, ya que ya se ha comprobado el access
+			secFd.fd = 0;
+		}
 	}
 }
-
 /**
  * @brief Handles waiting for CGI processing to complete.
  *
@@ -309,7 +321,15 @@ void Response::handleProcessingRes() {
 				status = ERROR_RESPONSE;
 				statusCodeVar = _500;
 			}
+			break;
 		case POST:
+			if(cgiToken == ""){
+				long written = write(secFd.fd, req.body.c_str(), req.body.size());
+				if(written == 0){
+					status = ERROR_RESPONSE;
+					statusCodeVar = _500;
+				}
+			}
 			break;
 		case DELETE:
 			std::cout << "handle delete" << std::endl;
@@ -318,6 +338,7 @@ void Response::handleProcessingRes() {
 				statusCodeVar = _500;
 			}
 			body = "<p> File: " + localFilePath + " removed</p>";
+			break;
 	}
 }
 
