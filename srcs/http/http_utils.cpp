@@ -185,39 +185,6 @@ const Server& getServerByHost(const std::vector<Server>& servers, std::string ho
 	return servers[servers.size() - 1];
 }
 
-
-Response::statusCode checkAccess(const std::string& path, enum methodsEnum method, bool autoIndex) {
-    struct stat fileStat;
-    
-    if (stat(path.c_str(), &fileStat) != 0) {
-        return Response::_404; 
-    }
-    
-    if (S_ISDIR(fileStat.st_mode)) {
-		if (!autoIndex)
-        	return Response::_404;
-		else if (method != GET)
-			return Response::_404;
-	}	
-
-	switch (method){
-		case GET:
-			if (access(path.c_str(), R_OK) == 0)
-				return Response::_200;
-			return Response::_404;
-		case POST: //TODO check
-			if (access(path.c_str(), W_OK) == 0)
-				return Response::_200;
-			return Response::_404;
-		case DELETE:
-			if (access(path.c_str(), W_OK) == 0)
-				return Response::_200;
-			return Response::_404;
-	}
-	return Response::_404;
-
-}
-
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted){
 	std::string reconstructedPath = "/";
     if (!pathSplitted.empty()) {

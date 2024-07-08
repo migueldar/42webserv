@@ -23,7 +23,8 @@ Location& Location::operator=(Location const& other) {
         methods[POST] = other.methods[POST];
         methods[DELETE] = other.methods[DELETE];
         autoindex = other.autoindex;
-        cgi = other.cgi; 
+        cgi = other.cgi;
+		uploadPath = other.uploadPath;
     }
     return *this;
 }

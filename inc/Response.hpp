@@ -21,7 +21,9 @@ class Response {
 
         enum statusCode{
             _200,
+			_201,
 			_308,
+			_403,
             _404,
 			_405,
 			_413,
@@ -45,6 +47,7 @@ class Response {
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
         bool checkCgiTokens(const std::string &localFilePath);
+		statusCode checkAccess(std::string path, enum methodsEnum method, bool autoIndex);
 
         void handleStartPrepingRes();
 		void handleProcessingRes();

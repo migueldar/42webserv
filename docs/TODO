@@ -2,6 +2,8 @@ DOING
 
 TODO
 
+- que funque el post bien
+
 - reflexionar sobre almacenamiento (particularmente imagenes y videos) en deques, porque gestiona la memoria en bloques de 512
 
 - para respuestas de entorno a 5*10^6 caracteres el send no da error, pero salta pollerr, se manda bastante parte del mensaje pero no todo, hay que ver como fragmentamos archivos grandes

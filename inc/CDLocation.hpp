@@ -15,6 +15,7 @@ class Location {
 		//MANAGES ESPECIFIC RULES FOR METHODS
 		bool methods[METHODS_NUM];
 
+		std::string uploadPath;
 		std::map<std::string, std::string> cgi;
 		//OFF predeterminado
 		bool autoindex;

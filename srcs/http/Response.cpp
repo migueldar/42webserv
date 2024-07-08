@@ -165,6 +165,44 @@ bool Response::checkCgiTokens(const std::string &localFilePath) {
     return false;
 }
 
+Response::statusCode Response::checkAccess(std::string path, enum methodsEnum method, bool autoIndex) {
+    struct stat fileStat;
+	std::string directory;
+
+	switch (method){
+		case GET:
+			if (stat(path.c_str(), &fileStat) != 0)
+				return Response::_404;
+			if (S_ISDIR(fileStat.st_mode) && !autoIndex)
+				return Response::_404;
+			if (access(path.c_str(), R_OK) == 0)
+				return Response::_200;
+			return Response::_404;
+		case POST:
+			//este check hace mas cosas asi que rompe
+			if (checkCgiTokens(path) && access(path.c_str(), R_OK) == 0)
+				return Response::_200;
+			else
+				return Response::_404;
+			if (loc.uploadPath == "")
+				return Response::_403;
+			directory = path.substr(0, path.find_last_of("/"));
+			//have to check in the upload path, not here
+			if (stat(directory.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
+				return Response::_404;
+			return Response::_201;
+		case DELETE:
+			if (stat(path.c_str(), &fileStat) != 0)
+				return Response::_404;
+			if (S_ISDIR(fileStat.st_mode))
+				return Response::_404;
+			if (access(path.c_str(), W_OK) == 0)
+				return Response::_200;
+			return Response::_404;
+	}
+	return Response::_404;
+}
+
 /**
  * @brief Handles the start of preparing the response.
  *
@@ -213,8 +251,10 @@ void Response::handleStartPrepingRes() {
 		if (req.method == GET) {
 			secFd.fd = open(localFilePath.c_str(), O_RDONLY);
 			secFd.rw = 0;
-		} else {
-			//TODO post, delete doesnt need fd
+		} else if (req.method == POST) {
+			//quiza haga falta crear directorios tambien, discutir con joan
+			secFd.fd = open(localFilePath.c_str(), O_APPEND | O_WRONLY);
+			secFd.rw = 1;
 		}
 		if (secFd.fd == -1) {
 			status = ERROR_RESPONSE;
@@ -327,9 +367,15 @@ void Response::handleBadResponse() {
 		case _200:
 			//safeguard, will never run
 			return;
+		case _201:
+			httpResponse = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n"; //SHOULD have location to created file
+			return;
 		case _308:
 			httpResponse = "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + reconstructPath + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n";
 			return;
+		case _403:
+			err = "403 Forbidden";
+			break;
 		case _404:
 			err = "404 Not Found";
 			break;
