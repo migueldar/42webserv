@@ -21,6 +21,6 @@ const Server &getServerByHost(const std::vector<Server> &servers, std::string ho
 const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted);
 
-std::string readFile(int fd);
+stringWrap	readFile(int fd);
 
 #endif

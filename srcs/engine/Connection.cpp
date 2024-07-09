@@ -59,21 +59,20 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
-		std::string httpResponse;
+		stringWrap httpResponse;
 		if (res != NULL) {
 			httpResponse = res->getHttpResponse();
 			delete res;
 			res = NULL;
 		}
 		else
-			httpResponse = "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
+			httpResponse += "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
 		
 		delete req;
 		req = NULL;
 		
 		std::cout << "RESPONSE: " << httpResponse << std::endl;
-		//TODO si la respuesta a mandar es muy grande (~10^6 caracteres), mandarla en cachos, a traves de varios pollin
-		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0){
+		if (send(sock, httpResponse.popFirst().c_str(), 100000, 0) <= 0){
 			return 1;
 		}
 

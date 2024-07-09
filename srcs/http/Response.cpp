@@ -4,12 +4,12 @@
 #include <sys/types.h>
 #include "webserv.hpp"
 
-std::string Response::getHttpResponse(){
+stringWrap Response::getHttpResponse(){
     return httpResponse;
 }
 
-Response::Response(std::string port, const Server& server, Request& req): req(req), header(""), body(""),\
-	httpResponse(""), reconstructPath(req.targetString), locationPath(""), cgiToken(""), port(port),\
+Response::Response(std::string port, const Server& server, Request& req): req(req), header(""),\
+	reconstructPath(req.targetString), locationPath(""), cgiToken(""), port(port),\
 	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(reconstructPath, server)),\
 	server(server), newCgi(NULL) {secFd.fd = 0;}
 
@@ -19,7 +19,6 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
 	static Location locDef;
 
     if (req.measure != Request::NO_BODY && server.maxBodySize < req.body.length()) {
-		std::cout << "size: " << req.body.length() << std::endl;
 		statusCodeVar = _413;
 		status = ERROR_RESPONSE;
 		return locDef;
@@ -79,15 +78,14 @@ SecondaryFd Response::prepareResponse(int err) {
 	std::cout << statusCodeVar << std::endl;
     if (status == START_PREPING_RES) {
         handleStartPrepingRes();
-        if (secFd.fd != 0)
+        if (secFd.fd != 0) 
             return secFd;
     }
     
     if (status == WAITING_FOR_CGI) {
         handleWaitingForCgi();
-		if (secFd.fd != 0){
+		if (secFd.fd != 0)
             return secFd;
-		}
     } else if (status == PROCESSING_RES) {
 		handleProcessingRes();
         status = GET_RESPONSE;
@@ -273,7 +271,7 @@ void Response::handleGetAutoIndex() {
     }
 
     streamBody << "</ul></body></html>";
-    body = streamBody.str();
+    body += streamBody.str();
     std::cout << body << std::endl;
 }
 
@@ -302,7 +300,7 @@ void Response::handleProcessingRes() {
         		status = ERROR_RESPONSE;
 				statusCodeVar = _500;
 			}
-			body = "<p> File: " + localFilePath + " removed</p>";
+			body += "<p> File: " + localFilePath + " removed</p>";
 			break;
 	}
 }
@@ -317,7 +315,7 @@ void Response::handleProcessingRes() {
 void Response::handleGetResponse() {
     std::cout << "END PROCESS" << std::endl;
     if (!cgiToken.empty()) {
-        body = newCgi->getCgiResponse();
+        body += newCgi->getCgiResponse();
         std::cout << body << std::endl;
         delete newCgi;
     }
@@ -348,7 +346,7 @@ void Response::handleBadResponse() {
 			//safeguard, will never run
 			return;
 		case _308:
-			httpResponse = "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + reconstructPath + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n";
+			httpResponse += "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + reconstructPath + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n";
 			return;
 		case _403:
 			err = "403 Forbidden";
@@ -372,7 +370,7 @@ void Response::handleBadResponse() {
 		secFd.fd = open(errPage.c_str(), O_RDONLY);
 		if (secFd.fd > 0)
 		{
-			httpResponse = "HTTP/1.1 " + err + "\r\nConnection: close\r\nContent-Length: ";
+			httpResponse += "HTTP/1.1 " + err + "\r\nConnection: close\r\nContent-Length: ";
 			status = ERROR_RESPONSE_PAGE;
 			return ;
 		}
@@ -381,19 +379,20 @@ void Response::handleBadResponse() {
 	}
 	catch (std::exception& _) {}
 
-    httpResponse = "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
+    httpResponse += "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
 }
 
 void Response::handleBadResponsePage() {
 	std::string err;
 
 	try {
-		std::string page = readFile(secFd.fd);
-		httpResponse += toString(page.size()) + "\r\n\r\n" + page;
+		stringWrap page = readFile(secFd.fd);
+		httpResponse += toString(page.length()) + "\r\n\r\n";
+		httpResponse += page;
 		return ;
 	}
 	catch (std::exception& _) {
 		err = "500 Internal Server Error";
 	}
-    httpResponse = "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
+    httpResponse += "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
 }

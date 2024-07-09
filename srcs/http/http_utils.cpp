@@ -198,8 +198,8 @@ std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted)
 	return(reconstructedPath);
 }
 
-std::string readFile(int fd) {
-    std::string	ret = "";
+stringWrap readFile(int fd) {
+    stringWrap	ret;
 	int			bytesRead;
     char		read_buff[SIZE_READ + 1];
 
