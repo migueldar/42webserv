@@ -1,7 +1,7 @@
 #include "webserv.hpp"
 #include <sys/poll.h>
 
-Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), res(NULL), data("") {
+Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), res(NULL) {
 	secFd.fd = -1;
 	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
@@ -54,7 +54,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		if (read_res <= 0)
 			return 1;
 
-		data.addData(read_buff);
+		data += read_buff;
 	}
 
 	else if (pollfd.revents & POLLOUT) {

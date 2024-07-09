@@ -1,4 +1,5 @@
 - maxBodySize > locationNotFound > redir > methods > not found
+- he comentado cosas en varios sitios que no funcionan con la nueva implementacion (habria que cambiarlas para hacer los write de uno en uno y tal)
 ? en la config file permitir tabs
 
 GET

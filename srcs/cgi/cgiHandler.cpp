@@ -27,7 +27,7 @@ long CgiHandler::handleCgiEvent() {
     static enum CGI_STAGES stages = BEGIN_CGI_EXEC;
     static int infd[2], outfd[2], errfd[2]; // Se añade un nuevo pipe para la salida de error
     static int pid;
-    ssize_t bytesWritten;
+    // ssize_t bytesWritten;
     ssize_t bytesRead;
 
     switch (stages) {
@@ -83,14 +83,14 @@ long CgiHandler::handleCgiEvent() {
             }
             break;
         case WRITE_CGI_EXEC:
-            bytesWritten = write(infd[1], req.body.c_str(), req.body.length());
-            close(infd[1]);
-            if (bytesWritten < 0) {
-                std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
-                return -1;
-            }
-            stages = READ_CGI_EXEC;
-            //TODO set in outfd read on sing bit
+            // bytesWritten = write(infd[1], req.body.c_str(), req.body.length());
+            // close(infd[1]);
+            // if (bytesWritten < 0) {
+            //     std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
+            //     return -1;
+            // }
+            // stages = READ_CGI_EXEC;
+            // //TODO set in outfd read on sing bit
             return (long)outfd[0]; 
             
         case READ_CGI_EXEC:
@@ -267,7 +267,7 @@ void	CgiHandler::parseAUTH_TYPE(void){
 }
 
 void	CgiHandler::parseCONTENT_LENGTH(void){
-    if(req.body != ""){
+    if(!req.body.empty()){
         metaVariables["CONTENT_LENGTH"] = toString(req.body.length());
     }
     return;

@@ -18,8 +18,8 @@ Response::~Response() {}
 const Location& Response::getLocationByRoute(std::string enterPath, const Server& server) {
 	static Location locDef;
 
-    if (req.measure != Request::NO_BODY && server.maxBodySize < req.body.size()) {
-		std::cout << "size: " << req.body.size() << std::endl;
+    if (req.measure != Request::NO_BODY && server.maxBodySize < req.body.length()) {
+		std::cout << "size: " << req.body.length() << std::endl;
 		statusCodeVar = _413;
 		status = ERROR_RESPONSE;
 		return locDef;
@@ -289,11 +289,11 @@ void Response::handleProcessingRes() {
 			break;
 		case POST:
 			if(cgiToken == ""){
-				long written = write(secFd.fd, req.body.c_str(), req.body.size());
-				if(written < 0){
-					status = ERROR_RESPONSE;
-					statusCodeVar = _500;
-				}
+				// long written = write(secFd.fd, req.body.c_str(), req.body.length());
+				// if(written == 0){
+				// 	status = ERROR_RESPONSE;
+				// 	statusCodeVar = _500;
+				// }
 			}
 			break;
 		case DELETE:

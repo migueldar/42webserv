@@ -1,5 +1,5 @@
 NAME := webserv
-SRCS := srcs/main.cpp \
+SRCS := srcs/mymain.cpp \
 		srcs/engine/Connection.cpp \
 		srcs/engine/Listener.cpp \
 		srcs/engine/PollHandler.cpp \
@@ -48,7 +48,7 @@ exe:
 
 #check sanitize#
 sanitize:: CXXFLAGS += -fsanitize=address -g3
-sanitize:: LDFLAGS += -fsanitize=address
+sanitize:: LDFLAGS += -fsanitize=address -g3
 sanitize:: re
 
 noflag:: CXXFLAGS = -I inc -std=c++98
