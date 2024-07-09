@@ -69,6 +69,7 @@ class Response {
         std::string			localFilePath;
         std::string			cgiToken;
         std::string			port;
+        std::string         uploadFilePath;
 
 		statusCode			statusCodeVar;						
         responseStages   	status;

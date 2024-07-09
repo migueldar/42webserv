@@ -163,7 +163,6 @@ bool Response::checkCgiTokens(const std::string &localFilePath) {
 
 Response::statusCode Response::checkAccess(std::string path, enum methodsEnum method, bool autoIndex) {
     struct stat fileStat;
-	std::string directory;
 
 	switch (method){
 		case GET:
@@ -183,12 +182,12 @@ Response::statusCode Response::checkAccess(std::string path, enum methodsEnum me
 			}
 			if (loc.uploadPath == "")
 				return Response::_403;
-			directory = loc.root + loc.uploadPath;
+			uploadFilePath = loc.root + loc.uploadPath;
 			//have to check in the upload path, not here
-			if (stat(directory.c_str(), &fileStat) != 0 || !S_ISDIR(fileStat.st_mode))
+			if (stat(uploadFilePath.c_str(), &fileStat) != 0 || !S_ISDIR(fileStat.st_mode))
 				return Response::_404;
-			directory += path.substr(locationPath.size(), path.size());
-			if (access(directory.c_str(), F_OK) == 0 && access(directory.c_str(), W_OK) != 0)
+			uploadFilePath = path;
+			if (access(uploadFilePath.c_str(), F_OK) == 0 && access(uploadFilePath.c_str(), W_OK) != 0)
                 return Response::_403;
 			return Response::_201;
 		case DELETE:
@@ -235,8 +234,9 @@ void Response::handleStartPrepingRes() {
 	//quiza si el metodo es post ni hay que comprobar nada, o hay comportamiento distinto dependiendo de si va al cgi o no
 	//o si el archivo existe o no
 	statusCodeVar = checkAccess(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
+	std::cout << "uploadFilePath: " << uploadFilePath << " statuscode:" << statusCodeVar << std::endl;
     // TODO Check access to file and non-default location
-	if (statusCodeVar != Response::_200) {
+	if (statusCodeVar != Response::_200 && statusCodeVar != Response::_201) {
 		status = ERROR_RESPONSE;
 		return ;
 	}
@@ -252,7 +252,7 @@ void Response::handleStartPrepingRes() {
 			secFd.fd = open(localFilePath.c_str(), O_RDONLY);
 			secFd.rw = 0;
 		} else if (req.method == POST) {
-			secFd.fd = open(localFilePath.c_str(), O_APPEND | O_WRONLY);
+			secFd.fd = open(uploadFilePath.c_str(), O_APPEND | O_WRONLY | O_CREAT, 0644);
 			secFd.rw = 1;
 		}
 		if (secFd.fd == -1) {
@@ -325,7 +325,7 @@ void Response::handleProcessingRes() {
 		case POST:
 			if(cgiToken == ""){
 				long written = write(secFd.fd, req.body.c_str(), req.body.size());
-				if(written == 0){
+				if(written < 0){
 					status = ERROR_RESPONSE;
 					statusCodeVar = _500;
 				}
@@ -357,7 +357,10 @@ void Response::handleGetResponse() {
         delete newCgi;
     }
 
-	httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.size()) + "\r\nConnection: keep-alive\r\n\r\n" + body;
+	if(statusCodeVar == Response::_200)
+		httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.size()) + "\r\nConnection: keep-alive\r\n\r\n" + body;
+	else if(statusCodeVar == Response::_201)
+		httpResponse = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n"; //SHOULD have location to created file
 }
 
 /**
@@ -377,7 +380,7 @@ void Response::handleBadResponse() {
 			//safeguard, will never run
 			return;
 		case _201:
-			httpResponse = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n"; //SHOULD have location to created file
+			//safeguard, will never run
 			return;
 		case _308:
 			httpResponse = "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + reconstructPath + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n";
