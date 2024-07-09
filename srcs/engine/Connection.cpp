@@ -59,29 +59,34 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
-		stringWrap httpResponse;
+		std::string httpResponse;
 		if (res != NULL) {
-			httpResponse = res->getHttpResponse();
-			delete res;
-			res = NULL;
+			httpResponse = res->getPartHttpResponse();
+			if (res->done()) {
+				delete res;
+				res = NULL;
+				delete req;
+				req = NULL;
+				pollfd.events = POLLIN;
+				startTimer();
+			}
 		}
-		else
+		else {
 			httpResponse += "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
+			delete req;
+			req = NULL;
+			pollfd.events = POLLIN;
+			startTimer();
+		}
 		
-		delete req;
-		req = NULL;
-		
-		std::cout << "RESPONSE: " << httpResponse << std::endl;
-		if (send(sock, httpResponse.popFirst().c_str(), 100000, 0) <= 0){
+		//std::cout << "RESPONSE: " << httpResponse << std::endl;
+		if (send(sock, httpResponse.c_str(), httpResponse.length(), 0) <= 0){
 			return 1;
 		}
-
-		pollfd.events = POLLIN;
-		startTimer();
 		return 0;
 	}
 
-	if (!data.empty()) {
+	if (!data.empty() && (pollfd.events & POLLIN)) {
 		if (!req)
 			req = new Request();
 
@@ -103,11 +108,9 @@ SecondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) 
 		else
 			res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 	}
-	
-	secFd = res->prepareResponse((revent & POLLERR) || (revent & POLLHUP));
-	std::cout << secFd.fd << std::endl;
-	std::cout << secFd.rw << std::endl;
-	
+
+	if ((revent & POLLIN) || (revent & POLLOUT) || (revent & POLLERR))
+		secFd = res->prepareResponse(revent & POLLERR);
 
 	if (secFd.fd == -1)
 		pollfd.events = POLLOUT;

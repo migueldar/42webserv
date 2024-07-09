@@ -34,7 +34,6 @@ void PollHandler::removeConnection(Connection &c) {
 void PollHandler::removeSecondary(SecondaryFd &f) {
 	if (f.fd > 0) {
 		std::cout << "Secondary Removed" << std::endl;
-		close(f.fd);
 		secFds.erase(std::find(secFds.begin(), secFds.end(), f));
 	}
 }
@@ -147,8 +146,8 @@ int PollHandler::pollMode() {
 		if (fdsExtra[i].revents) {
 			if (it->handleEvent(fdsExtra[i]))
 				toRemove.push_back(*it);
-			else if (it->req && it->req->parsed == Request::ALL) {
-				SecondaryFd auxS = it->handleSecondaryEvent(fdsExtra[i], 0);
+			else if (it->req && it->req->parsed == Request::ALL && fdsExtra[i].events == 0) {
+				SecondaryFd auxS = it->handleSecondaryEvent(fdsExtra[i], 1);
 				if (auxS.fd > 0)
 					toAddSecondary.push_back(auxS);
 			}

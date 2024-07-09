@@ -22,5 +22,6 @@ const Location& getLocationByRoute(std::string reconstructedPath, const Server& 
 std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted);
 
 stringWrap	readFile(int fd);
+long writeFile(int fd, stringWrap str);
 
 #endif

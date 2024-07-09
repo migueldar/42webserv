@@ -197,19 +197,3 @@ std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted)
 	 
 	return(reconstructedPath);
 }
-
-stringWrap readFile(int fd) {
-    stringWrap	ret;
-	int			bytesRead;
-    char		read_buff[SIZE_READ + 1];
-
-	memset(read_buff, 0, SIZE_READ + 1);
-    while ((bytesRead = read(fd, read_buff, SIZE_READ)) > 0) {
-        ret += read_buff;
-    }
-
-    if (bytesRead == -1) {
-        throw std::runtime_error("corrupted fd");
-    }
-	return ret;
-}

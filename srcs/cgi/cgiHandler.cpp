@@ -2,8 +2,6 @@
 #include "webserv.hpp"
 
 CgiHandler::CgiHandler(const Location &loc, std::string &tokenCGI, std::string &port, Request &req, std::vector<std::string> &uri, std::string &query_string): tokenCGI(tokenCGI), port(port), req(req), uri(uri), query_string(query_string), loc(loc){
-    response = "";
-    
     initDictParser();
     for (enum metaVariables x = LOCATION; x < METAVARIABLES_LENGTH; x = static_cast<enum metaVariables>(x + 1)) {
         (this->*methodMap[x])();
@@ -12,6 +10,7 @@ CgiHandler::CgiHandler(const Location &loc, std::string &tokenCGI, std::string &
         std::cout << it->first << "=" << it->second << std::endl;
     }
 
+	reqbody = req.body;
     script = loc.root + script;
 }
 
@@ -27,8 +26,7 @@ long CgiHandler::handleCgiEvent() {
     static enum CGI_STAGES stages = BEGIN_CGI_EXEC;
     static int infd[2], outfd[2], errfd[2]; // Se añade un nuevo pipe para la salida de error
     static int pid;
-    // ssize_t bytesWritten;
-    ssize_t bytesRead;
+	std::string aux;
 
     switch (stages) {
         case BEGIN_CGI_EXEC:
@@ -83,56 +81,66 @@ long CgiHandler::handleCgiEvent() {
             }
             break;
         case WRITE_CGI_EXEC:
-            // bytesWritten = write(infd[1], req.body.c_str(), req.body.length());
-            // close(infd[1]);
-            // if (bytesWritten < 0) {
-            //     std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
-            //     return -1;
-            // }
-            // stages = READ_CGI_EXEC;
-            // //TODO set in outfd read on sing bit
-            return (long)outfd[0]; 
-            
-        case READ_CGI_EXEC:
-            char buffer[SIZE_READ];
-            bytesRead = read(outfd[0], buffer, SIZE_READ);
-            if (bytesRead <= 0) {
-                std::cerr << "Error del script CGI" << std::endl;
+			std::cout << "writting pipe: " << infd[1] << std::endl;
+
+			aux = reqbody.popFirst();
+            if (write(infd[1], aux.c_str(), aux.length()) < 0) {
+                std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
                 return -1;
             }
-            if (bytesRead > 0){
-                std::string aux(buffer, bytesRead);
-                response += aux;
-            }
+			if (reqbody.empty()) {
+				close(infd[1]);
+            	stages = READ_CGI_EXEC;
+            	return (long)outfd[0];
+			}
+			{
+				long ret = infd[1] | ((long)1 << 32);
+            	return ret;
+			}
+			break;
+        case READ_CGI_EXEC:
+			std::cout << "reading pipe: " << outfd[0] << std::endl;
+			char read_buff[SIZE_READ + 1];
+			memset(read_buff, 0, SIZE_READ + 1);
+
+			if (read(outfd[0], read_buff, SIZE_READ) >= 0) {
+                response += read_buff;
+				std::cout << "read till now len:" << response.length() << std::endl;
+			}
+			else {
+				perror("Error del script CGI");
+				return -1;
+			}
             size_t index = response.find("EOF");
-            if (index != std::string::npos && index == response.size() - 4){
-                int status;
-                waitpid(pid, &status, 0);
-                if (WIFEXITED(status)) {
-                    int exit_status = WEXITSTATUS(status);
-                    if (exit_status != EXIT_SUCCESS){
-                        std::cerr << "El proceso hijo terminó sin éxito" << std::endl;
-                        return -1;
-                    }
-                } else {
-                    std::cerr << "El proceso hijo terminó de forma anormal" << std::endl;
-                }
-                index = response.find("EOF");
-                response = response.substr(0, index);
+            std::cout << "INDEX " << index << std::endl;
+			if (index != std::string::npos && index == response.length() - 4){
+                response = response.subdeque(0, index);
                 close(outfd[0]);
                 stages = BEGIN_CGI_EXEC;
-                return 0;
             }
             else{
                 //TODO set in outfd read on sing bit
                 return (long)outfd[0];
             }
+            int status;
+            waitpid(pid, &status, 0);
+            if (WIFEXITED(status)) {
+                int exit_status = WEXITSTATUS(status);
+                if (exit_status != EXIT_SUCCESS){
+                    std::cerr << "El proceso hijo terminó sin éxito" << std::endl;
+                    return -1;
+                }
+            } else {
+                std::cerr << "El proceso hijo terminó de forma anormal" << std::endl;
+            }
+            break;
     }
-    return -1;
+	std::cout << "xatata" << std::endl;
+    return 0;
 }
 
 
-std::string CgiHandler::getCgiResponse() const {
+stringWrap CgiHandler::getCgiResponse() const {
     return response;
 }
 

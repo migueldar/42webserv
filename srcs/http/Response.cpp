@@ -4,8 +4,12 @@
 #include <sys/types.h>
 #include "webserv.hpp"
 
-stringWrap Response::getHttpResponse(){
-    return httpResponse;
+std::string Response::getPartHttpResponse() {
+    return httpResponse.popFirst();
+}
+
+bool Response::done() {
+	return httpResponse.empty();
 }
 
 Response::Response(std::string port, const Server& server, Request& req): req(req), header(""),\
@@ -197,7 +201,6 @@ void Response::handleStartPrepingRes() {
 	//quiza si el metodo es post ni hay que comprobar nada, o hay comportamiento distinto dependiendo de si va al cgi o no
 	//o si el archivo existe o no
 	statusCodeVar = checkAccess(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
-	std::cout << "uploadFilePath: " << uploadFilePath << " statuscode:" << statusCodeVar << std::endl;
     // TODO Check access to file and non-default location
 	if (statusCodeVar != Response::_200 && statusCodeVar != Response::_201) {
 		status = ERROR_RESPONSE;
@@ -206,7 +209,7 @@ void Response::handleStartPrepingRes() {
 
 	if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
 		status = GET_AUTO_INDEX;
-	} else if (checkCgiTokens(localFilePath)) {
+	} else if (!cgiToken.empty()) {
 		newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
 		status = WAITING_FOR_CGI;
 	} else {
@@ -236,7 +239,7 @@ void Response::handleStartPrepingRes() {
  */
 void Response::handleWaitingForCgi() {
 	long fdRet = newCgi->handleCgiEvent();
-    if (fdRet > 0){
+    if (fdRet > 0) {
 		secFd.fd = (int)fdRet;
 		secFd.rw = fdRet >> 32;
         return ;
@@ -246,8 +249,9 @@ void Response::handleWaitingForCgi() {
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
+	secFd.fd = 0;
     return ;
-}
+}	
 
 void Response::handleGetAutoIndex() {
     std::ostringstream streamBody;
@@ -287,11 +291,11 @@ void Response::handleProcessingRes() {
 			break;
 		case POST:
 			if(cgiToken == ""){
-				// long written = write(secFd.fd, req.body.c_str(), req.body.length());
-				// if(written == 0){
-				// 	status = ERROR_RESPONSE;
-				// 	statusCodeVar = _500;
-				// }
+				long written = writeFile(secFd.fd, req.body);
+				if (written < 0) {
+					status = ERROR_RESPONSE;
+					statusCodeVar = _500;
+				}
 			}
 			break;
 		case DELETE:
@@ -316,14 +320,16 @@ void Response::handleGetResponse() {
     std::cout << "END PROCESS" << std::endl;
     if (!cgiToken.empty()) {
         body += newCgi->getCgiResponse();
-        std::cout << body << std::endl;
         delete newCgi;
+		newCgi = NULL;
     }
 
-	if(statusCodeVar == Response::_200)
-		httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.size()) + "\r\nConnection: keep-alive\r\n\r\n" + body;
-	else if(statusCodeVar == Response::_201)
-		httpResponse = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n"; //SHOULD have location to created file
+	if (statusCodeVar == Response::_200) {
+		httpResponse += "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.length()) + "\r\nConnection: keep-alive\r\n\r\n";
+		httpResponse += body;
+	}
+	else if (statusCodeVar == Response::_201)
+		httpResponse += "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: keep-alive\r\nLocation: " + uploadFilePath.substr(loc.root.length() - 1) + "\r\n\r\n";
 }
 
 /**

@@ -43,7 +43,8 @@ class Response {
         ~Response();
 
         SecondaryFd prepareResponse(int err);
-        stringWrap getHttpResponse();
+        std::string getPartHttpResponse();
+		bool done();
         const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
 
         bool checkCgiTokens(const std::string &localFilePath);

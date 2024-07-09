@@ -1,4 +1,5 @@
 import sys
+import time
 
 if __name__ == "__main__":
     data = sys.stdin.read()
@@ -7,8 +8,8 @@ if __name__ == "__main__":
 
     print(data)
 
-
-    print("\n")
-
+    sys.stdout.flush()
 
     print("EOF")
+
+    sys.stdout.flush()

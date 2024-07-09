@@ -62,9 +62,10 @@ class CgiHandler {
 		void	parseREMOTE_IDENT(void);
 		void	parseREMOTE_USER(void);
 
-		std::string getCgiResponse() const ;
+		stringWrap getCgiResponse() const ;
 		
 	private:
+		CgiHandler();
 		std::string												tokenCGI;
 		std::map<enum metaVariables, void(CgiHandler::*)()> 	methodMap;
 		std::string 											body;
@@ -76,8 +77,9 @@ class CgiHandler {
 		std::string 											&query_string;
 		const Location 											&loc;
 		char 													**env;
+		stringWrap												reqbody;
 
-		std::string 											response;
+		stringWrap 												response;
 };
 
 #endif

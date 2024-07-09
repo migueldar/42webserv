@@ -1,6 +1,8 @@
 #include "StringWrapper.hpp"
 
-stringWrap::stringWrap() {}
+stringWrap::stringWrap() {
+	deq = std::deque<std::string>();
+}
 
 stringWrap::stringWrap(const stringWrap &other) {
 	*this = other;

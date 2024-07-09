@@ -1,5 +1,8 @@
 - maxBodySize > locationNotFound > redir > methods > not found
-- he comentado cosas en varios sitios que no funcionan con la nueva implementacion (habria que cambiarlas para hacer los write de uno en uno y tal)
+- cuando el cgi peta no deberia petar el webserv
+- los fds no los estamos liberando bien
+- comprobar si se esta recibiendo todo el archivo
+- porque peta con 10000
 ? en la config file permitir tabs
 
 GET

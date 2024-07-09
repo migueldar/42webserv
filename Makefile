@@ -11,15 +11,16 @@ SRCS := srcs/main.cpp \
 		srcs/parser/CDServer.cpp \
 		srcs/parser/parserUtils.cpp \
 		srcs/cgi/cgiHandler.cpp \
+		srcs/utils/ioUtils.cpp \
 		srcs/utils/StringWrapper.cpp \
 		
 OBJS := $(SRCS:srcs/%.cpp=objs/%.o)
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98
-LDFLAGS = -std=c++98
+CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98 -fsanitize=address -g3
+LDFLAGS = -std=c++98 -fsanitize=address -g3
 RM = /bin/rm -rf
 
-ARG = "test/nginx/conf/requestTest.conf"
+ARG = "test/nginx/conf/requestTest2.conf"
 
 all: $(NAME)
 
