@@ -16,11 +16,11 @@ SRCS := srcs/main.cpp \
 		
 OBJS := $(SRCS:srcs/%.cpp=objs/%.o)
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98 #-fsanitize=address -g3
-LDFLAGS = -std=c++98 #-fsanitize=address -g3
+CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98 -fsanitize=address -g3
+LDFLAGS = -std=c++98 -fsanitize=address -g3
 RM = /bin/rm -rf
 
-ARG = "test/nginx/conf/requestTest2.conf"
+ARG = "test/nginx/conf/requestTest.conf"
 
 all: $(NAME)
 

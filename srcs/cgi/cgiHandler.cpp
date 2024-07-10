@@ -85,10 +85,11 @@ long CgiHandler::handleCgiEvent() {
 
 			aux = reqbody.popFirst();
             if (write(infd[1], aux.c_str(), aux.length()) < 0) {
+                
                 std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
                 return -1;
             }
-			if (reqbody.empty()) {
+            if (reqbody.empty()) {
 				close(infd[1]);
             	stages = READ_CGI_EXEC;
             	return (long)outfd[0];
@@ -119,23 +120,23 @@ long CgiHandler::handleCgiEvent() {
                 stages = BEGIN_CGI_EXEC;
             }
             else{
-                //TODO set in outfd read on sing bit
                 return (long)outfd[0];
             }
-            int status;
-            waitpid(pid, &status, 0);
-            if (WIFEXITED(status)) {
-                int exit_status = WEXITSTATUS(status);
-                if (exit_status != EXIT_SUCCESS){
-                    std::cerr << "El proceso hijo terminó sin éxito" << std::endl;
+            {
+                int status;
+                waitpid(pid, &status, 0);
+                if (WIFEXITED(status)) {
+                    int exit_status = WEXITSTATUS(status);
+                    if (exit_status != EXIT_SUCCESS){
+                        std::cerr << "El proceso hijo terminó sin éxito" << std::endl;
+                        return -1;
+                    }
+                } else {
+                    std::cerr << "El proceso hijo terminó de forma anormal" << std::endl;
                     return -1;
                 }
-            } else {
-                std::cerr << "El proceso hijo terminó de forma anormal" << std::endl;
             }
-            break;
     }
-	std::cout << "xatata" << std::endl;
     return 0;
 }
 

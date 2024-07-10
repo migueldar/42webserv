@@ -28,6 +28,7 @@ int main(int argc, char **argv) {
 	ParserFile				config;
 
 	signal(SIGINT, signalHandler);
+	signal(SIGPIPE, SIG_IGN);
 	if (argc > 2)
 		std::cerr << "Usage: ./webserv [configuration ParserFile]" << std::endl;
 	if (argc == 2)

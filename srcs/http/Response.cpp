@@ -73,8 +73,9 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
  *
  * @return 0 if can continue to the next stage, -1 if finishes processing, anything else are fds to be imputed into poll
  */
+//1 pollerr, 2 pollhup
 SecondaryFd Response::prepareResponse(int err) {
-    if (err) {
+    if (err == 1) {
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
@@ -244,8 +245,15 @@ void Response::handleWaitingForCgi() {
 		secFd.rw = fdRet >> 32;
         return ;
 	}
+
     status = GET_RESPONSE;
-    if(fdRet == -1){
+    if (!cgiToken.empty()) {
+        body += newCgi->getCgiResponse();
+        delete newCgi;
+		newCgi = NULL;
+    }
+
+	if(fdRet == -1){
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
@@ -318,12 +326,6 @@ void Response::handleProcessingRes() {
  */
 void Response::handleGetResponse() {
     std::cout << "END PROCESS" << std::endl;
-    if (!cgiToken.empty()) {
-        body += newCgi->getCgiResponse();
-        delete newCgi;
-		newCgi = NULL;
-    }
-
 	if (statusCodeVar == Response::_200) {
 		httpResponse += "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.length()) + "\r\nConnection: keep-alive\r\n\r\n";
 		httpResponse += body;
