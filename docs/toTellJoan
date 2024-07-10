@@ -1,8 +1,10 @@
 - maxBodySize > locationNotFound > redir > methods > not found
 - cuando el cgi peta no deberia petar el webserv
 - los fds no los estamos liberando bien
-- comprobar si se esta recibiendo todo el archivo
-- porque peta con 10000
+- comprobar si se esta recibiendo todo el archivo cuando se hace un get y que se envia bien cuando se hace un post grande
+- al hacer una request a un directorio sin autoindex, es correcto que la respuesta sea 404?
+- hay que comprobar keep alive para devolver keep alive? (quiza no porque si el browser manda close va a cerrar la conexion despues de recibir respuesta, da igual lo que devolvamos)
+? deberiamos comprobar el keep-alive
 ? en la config file permitir tabs
 
 GET

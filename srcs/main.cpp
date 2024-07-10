@@ -19,6 +19,7 @@ PollHandler	createPollHandler(std::vector<Listener>& listeners) {
 
 void signalHandler(int a) {
 	(void) a;
+	std::cout << std::endl << "Exiting webserv" << std::endl;
 	exit(0);
 }
 
@@ -46,7 +47,7 @@ int main(int argc, char **argv) {
 			PollHandler				po = createPollHandler(listeners);
 			po.listenMode();
 			while (1)
-				po.pollMode();	
+				po.pollMode();
 		}
 		catch (std::exception &e) {
 			std::cerr << e.what() << std::endl;
