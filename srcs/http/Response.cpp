@@ -44,17 +44,17 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
 			return *loc;
 		}
 
-        if(!token)
-            token = 1;
-        else
-            token = 0;
-
-		if(remainingPath == "")
+		if(remainingPath == "/")
 			break;
 
         std::cout << "Remaining path: " << remainingPath << std::endl;
 		lastSlashPos = remainingPath.rfind('/');
         remainingPath = remainingPath.substr(0, lastSlashPos + token);
+
+        if(!token)
+            token = 1;
+        else
+            token = 0;
     }
 	statusCodeVar = _404;
 	status = ERROR_RESPONSE;
