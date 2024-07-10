@@ -20,7 +20,7 @@ CXXFLAGS = -Wall -Wextra -Werror -I inc -std=c++98 -fsanitize=address -g3
 LDFLAGS = -std=c++98 -fsanitize=address -g3
 RM = /bin/rm -rf
 
-ARG = "test/nginx/conf/requestTest.conf"
+ARG = "test/nginx/conf/tester.conf"
 
 all: $(NAME)
 
