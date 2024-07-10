@@ -30,7 +30,7 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
 
     std::string remainingPath = enterPath;
     size_t lastSlashPos = remainingPath.size();
-    bool token = 0;
+    bool token = 1;
     while (42) {
 		if (server.existsLocationByRoute(remainingPath)){
 			const Location *loc = &server.getLocation(remainingPath);
@@ -38,7 +38,7 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
 			if(loc->redirectionUrl != "") {
 				statusCodeVar = _308;
 				status = ERROR_RESPONSE;
-				token = 0;
+				token = 1;
 				reconstructPath = loc->redirectionUrl + enterPath.substr(lastSlashPos + !token, enterPath.length());
 			}
 			return *loc;
@@ -49,7 +49,7 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
         else
             token = 0;
 
-		if(remainingPath == "/")
+		if(remainingPath == "")
 			break;
 
         std::cout << "Remaining path: " << remainingPath << std::endl;
@@ -201,6 +201,7 @@ void Response::handleStartPrepingRes() {
     std::cout << "localfilePath: " << localFilePath << std::endl;
 	//quiza si el metodo es post ni hay que comprobar nada, o hay comportamiento distinto dependiendo de si va al cgi o no
 	//o si el archivo existe o no
+
 	statusCodeVar = checkAccess(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
     // TODO Check access to file and non-default location
 	if (statusCodeVar != Response::_200 && statusCodeVar != Response::_201) {

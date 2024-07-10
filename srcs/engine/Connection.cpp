@@ -103,6 +103,7 @@ SecondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) 
 	if (res == NULL) {
 		if (req->errorStatus != "") {
 			secFd.fd = -1;
+			pollfd.events = POLLOUT;
 			return secFd;
 		}
 		else
