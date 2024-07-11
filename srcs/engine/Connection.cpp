@@ -44,7 +44,6 @@ bool Connection::checkTimerConnection() const {
 
 // returns true if timeout
 bool Connection::checkTimerResponse() const {
-	std::cout << "checking 2: " << checkTimers << ": " << (checkTimers && !whichTimer && startTimeResponse + RESPONSE_PROCESSING_TIMEOUT <= time(NULL)) << std::endl; 
 	return (checkTimers && !whichTimer && startTimeResponse + RESPONSE_PROCESSING_TIMEOUT <= time(NULL));
 }
 

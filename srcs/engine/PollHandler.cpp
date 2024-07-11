@@ -168,6 +168,7 @@ int PollHandler::pollMode() {
 			toRemove.push_back(*it);
 		if (it->checkTimerResponse()) {
 			fdsExtra[findSecondaryIndex(it->secFd) + listeners.size() + connections.size()].revents = POLLERR;
+			close(fdsExtra[findSecondaryIndex(it->secFd) + listeners.size() + connections.size()].fd);
 			it->dontCheckTimers();
 		}
 		i++;
