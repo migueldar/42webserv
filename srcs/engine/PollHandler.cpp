@@ -112,6 +112,18 @@ int PollHandler::findConnectionIndex(const Connection& con) const {
 	return -1;
 }
 
+int PollHandler::findSecondaryIndex(const SecondaryFd& secFd) const {
+	int i = 0;
+
+	for (std::vector<SecondaryFd>::const_iterator it = secFds.begin(); it != secFds.end(); it++) {
+		if (*it == secFd)
+			return i;
+		i++;
+	}
+	//safeguard, will never happen
+	return -1;
+}
+
 int PollHandler::pollMode() {
 	struct pollfd* fdsExtra = createFdsExtra();
 
@@ -152,8 +164,12 @@ int PollHandler::pollMode() {
 					toAddSecondary.push_back(auxS);
 			}
 		}
-		if (it->checkTimer())
+		if (it->checkTimerConnection())
 			toRemove.push_back(*it);
+		if (it->checkTimerResponse()) {
+			fdsExtra[findSecondaryIndex(it->secFd) + listeners.size() + connections.size()].revents = POLLERR;
+			it->dontCheckTimers();
+		}
 		i++;
 	}
 

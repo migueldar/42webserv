@@ -5,7 +5,7 @@
 #include <deque>
 #include <iostream>
 
-#define MAX_STRING_SIZE 100
+#define MAX_STRING_SIZE 100000
 
 //to store large strings in non-contiguous memory
 //to work propertly everything should be in canonical mode

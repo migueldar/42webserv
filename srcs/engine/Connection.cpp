@@ -7,24 +7,45 @@ Connection::Connection(int port, int sock, const std::vector<Server>& servers): 
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
-	startTimer();
+	startTimerConnection();
 }
 
-Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), port(other.port), sock(other.sock), servers(other.servers), req(other.req), res(other.res), data(other.data) {
-	secFd = other.secFd;
+Connection::Connection(Connection const& other): startTimeConnection(other.startTimeConnection), startTimeResponse(other.startTimeResponse),\
+	whichTimer(other.whichTimer), port(other.port), sock(other.sock), servers(other.servers),\
+	req(other.req), res(other.res), data(other.data) { secFd = other.secFd; }
+
+Connection::~Connection() {
+	if (req)
+		delete req;
+	if (res)
+		delete res;
 }
 
-Connection::~Connection() {}
+void Connection::startTimerConnection() {
+	startTimeConnection = time(NULL);
+	whichTimer = true;
+	checkTimers = true;
+}
 
-void Connection::startTimer() {
-	startTime = time(NULL);
-	checkTime = true;
+void Connection::startTimerResponse() {
+	startTimeResponse = time(NULL);
+	whichTimer = false;
+	checkTimers = true;
+}
+
+void Connection::dontCheckTimers() {
+	checkTimers = false;
 }
 
 // returns true if timeout
-// 60s timeout
-bool Connection::checkTimer() const {
-	return (checkTime && startTime + 60 <= time(NULL));
+bool Connection::checkTimerConnection() const {
+	return (checkTimers && whichTimer && startTimeConnection + CONNECTION_TIMEOUT <= time(NULL));
+}
+
+// returns true if timeout
+bool Connection::checkTimerResponse() const {
+	std::cout << "checking 2: " << checkTimers << ": " << (checkTimers && !whichTimer && startTimeResponse + RESPONSE_PROCESSING_TIMEOUT <= time(NULL)) << std::endl; 
+	return (checkTimers && !whichTimer && startTimeResponse + RESPONSE_PROCESSING_TIMEOUT <= time(NULL));
 }
 
 //a connection is uniquely identified by sock fd
@@ -69,7 +90,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 				delete req;
 				req = NULL;
 				pollfd.events = POLLIN;
-				startTimer();
+				startTimerConnection();
 			}
 		}
 		else {
@@ -77,7 +98,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			delete req;
 			req = NULL;
 			pollfd.events = POLLIN;
-			startTimer();
+			startTimerConnection();
 		}
 		
 		std::cout << "RESPONSE: " << httpResponse << std::endl;
@@ -93,7 +114,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 
 		data = req->addData(data);
 		if (req->parsed == Request::ALL) {
-			checkTime = false;
+			startTimerResponse();
 			pollfd.events = 0;
 		}
 	}
@@ -113,15 +134,14 @@ SecondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) 
 			res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 	}
 
-	if ((revent & POLLHUP))
-		std::cout << "joan" << std::endl;
-	if ((revent & POLLHUP) && !hasHooped) {
+	if (revent & POLLERR)
+		secFd = res->prepareResponse(1);
+	else if ((revent & POLLHUP) && !hasHooped) {
 		hasHooped = true;
-		std::cout << "huphup" << std::endl;
 		secFd = res->prepareResponse(2);
 	}
-	else if ((revent & POLLIN) || (revent & POLLOUT) || (revent & POLLERR))
-		secFd = res->prepareResponse(revent & POLLERR);
+	else if ((revent & POLLIN) || (revent & POLLOUT))
+		secFd = res->prepareResponse(0);
 
 	if (secFd.fd == -1) {
 		pollfd.events = POLLOUT;

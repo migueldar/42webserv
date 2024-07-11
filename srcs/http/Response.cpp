@@ -17,7 +17,10 @@ Response::Response(std::string port, const Server& server, Request& req): req(re
 	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(server)),\
 	server(server), newCgi(NULL) {secFd.fd = 0;}
 
-Response::~Response() {}
+Response::~Response() {
+	if (newCgi)
+		delete newCgi;
+}
 
 const Location& Response::getLocationByRoute(const Server& server) {
 	static Location locDef;
@@ -75,7 +78,6 @@ SecondaryFd Response::prepareResponse(int err) {
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
-
 
 	std::cout << statusCodeVar << std::endl;
     if (status == START_PREPING_RES) {

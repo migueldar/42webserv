@@ -7,13 +7,16 @@
 #include "SecondaryFd.hpp"
 #include "StringWrapper.hpp"
 
-#define SIZE_READ 100
+#define SIZE_READ 100000
 
 class Connection {
 	private:
-		time_t		startTime;
-		//only on false when server is doing response processing
-		bool		checkTime;
+		time_t		startTimeConnection;
+		time_t		startTimeResponse;
+		//true when server is not doing response processing
+		//false when server is doing response processing
+		bool		whichTimer;
+		bool		checkTimers;
 
 	public:
 		int							port;
@@ -29,8 +32,11 @@ class Connection {
 		Connection(int port, int socket, const std::vector<Server> &servers);
 		Connection(const Connection &other);
 		~Connection();
-		void startTimer();
-		bool checkTimer() const;
+		void startTimerConnection();
+		bool checkTimerConnection() const;
+		void startTimerResponse();
+		bool checkTimerResponse() const;
+		void dontCheckTimers();
 		bool operator==(const Connection &other) const;
 		int handleEvent(struct pollfd &pollfd);
 		//if nothing wants to be returned, just return fd == -1

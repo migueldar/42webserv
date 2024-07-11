@@ -28,6 +28,8 @@
 #include "SecondaryFd.hpp"
 #include "StringWrapper.hpp"
 
-#define ONLY_PARSING_CONF 0
 
+#define ONLY_PARSING_CONF 0
+#define CONNECTION_TIMEOUT 60 //in seconds
+#define RESPONSE_PROCESSING_TIMEOUT 60 //in seconds
 #endif
