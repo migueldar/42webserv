@@ -169,6 +169,9 @@ long hexStringToLong(std::string str) {
     std::istringstream iss(str);
     long ret;
 
+	for (size_t i = 0; i < str.size(); i++)
+		if (!isxdigit(str[i]))
+			return -1;
     if (!(iss >> std::hex >> ret)) 
 		return ret;
     return ret;

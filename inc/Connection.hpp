@@ -7,7 +7,7 @@
 #include "SecondaryFd.hpp"
 #include "StringWrapper.hpp"
 
-#define SIZE_READ 100000
+#define SIZE_READ 100
 
 class Connection {
 	private:

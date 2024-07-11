@@ -15,6 +15,7 @@ class CgiHandler {
 		enum CGI_STAGES {
 			BEGIN_CGI_EXEC = 0,
 			WRITE_CGI_EXEC,
+			WAITPID_CGI,
 			READ_CGI_EXEC,
 		};
 		enum metaVariables{
@@ -41,7 +42,7 @@ class CgiHandler {
 		CgiHandler(const CgiHandler& other);
 		~CgiHandler();
 		void 	initDictParser(void);
-		long 	handleCgiEvent(void);
+		long 	handleCgiEvent(int err);
 		int 	executeCgi(int &fd);
 
 		void	parseLOCATION(void);

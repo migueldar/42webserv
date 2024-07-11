@@ -1,0 +1,8 @@
+multiple requests in one send
+everything in subject
+
+CGI
+- error de primeras
+- error de segudnas
+- no EOF
+- muy larga

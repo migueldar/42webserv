@@ -14,12 +14,12 @@ bool Response::done() {
 
 Response::Response(std::string port, const Server& server, Request& req): req(req), header(""),\
 	reconstructPath(req.targetString), locationPath(""), cgiToken(""), port(port),\
-	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(reconstructPath, server)),\
+	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(server)),\
 	server(server), newCgi(NULL) {secFd.fd = 0;}
 
 Response::~Response() {}
 
-const Location& Response::getLocationByRoute(std::string enterPath, const Server& server) {
+const Location& Response::getLocationByRoute(const Server& server) {
 	static Location locDef;
 
     if (req.measure != Request::NO_BODY && server.maxBodySize < req.body.length()) {
@@ -28,33 +28,29 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
 		return locDef;
 	}
 
-    std::string remainingPath = enterPath;
-    size_t lastSlashPos = remainingPath.size();
-    bool token = 1;
+	if(reconstructPath[reconstructPath.size() - 1] == '/')
+		reconstructPath = reconstructPath.substr(0, reconstructPath.size() - 1);		
+    std::string remainingPath = reconstructPath;
+    size_t lastSlashPos = remainingPath.length();
     while (42) {
+        std::cout << "Remaining path: " << remainingPath << std::endl;
 		if (server.existsLocationByRoute(remainingPath)){
 			const Location *loc = &server.getLocation(remainingPath);
-			this->locationPath = std::string(remainingPath);
-			if(loc->redirectionUrl != "") {
+			this->locationPath = remainingPath;
+			if (loc->redirectionUrl != "") {
 				statusCodeVar = _308;
 				status = ERROR_RESPONSE;
-				token = 1;
-				reconstructPath = loc->redirectionUrl + enterPath.substr(lastSlashPos + !token, enterPath.length());
+				reconstructPath = loc->redirectionUrl + reconstructPath.substr(lastSlashPos, reconstructPath.length());
 			}
 			return *loc;
 		}
 
-		if(remainingPath == "/")
+		if(remainingPath == "")
 			break;
 
-        std::cout << "Remaining path: " << remainingPath << std::endl;
 		lastSlashPos = remainingPath.rfind('/');
-        remainingPath = remainingPath.substr(0, lastSlashPos + token);
+        remainingPath = remainingPath.substr(0, lastSlashPos);
 
-        if(!token)
-            token = 1;
-        else
-            token = 0;
     }
 	statusCodeVar = _404;
 	status = ERROR_RESPONSE;
@@ -80,6 +76,7 @@ SecondaryFd Response::prepareResponse(int err) {
         status = ERROR_RESPONSE;
     }
 
+
 	std::cout << statusCodeVar << std::endl;
     if (status == START_PREPING_RES) {
         handleStartPrepingRes();
@@ -88,7 +85,7 @@ SecondaryFd Response::prepareResponse(int err) {
     }
     
     if (status == WAITING_FOR_CGI) {
-        handleWaitingForCgi();
+        handleWaitingForCgi(err == 2);
 		if (secFd.fd != 0)
             return secFd;
     } else if (status == PROCESSING_RES) {
@@ -96,7 +93,6 @@ SecondaryFd Response::prepareResponse(int err) {
         status = GET_RESPONSE;
     } else if (status == GET_AUTO_INDEX) {
         handleGetAutoIndex();
-        status = GET_RESPONSE;
     }
 
     if (status == GET_RESPONSE) {
@@ -115,32 +111,38 @@ SecondaryFd Response::prepareResponse(int err) {
 
 // TODO change parameters to be more specific
 bool Response::checkCgiTokens(const std::string &localFilePath) {
-    if (req.method != DELETE) {
-        for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
-            size_t lastSlashPos = localFilePath.rfind('/');
-            std::string file = localFilePath.substr(lastSlashPos + 1, localFilePath.size());
-            if (file.find(it->first) != std::string::npos) {
-                req.target.push_back(file);
-                cgiToken = it->first;
-                return true;
-            }
-        }
-    }
+	size_t lastSlashPos = localFilePath.rfind('/');
+	std::string file = localFilePath.substr(lastSlashPos + 1, localFilePath.size());
+
+	for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
+		if (file.find(it->first) != std::string::npos) {
+			//TODO joan check this
+			//req.target.push_back(file);
+			cgiToken = it->first;
+			return true;
+		}
+	}
     return false;
 }
 
-Response::statusCode Response::checkAccess(std::string path, enum methodsEnum method, bool autoIndex) {
+Response::statusCode Response::checkAccess(std::string path, enum methodsEnum method, bool autoIndex, bool& isDir) {
     struct stat fileStat;
 
-	switch (method){
+	switch (method) {
 		case GET:
 			if (stat(path.c_str(), &fileStat) != 0)
 				return Response::_404;
 			if (S_ISDIR(fileStat.st_mode) && !autoIndex)
 				return Response::_404;
+			checkCgiTokens(path);
+			if (S_ISDIR(fileStat.st_mode))  
+				isDir = true;
+			else if (!S_ISREG(fileStat.st_mode))
+				return Response::_403;
 			if (access(path.c_str(), R_OK) == 0)
 				return Response::_200;
 			return Response::_404;
+		//change	
 		case POST:
 			//este check hace mas cosas asi que rompe
 			if (checkCgiTokens(path)) {
@@ -161,12 +163,13 @@ Response::statusCode Response::checkAccess(std::string path, enum methodsEnum me
 		case DELETE:
 			if (stat(path.c_str(), &fileStat) != 0)
 				return Response::_404;
-			if (S_ISDIR(fileStat.st_mode))
+			if (!S_ISREG(fileStat.st_mode))
 				return Response::_404;
 			if (access(path.c_str(), W_OK) == 0)
 				return Response::_200;
 			return Response::_404;
 	}
+	//safeguard
 	return Response::_404;
 }
 
@@ -183,15 +186,19 @@ Response::statusCode Response::checkAccess(std::string path, enum methodsEnum me
  * @return Always returns 0 to continue state machine (indicators for future implementation).
  */
 void Response::handleStartPrepingRes() {
+	
 	if (!loc.methods[req.method]) {
         statusCodeVar = _405;
 		status = ERROR_RESPONSE;
 		return ;
     }
 
+	std::cout << "location path: " << locationPath << std::endl;
+	std::cout << "reconstruct path: " << reconstructPath << std::endl;
+
     // Getting final path for searching in local machine
 	if (locationPath != reconstructPath) {
-        localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
+        localFilePath = loc.root + reconstructPath.substr(locationPath.size() + 1);
     } else if (loc.defaultPath != "") {
         localFilePath = loc.root + loc.defaultPath;
     } else {
@@ -202,16 +209,18 @@ void Response::handleStartPrepingRes() {
 	//quiza si el metodo es post ni hay que comprobar nada, o hay comportamiento distinto dependiendo de si va al cgi o no
 	//o si el archivo existe o no
 
-	statusCodeVar = checkAccess(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
+	bool isDir = false;
+	statusCodeVar = checkAccess(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0, isDir);
     // TODO Check access to file and non-default location
 	if (statusCodeVar != Response::_200 && statusCodeVar != Response::_201) {
 		status = ERROR_RESPONSE;
 		return ;
 	}
 
-	if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
+	if (loc.autoindex == true && req.method == GET && isDir) {
 		status = GET_AUTO_INDEX;
 	} else if (!cgiToken.empty()) {
+		req.body += "EOF";
 		newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
 		status = WAITING_FOR_CGI;
 	} else {
@@ -239,25 +248,24 @@ void Response::handleStartPrepingRes() {
  *
  * @return File descriptor returned by CGI event handling, or -1 if finished.
  */
-void Response::handleWaitingForCgi() {
-	long fdRet = newCgi->handleCgiEvent();
+void Response::handleWaitingForCgi(int err) {
+	long fdRet = newCgi->handleCgiEvent(err);
     if (fdRet > 0) {
 		secFd.fd = (int)fdRet;
 		secFd.rw = fdRet >> 32;
         return ;
 	}
-
-    status = GET_RESPONSE;
-    if (!cgiToken.empty()) {
-        body += newCgi->getCgiResponse();
-        delete newCgi;
-		newCgi = NULL;
-    }
-
-	if(fdRet == -1){
+   
+	if(fdRet == -1) {
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
-    }
+    } else {
+		body += newCgi->getCgiResponse();
+		status = GET_RESPONSE;
+	}
+
+	delete newCgi;
+	newCgi = NULL;
 	secFd.fd = 0;
     return ;
 }	
@@ -280,12 +288,13 @@ void Response::handleGetAutoIndex() {
         }
         closedir(dir);
     } else {
-        streamBody << "<li>Error: unable to open directory " << localFilePath << "</li>"; //should put error status to true maybe instead of writting the error in the html
+        statusCodeVar = _500;
+		status = ERROR_RESPONSE;
     }
 
     streamBody << "</ul></body></html>";
     body += streamBody.str();
-    std::cout << body << std::endl;
+    status = GET_RESPONSE;
 }
 
 void Response::handleProcessingRes() {
@@ -299,7 +308,8 @@ void Response::handleProcessingRes() {
 			}
 			break;
 		case POST:
-			if(cgiToken == ""){
+			//change
+			{
 				long written = writeFile(secFd.fd, req.body);
 				if (written < 0) {
 					status = ERROR_RESPONSE;
@@ -308,12 +318,12 @@ void Response::handleProcessingRes() {
 			}
 			break;
 		case DELETE:
-			std::cout << "handle delete" << std::endl;
 			if (remove(localFilePath.c_str()) != 0) {
         		status = ERROR_RESPONSE;
 				statusCodeVar = _500;
 			}
-			body += "<p> File: " + localFilePath + " removed</p>";
+			else
+				body += "<p> File: " + localFilePath + " removed</p>";
 			break;
 	}
 }
@@ -327,12 +337,16 @@ void Response::handleProcessingRes() {
  */
 void Response::handleGetResponse() {
     std::cout << "END PROCESS" << std::endl;
+	std::string connectionState = "close";
+
+	if (req.headers.count("Connection") == 1 && toLower(req.headers.at("Connection")) == "keep-alive")
+		connectionState = "keep-alive";
 	if (statusCodeVar == Response::_200) {
-		httpResponse += "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.length()) + "\r\nConnection: keep-alive\r\n\r\n";
+		httpResponse += "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.length()) + "\r\nConnection: " + connectionState + "\r\n\r\n";
 		httpResponse += body;
 	}
 	else if (statusCodeVar == Response::_201)
-		httpResponse += "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: keep-alive\r\nLocation: " + uploadFilePath.substr(loc.root.length() - 1) + "\r\n\r\n";
+		httpResponse += "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: " + connectionState + "\r\nLocation: " + uploadFilePath.substr(loc.root.length() - 1) + "\r\n\r\n";
 }
 
 /**

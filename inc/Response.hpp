@@ -45,14 +45,14 @@ class Response {
         SecondaryFd prepareResponse(int err);
         std::string getPartHttpResponse();
 		bool done();
-        const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
+        const Location& getLocationByRoute(const Server& server);
 
         bool checkCgiTokens(const std::string &localFilePath);
-		statusCode checkAccess(std::string path, enum methodsEnum method, bool autoIndex);
+		statusCode checkAccess(std::string path, enum methodsEnum method, bool autoIndex, bool& isDir);
 
         void handleStartPrepingRes();
 		void handleProcessingRes();
-        void handleWaitingForCgi();
+        void handleWaitingForCgi(int err);
         void handleGetResponse();
         void handleGetAutoIndex();
     

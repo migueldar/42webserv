@@ -22,11 +22,18 @@ CgiHandler::CgiHandler(const CgiHandler& other)
 }
 
 
-long CgiHandler::handleCgiEvent() {
+long CgiHandler::handleCgiEvent(int err) {
     static enum CGI_STAGES stages = BEGIN_CGI_EXEC;
     static int infd[2], outfd[2], errfd[2]; // Se añade un nuevo pipe para la salida de error
     static int pid;
+	static bool hasBeenWaited = false;
 	std::string aux;
+	enum CGI_STAGES auxStage;
+
+	if(err){
+		auxStage = stages;
+		stages = WAITPID_CGI;
+	}
 
     switch (stages) {
         case BEGIN_CGI_EXEC:
@@ -104,7 +111,7 @@ long CgiHandler::handleCgiEvent() {
 			char read_buff[SIZE_READ + 1];
 			memset(read_buff, 0, SIZE_READ + 1);
 
-			if (read(outfd[0], read_buff, SIZE_READ) >= 0) {
+			if (read(outfd[0], read_buff, SIZE_READ) > 0) {
                 response += read_buff;
 				std::cout << "read till now len:" << response.length() << std::endl;
 			}
@@ -112,30 +119,39 @@ long CgiHandler::handleCgiEvent() {
 				perror("Error del script CGI");
 				return -1;
 			}
-            size_t index = response.find("EOF");
-            std::cout << "INDEX " << index << std::endl;
-			if (index != std::string::npos && index == response.length() - 4){
-                response = response.subdeque(0, index);
-                close(outfd[0]);
-                stages = BEGIN_CGI_EXEC;
-            }
-            else{
-                return (long)outfd[0];
-            }
-            {
-                int status;
-                waitpid(pid, &status, 0);
-                if (WIFEXITED(status)) {
-                    int exit_status = WEXITSTATUS(status);
-                    if (exit_status != EXIT_SUCCESS){
-                        std::cerr << "El proceso hijo terminó sin éxito" << std::endl;
-                        return -1;
-                    }
-                } else {
-                    std::cerr << "El proceso hijo terminó de forma anormal" << std::endl;
-                    return -1;
-                }
-            }
+			{
+				size_t index = response.find("EOF");
+				std::cout << "INDEX " << index << std::endl;
+				if (index != std::string::npos && index == response.length() - 4){
+					response = response.subdeque(0, index);
+					close(outfd[0]);
+					stages = BEGIN_CGI_EXEC;
+				}
+				else {
+					return (long)outfd[0];
+				}
+			}
+		case WAITPID_CGI:
+			if (!hasBeenWaited) {
+				hasBeenWaited = true;
+				int status;
+				waitpid(pid, &status, 0);
+				if (WIFEXITED(status)) {
+					int exit_status = WEXITSTATUS(status);
+					if (exit_status != EXIT_SUCCESS){
+						std::cerr << "El proceso hijo terminó sin éxito" << std::endl;
+						return -1;
+					}
+				} else {
+					std::cerr << "El proceso hijo terminó de forma anormal" << std::endl;
+					return -1;
+				}
+				if(stages == WAITPID_CGI){
+					stages = auxStage;
+					return (long)outfd[0];
+				}
+			}
+			break;
     }
     return 0;
 }

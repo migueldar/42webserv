@@ -314,8 +314,8 @@ void ParserFile::fillServers() {
                         throw runtime_error("[ERROR] line " + toString(lineNum) + ": not valid location dir:" + wordLines[1]);
                     if(checkRoutesServer(server.getRoutes(), wordLines[1]) == 1)
                         throw runtime_error("[ERROR] line " + toString(lineNum) + ": duplicated location dir:" + wordLines[1]);
-                    if(wordLines[1][wordLines[1].size()-1] != '/')
-                        wordLines[1] += "/";
+                    if(wordLines[1][wordLines[1].size()-1] == '/')
+						wordLines[1] = wordLines[1].substr(0, wordLines[1].length() - 1);
                     routeKey = wordLines[1];
                     ++brace;
                 }

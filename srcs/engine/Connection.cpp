@@ -51,6 +51,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		memset(read_buff, 0, SIZE_READ + 1);
 		read_res = recv(sock, read_buff, SIZE_READ, 0);
 
+		std::cout << read_buff << std::endl;
 		if (read_res <= 0)
 			return 1;
 
@@ -79,7 +80,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			startTimer();
 		}
 		
-		//std::cout << "RESPONSE: " << httpResponse << std::endl;
+		std::cout << "RESPONSE: " << httpResponse << std::endl;
 		if (send(sock, httpResponse.c_str(), httpResponse.length(), 0) <= 0){
 			return 1;
 		}
@@ -100,6 +101,8 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 }
 
 SecondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) {
+	static bool hasHooped = false;
+
 	if (res == NULL) {
 		if (req->errorStatus != "") {
 			secFd.fd = -1;
@@ -110,11 +113,20 @@ SecondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) 
 			res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 	}
 
-	if ((revent & POLLIN) || (revent & POLLOUT) || (revent & POLLERR))
+	if ((revent & POLLHUP))
+		std::cout << "joan" << std::endl;
+	if ((revent & POLLHUP) && !hasHooped) {
+		hasHooped = true;
+		std::cout << "huphup" << std::endl;
+		secFd = res->prepareResponse(2);
+	}
+	else if ((revent & POLLIN) || (revent & POLLOUT) || (revent & POLLERR))
 		secFd = res->prepareResponse(revent & POLLERR);
 
-	if (secFd.fd == -1)
+	if (secFd.fd == -1) {
 		pollfd.events = POLLOUT;
+		hasHooped = false;
+	}
 	
 	return secFd;
 }

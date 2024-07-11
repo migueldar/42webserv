@@ -73,7 +73,8 @@ bool Server::existsLocationByRoute(const std::string& path) const {
             return true;
         }
     }
-
+	
+	std::cout << "size" << routes.size() << std::endl;
     return false;
 }
 
