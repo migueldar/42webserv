@@ -27,8 +27,8 @@ void PollHandler::removeConnection(Connection &c) {
 	std::cout << "Connection Removed" << std::endl;
 	close(c.sock);
 	removeFromFds(c.sock);
-	connections.erase(std::find(connections.begin(), connections.end(), c));
 	removeSecondary(c.secFd);
+	connections.erase(std::find(connections.begin(), connections.end(), c));
 }
 
 void PollHandler::removeSecondary(SecondaryFd &f) {
@@ -152,12 +152,12 @@ int PollHandler::pollMode() {
 
 	//check connections, also timeouts
 	std::cout << "Checking connections and timeouts" << std::endl;
-	std::vector<Connection> toRemove;
+	std::vector<Connection*> toRemove;
 	std::vector<SecondaryFd> toAddSecondary;
 	for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++) {
 		if (fdsExtra[i].revents) {
 			if (it->handleEvent(fdsExtra[i]))
-				toRemove.push_back(*it);
+				toRemove.push_back(&(*it));
 			else if (it->req && it->req->parsed == Request::ALL && fdsExtra[i].events == 0) {
 				SecondaryFd auxS = it->handleSecondaryEvent(fdsExtra[i], 1);
 				if (auxS.fd > 0)
@@ -165,7 +165,7 @@ int PollHandler::pollMode() {
 			}
 		}
 		if (it->checkTimerConnection())
-			toRemove.push_back(*it);
+			toRemove.push_back(&(*it));
 		if (it->checkTimerResponse()) {
 			fdsExtra[findSecondaryIndex(it->secFd) + listeners.size() + connections.size()].revents = POLLERR;
 			close(fdsExtra[findSecondaryIndex(it->secFd) + listeners.size() + connections.size()].fd);
@@ -183,7 +183,7 @@ int PollHandler::pollMode() {
 			if (fdsExtra[i].revents) {
 				Connection& con = findConnection(*it);
 				//check wether connection is being removed due to some error
-				if (std::count(toRemove.begin(), toRemove.end(), con) == 0) {
+				if (std::count(toRemove.begin(), toRemove.end(), &con) == 0) {
 					SecondaryFd auxS = con.handleSecondaryEvent(fdsExtra[findConnectionIndex(con) + listeners.size()], fdsExtra[i].revents);
 					toRemoveSecondary.push_back(*it);
 					if (auxS.fd > 0)
@@ -197,8 +197,8 @@ int PollHandler::pollMode() {
 	recoverFds(fdsExtra);
 	delete[] fdsExtra;
 
-	for (std::vector<Connection>::iterator it = toRemove.begin(); it != toRemove.end(); it++)
-		removeConnection(*it);
+	for (std::vector<Connection*>::iterator it = toRemove.begin(); it != toRemove.end(); it++)
+		removeConnection(**it);
 
 	for (std::vector<Connection>::iterator it = toAdd.begin(); it != toAdd.end(); it++)
 		addConnection(*it);

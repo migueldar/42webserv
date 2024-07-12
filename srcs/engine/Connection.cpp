@@ -11,7 +11,7 @@ Connection::Connection(int port, int sock, const std::vector<Server>& servers): 
 }
 
 Connection::Connection(Connection const& other): startTimeConnection(other.startTimeConnection), startTimeResponse(other.startTimeResponse),\
-	whichTimer(other.whichTimer), port(other.port), sock(other.sock), servers(other.servers),\
+	whichTimer(other.whichTimer), checkTimers(other.checkTimers), port(other.port), sock(other.sock), servers(other.servers),\
 	req(other.req), res(other.res), data(other.data) { secFd = other.secFd; }
 
 Connection::~Connection() {
@@ -72,9 +72,10 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		read_res = recv(sock, read_buff, SIZE_READ, 0);
 
 		std::cout << read_buff << std::endl;
-		if (read_res <= 0)
+		if (read_res <= 0) {
 			return 1;
-
+		}
+	
 		data += read_buff;
 	}
 

@@ -24,4 +24,6 @@ std::string reconstructPathFromVec(const std::vector<std::string>& pathSplitted)
 stringWrap	readFile(int fd);
 long writeFile(int fd, stringWrap str);
 
+stringWrap parseMultipart(std::string& fileName, stringWrap& body);
+
 #endif

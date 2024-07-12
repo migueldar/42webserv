@@ -144,9 +144,7 @@ Response::statusCode Response::checkAccess(std::string path, enum methodsEnum me
 			if (access(path.c_str(), R_OK) == 0)
 				return Response::_200;
 			return Response::_404;
-		//change	
 		case POST:
-			//este check hace mas cosas asi que rompe
 			if (checkCgiTokens(path)) {
 				if (access(path.c_str(), R_OK) == 0)
 					return Response::_200;
@@ -155,12 +153,10 @@ Response::statusCode Response::checkAccess(std::string path, enum methodsEnum me
 			if (loc.uploadPath == "")
 				return Response::_403;
 			uploadFilePath = loc.root + loc.uploadPath;
-			//have to check in the upload path, not here
-			if (stat(uploadFilePath.c_str(), &fileStat) != 0 || !S_ISDIR(fileStat.st_mode))
+			if (stat(uploadFilePath.c_str(), &fileStat) != 0 || !S_ISDIR(fileStat.st_mode) || access(uploadFilePath.c_str(), W_OK) != 0 || access(uploadFilePath.c_str(), X_OK) != 0)
 				return Response::_404;
-			uploadFilePath = path;
-			if (access(uploadFilePath.c_str(), F_OK) == 0 && access(uploadFilePath.c_str(), W_OK) != 0)
-                return Response::_403;
+			if (req.headers.count("Content-Type") == 0 || req.headers.at("Content-Type").find("multipart/form-data") == std::string::npos)
+				return Response::_400;
 			return Response::_201;
 		case DELETE:
 			if (stat(path.c_str(), &fileStat) != 0)
@@ -230,14 +226,28 @@ void Response::handleStartPrepingRes() {
 		if (req.method == GET) {
 			secFd.fd = open(localFilePath.c_str(), O_RDONLY);
 			secFd.rw = 0;
+			if (secFd.fd == -1) {
+				status = ERROR_RESPONSE;
+				statusCodeVar = Response::_500;
+				secFd.fd = 0;
+			}
 		} else if (req.method == POST) {
-			secFd.fd = open(uploadFilePath.c_str(), O_APPEND | O_WRONLY | O_CREAT, 0644);
+			std::string fileName;
+			try {
+				fileContent = parseMultipart(fileName, req.body);
+			} catch (std::exception& _) {
+				status = ERROR_RESPONSE;
+				statusCodeVar = Response::_400;
+				secFd.fd = 0;
+				return ;
+			}
+			secFd.fd = open((uploadFilePath + "/" + fileName).c_str(), O_TRUNC | O_WRONLY | O_CREAT, 0644);
 			secFd.rw = 1;
-		}
-		if (secFd.fd == -1) {
-			status = ERROR_RESPONSE;
-			statusCodeVar = Response::_500; //en caso de darse este error es un 500, ya que ya se ha comprobado el access
-			secFd.fd = 0;
+			if (secFd.fd == -1) {
+				status = ERROR_RESPONSE;
+				statusCodeVar = Response::_403;
+				secFd.fd = 0;
+			}
 		}
 	}
 }
@@ -310,9 +320,8 @@ void Response::handleProcessingRes() {
 			}
 			break;
 		case POST:
-			//change
 			{
-				long written = writeFile(secFd.fd, req.body);
+				long written = writeFile(secFd.fd, fileContent);
 				if (written < 0) {
 					status = ERROR_RESPONSE;
 					statusCodeVar = _500;
@@ -348,7 +357,7 @@ void Response::handleGetResponse() {
 		httpResponse += body;
 	}
 	else if (statusCodeVar == Response::_201)
-		httpResponse += "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: " + connectionState + "\r\nLocation: " + uploadFilePath.substr(loc.root.length() - 1) + "\r\n\r\n";
+		httpResponse += "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: " + connectionState + "\r\n\r\n";//i think we should return location to created source
 }
 
 /**
@@ -373,6 +382,9 @@ void Response::handleBadResponse() {
 		case _308:
 			httpResponse += "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + reconstructPath + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n";
 			return;
+		case _400:
+			err = "400 Bad Request";
+			break;
 		case _403:
 			err = "403 Forbidden";
 			break;

@@ -23,6 +23,7 @@ class Response {
             _200,
 			_201,
 			_308,
+			_400,
 			_403,
             _404,
 			_405,
@@ -71,6 +72,7 @@ class Response {
         std::string			cgiToken;
         std::string			port;
         std::string         uploadFilePath;
+		stringWrap			fileContent;
 
 		statusCode			statusCodeVar;						
         responseStages   	status;

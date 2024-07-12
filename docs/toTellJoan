@@ -1,6 +1,5 @@
 - crear cgi de go
-- leaks with wrong requests
-- subir archivos
+- tras una request al cgi que da 500, todas dan 500
 
 GET
 - devolver el archivo

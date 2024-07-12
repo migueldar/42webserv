@@ -5,7 +5,8 @@ SRCS := srcs/main.cpp \
 		srcs/engine/PollHandler.cpp \
 		srcs/http/Request.cpp \
 		srcs/http/Response.cpp \
-		srcs/http/http_utils.cpp \
+		srcs/http/httpUtils.cpp \
+		srcs/http/parseMultipart.cpp \
 		srcs/parser/CDLocation.cpp \
 		srcs/parser/CDParserFile.cpp \
 		srcs/parser/CDServer.cpp \
