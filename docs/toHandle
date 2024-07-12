@@ -20,3 +20,8 @@ LEFT
 
 NOTES
 - request-line lengths of 8000 octets.
+
+
+-JOAN:
+    -MAX Body size
+    -upload-path

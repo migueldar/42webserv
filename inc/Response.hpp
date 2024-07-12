@@ -23,6 +23,7 @@ class Response {
             _200,
 			_201,
 			_308,
+			_400,
 			_403,
             _404,
 			_405,
@@ -38,36 +39,40 @@ class Response {
                 }
 		};
 
-        Response(std::string port, const Server& server, Request req);
+        Response(std::string port, const Server& server, Request& req);
         // Response(const Response& other);
         ~Response();
 
         SecondaryFd prepareResponse(int err);
-        std::string getHttpResponse();
-        const Location& getLocationByRoute(std::string reconstructedPath, const Server& server);
+        std::string getPartHttpResponse();
+		bool done();
+        const Location& getLocationByRoute(const Server& server);
 
         bool checkCgiTokens(const std::string &localFilePath);
-		statusCode checkAccess(std::string path, enum methodsEnum method, bool autoIndex);
+		statusCode checkAccess(std::string path, enum methodsEnum method, bool autoIndex, bool& isDir);
 
         void handleStartPrepingRes();
 		void handleProcessingRes();
-        long handleWaitingForCgi();
+        void handleWaitingForCgi(int err);
         void handleGetResponse();
-        long handleGetAutoIndex();
+        void handleGetAutoIndex();
     
         void handleBadResponse();
 		void handleBadResponsePage();
 
         // Response& operator=(const Response& other);
     private:
+        Request&       		req;
+        stringWrap			body;
+        stringWrap			httpResponse;
         std::string			header;
-        std::string			body;
-        std::string			httpResponse;
 		std::string			reconstructPath;
         std::string			locationPath;
         std::string			localFilePath;
         std::string			cgiToken;
         std::string			port;
+        std::string         uploadFilePath;
+		stringWrap			fileContent;
 
 		statusCode			statusCodeVar;						
         responseStages   	status;
@@ -75,7 +80,6 @@ class Response {
         const Location&		loc;
 		const Server&		server;
         CgiHandler*			newCgi;
-        Request        		req;
 
 		SecondaryFd			secFd;
 };

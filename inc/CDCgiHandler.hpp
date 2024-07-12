@@ -15,6 +15,7 @@ class CgiHandler {
 		enum CGI_STAGES {
 			BEGIN_CGI_EXEC = 0,
 			WRITE_CGI_EXEC,
+			WAITPID_CGI,
 			READ_CGI_EXEC,
 		};
 		enum metaVariables{
@@ -41,7 +42,7 @@ class CgiHandler {
 		CgiHandler(const CgiHandler& other);
 		~CgiHandler();
 		void 	initDictParser(void);
-		long 	handleCgiEvent();
+		long 	handleCgiEvent(int err);
 		int 	executeCgi(int &fd);
 
 		void	parseLOCATION(void);
@@ -62,9 +63,10 @@ class CgiHandler {
 		void	parseREMOTE_IDENT(void);
 		void	parseREMOTE_USER(void);
 
-		std::string getCgiResponse() const ;
+		stringWrap getCgiResponse() const ;
 		
 	private:
+		CgiHandler();
 		std::string												tokenCGI;
 		std::map<enum metaVariables, void(CgiHandler::*)()> 	methodMap;
 		std::string 											body;
@@ -76,8 +78,9 @@ class CgiHandler {
 		std::string 											&query_string;
 		const Location 											&loc;
 		char 													**env;
+		stringWrap												reqbody;
 
-		std::string 											response;
+		stringWrap 												response;
 };
 
 #endif

@@ -73,7 +73,7 @@ bool Server::existsLocationByRoute(const std::string& path) const {
             return true;
         }
     }
-
+	
     return false;
 }
 

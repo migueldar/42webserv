@@ -23,9 +23,20 @@ std::vector<std::string> splitString(const std::string& input, char delimiter) {
 }
 
 
-short stringToUnsignedLong(const std::string& str) {
+short stringToShort(const std::string& str) {
     std::istringstream stream(str);
     short result = 0;
+
+    if (!(stream >> result) || !stream.eof()) {
+        throw std::invalid_argument("Error en la conversión de cadena a short");
+    }
+
+    return result;
+}
+
+unsigned long stringToUnsignedLong(const std::string& str) {
+    std::istringstream stream(str);
+    unsigned long result = 0;
 
     if (!(stream >> result) || !stream.eof()) {
         throw std::invalid_argument("Error en la conversión de cadena a unsigned long");

@@ -1,30 +1,50 @@
 #include "webserv.hpp"
 #include <sys/poll.h>
 
-Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), res(NULL), data("") {
+Connection::Connection(int port, int sock, const std::vector<Server>& servers): port(port), sock(sock), servers(servers), req(NULL), res(NULL) {
 	secFd.fd = -1;
 	if (fcntl(sock, F_SETFD, O_CLOEXEC) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
 	if (fcntl(sock, F_SETFL, O_NONBLOCK) == -1)
 		throw std::runtime_error("fcntl error: " + std::string(strerror(errno)));
-	startTimer();
+	startTimerConnection();
 }
 
-Connection::Connection(Connection const& other): startTime(other.startTime), checkTime(other.checkTime), port(other.port), sock(other.sock), servers(other.servers), req(other.req), res(other.res), data(other.data) {
-	secFd = other.secFd;
+Connection::Connection(Connection const& other): startTimeConnection(other.startTimeConnection), startTimeResponse(other.startTimeResponse),\
+	whichTimer(other.whichTimer), checkTimers(other.checkTimers), port(other.port), sock(other.sock), servers(other.servers),\
+	req(other.req), res(other.res), data(other.data) { secFd = other.secFd; }
+
+Connection::~Connection() {
+	if (req)
+		delete req;
+	if (res)
+		delete res;
 }
 
-Connection::~Connection() {}
+void Connection::startTimerConnection() {
+	startTimeConnection = time(NULL);
+	whichTimer = true;
+	checkTimers = true;
+}
 
-void Connection::startTimer() {
-	startTime = time(NULL);
-	checkTime = true;
+void Connection::startTimerResponse() {
+	startTimeResponse = time(NULL);
+	whichTimer = false;
+	checkTimers = true;
+}
+
+void Connection::dontCheckTimers() {
+	checkTimers = false;
 }
 
 // returns true if timeout
-// 60s timeout
-bool Connection::checkTimer() const {
-	return (checkTime && startTime + 60 <= time(NULL));
+bool Connection::checkTimerConnection() const {
+	return (checkTimers && whichTimer && startTimeConnection + CONNECTION_TIMEOUT <= time(NULL));
+}
+
+// returns true if timeout
+bool Connection::checkTimerResponse() const {
+	return (checkTimers && !whichTimer && startTimeResponse + RESPONSE_PROCESSING_TIMEOUT <= time(NULL));
 }
 
 //a connection is uniquely identified by sock fd
@@ -50,11 +70,12 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 
 		memset(read_buff, 0, SIZE_READ + 1);
 		read_res = recv(sock, read_buff, SIZE_READ, 0);
+
 		std::cout << read_buff << std::endl;
-
-		if (read_res <= 0)
+		if (read_res <= 0) {
 			return 1;
-
+		}
+	
 		data += read_buff;
 	}
 
@@ -62,35 +83,38 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		std::cout << "pollout" << std::endl;
 		std::string httpResponse;
 		if (res != NULL) {
-			httpResponse = res->getHttpResponse();
-			delete res;
-			res = NULL;
+			httpResponse = res->getPartHttpResponse();
+			if (res->done()) {
+				delete res;
+				res = NULL;
+				delete req;
+				req = NULL;
+				pollfd.events = POLLIN;
+				startTimerConnection();
+			}
 		}
-		else
-			httpResponse = "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
-		
-		delete req;
-		req = NULL;
+		else {
+			httpResponse += "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
+			delete req;
+			req = NULL;
+			pollfd.events = POLLIN;
+			startTimerConnection();
+		}
 		
 		std::cout << "RESPONSE: " << httpResponse << std::endl;
-		//TODO si la respuesta a mandar es muy grande (~10^6 caracteres), mandarla en cachos, a traves de varios pollin
-		if (send(sock, httpResponse.c_str(), httpResponse.size(), 0) <= 0){
+		if (send(sock, httpResponse.c_str(), httpResponse.length(), 0) <= 0){
 			return 1;
 		}
-
-		pollfd.events = POLLIN;
-		startTimer();
 		return 0;
 	}
 
-	if (data != "") {
+	if (!data.empty() && (pollfd.events & POLLIN)) {
 		if (!req)
 			req = new Request();
 
 		data = req->addData(data);
-		//probablemente aqui tambien haga falta poner a 0 los events del fd
 		if (req->parsed == Request::ALL) {
-			checkTime = false;
+			startTimerResponse();
 			pollfd.events = 0;
 		}
 	}
@@ -98,19 +122,31 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 }
 
 SecondaryFd	Connection::handleSecondaryEvent(struct pollfd &pollfd, int revent) {
+	static bool hasHooped = false;
+
 	if (res == NULL) {
 		if (req->errorStatus != "") {
 			secFd.fd = -1;
+			pollfd.events = POLLOUT;
 			return secFd;
 		}
 		else
 			res = new Response(toString(port), getServerByHost(servers, req->headers.at("Host")), *req);
 	}
-	
-	secFd = res->prepareResponse((revent & POLLERR) || (revent & POLLHUP));
-	
-	if (secFd.fd == -1)
+
+	if (revent & POLLERR)
+		secFd = res->prepareResponse(1);
+	else if ((revent & POLLHUP) && !hasHooped) {
+		hasHooped = true;
+		secFd = res->prepareResponse(2);
+	}
+	else if ((revent & POLLIN) || (revent & POLLOUT))
+		secFd = res->prepareResponse(0);
+
+	if (secFd.fd == -1) {
 		pollfd.events = POLLOUT;
+		hasHooped = false;
+	}
 	
 	return secFd;
 }

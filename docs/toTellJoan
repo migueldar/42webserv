@@ -1,16 +1,9 @@
-- estoy casi seguro de que hay que desactivar el checkeo de los events(poner a 0) mientras se handelea el fd secundario
-- maxBodySize > locationNotFound > redir > methods > not found
-- como podria darse el outofrange en el getLocationbyroute (no estoy seguro de si me he adaptado bien a la redireccion)
-- maxBodySize no esta hecho
-- upload_path path no esta hecho
-- necesito una forma de saber si las requests van al cgi o no, sin cambiar el las cosas, solo un check
-- lo de comprobar se puede hacer mas facil con mecanismos de c++
-? en la config file permitir tabs
-? que 404 no cierre conexion
+- crear cgi de go
+- tras una request al cgi que da 500, todas dan 500
 
 GET
 - devolver el archivo
 POST
-- si la localizacion es cgi(200) o permite update de archivos(201), sino 403, deberia poder crear directorios? (sino 403)
+- si la localizacion es cgi(200) o permite update de archivos(201)
 DELETE
-- cargarnos el archivo, deberia poder destruir directorios? (sino 403)
+- cargarnos el archivo

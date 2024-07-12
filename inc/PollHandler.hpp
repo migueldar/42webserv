@@ -31,6 +31,7 @@ class PollHandler {
 		//returns connection position in list
 		Connection&		findConnection(const SecondaryFd& secFd);
 		int				findConnectionIndex(const Connection& con) const;
+		int				findSecondaryIndex(const SecondaryFd& secFd) const;
 		// void tester();
 
 	private:
@@ -38,7 +39,7 @@ class PollHandler {
 		struct pollfd*							fds;
 		std::vector<Listener>					listeners;
 		std::list<Connection>					connections;
-		std::vector<SecondaryFd>	secFds;
+		std::vector<SecondaryFd>				secFds;
 };
 
 #endif

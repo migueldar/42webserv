@@ -1,14 +1,15 @@
 #include "http.hpp"
 #include "parser.hpp"
+#include "StringWrapper.hpp"
 #include <cstddef>
 #include <algorithm>
 
-Request::Request(): rawData(""), queryParams(""), body(""), parsed(NOTHING), errorStatus("") {}
+Request::Request(): queryParams(""), parsed(NOTHING), errorStatus("") {}
 
 Request::~Request() {}
 
 //returns the data which doesnt belong to this request
-std::string Request::addData(std::string data) {
+stringWrap Request::addData(stringWrap& data) {
 	size_t found;
 
 	rawData += data;
@@ -18,7 +19,7 @@ std::string Request::addData(std::string data) {
 			if (found != std::string::npos)	{
 				parseRequestLine(rawData.substr(0, found));
 				parsed = REQLINE;
-				rawData = rawData.substr(found + 2);
+				rawData = rawData.subdeque(found + 2);
 			}
 		}
 
@@ -32,7 +33,7 @@ std::string Request::addData(std::string data) {
 					parseFields(rawData.substr(0, found + 2));
 					parsed = HEADERS;
 					checkFields();
-					rawData = rawData.substr(found + 4);
+					rawData = rawData.subdeque(found + 4);
 				}
 			}
 		}
@@ -46,9 +47,9 @@ std::string Request::addData(std::string data) {
 			else if (measure == CONTENT_LENGTH) {
 				if (rawData.length() >= contentLength) {
 					parsed = ALL;
-					body = rawData.substr(0, contentLength);
+					body = rawData.subdeque(0, contentLength);
 					// std::cout << std::endl << "FULLY PARSED: " << std::endl << *this;
-					return rawData.substr(contentLength);
+					return rawData.subdeque(contentLength);
 				}
 			}
 			else {
@@ -64,7 +65,7 @@ std::string Request::addData(std::string data) {
 		parsed = ALL;
 		//std::cout << std::endl << "FULLY PARSED: " << std::endl << *this;
 	}
-	return "";
+	return stringWrap();
 }
 
 void Request::parseMethod(std::string& str) {
@@ -176,7 +177,7 @@ void Request::parseField(std::string fieldLine) {
 	if (*it != ':' || !isToken(fieldName))
 		throw BadRequest();
 	it++;
-	// std::cout << "field name parsed" << std::endl;
+	// std::cout << "field name parsed: " << fieldName << std::endl;
 
 	while (it != fieldLine.end() && (*it == ' ' || *it == '\t'))
 		it++;
@@ -190,7 +191,7 @@ void Request::parseField(std::string fieldLine) {
 	}
 	if (!isFieldLine(fieldValue))
 		throw BadRequest();
-	// std::cout << "field value parsed" << std::endl;
+	// std::cout << "field value parsed: " << fieldValue << std::endl;
 
 	//value is in map
 	if (headers.count(fieldName) == 1)
@@ -241,27 +242,27 @@ void Request::checkFields() {
 }
 
 //returns unparsed data
-std::string Request::parseChunkedBody() {
-	// std::cout << "parseChunked start" << std::endl;
-
+stringWrap Request::parseChunkedBody() {
+	std::cout << "parseChunked start" << std::endl;
 	size_t		counter = 0;
-	size_t		len;
+	long		len;
 	size_t		found;
 	std::string chunkBody;
 
 	while (1) {
 		found = rawData.find("\r\n", counter);
 		if (found == std::string::npos)
-			return rawData.substr(counter);
-		if (!isdigit(rawData[counter]))
-			throw BadRequest();
+			return rawData.subdeque(counter);
 		len = hexStringToLong(rawData.substr(counter, found - counter));
+
+		if (len < 0)
+			throw BadRequest();
 		if (len == 0)
 			break;
 	
 		chunkBody = rawData.substr(found + 2, len);
-		if (chunkBody.length() != len)
-			return rawData.substr(counter);
+		if (chunkBody.length() != (size_t) len)
+			return rawData.subdeque(counter);
 		if (rawData[found + 2 + len] != '\r' || rawData[found + 2 + len + 1] != '\n')
 			throw BadRequest();
 		body += chunkBody;
@@ -270,11 +271,11 @@ std::string Request::parseChunkedBody() {
 
 	found = rawData.find("\r\n\r\n", counter);
 	if (found == std::string::npos)
-		return rawData.substr(counter);
+		return rawData.subdeque(counter);
 	
 	parsed = ALL;
-	// std::cout << "parseChunked end" << std::endl << std::endl;
-	return rawData.substr(found + 4);
+	std::cout << "parseChunked end" << std::endl << std::endl;
+	return rawData.subdeque(found + 4);
 }
 
 std::ostream& operator<<(std::ostream& o, Request const& prt) {
@@ -301,7 +302,7 @@ std::ostream& operator<<(std::ostream& o, Request const& prt) {
 		o << "    " << it->first << ": " << it->second << std::endl; 
 
 	o << std::endl;
-	o << "Body: " << std::endl << "    " << prt.body << std::endl << std::endl;
+	o << "Body: " << std::endl << prt.body << std::endl << std::endl;
 	o << "BodyLengthMeasure: ";
 	switch (prt.measure) {
 		case Request::NO_BODY:

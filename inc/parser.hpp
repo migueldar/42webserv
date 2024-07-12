@@ -32,6 +32,8 @@ enum ConfigType {
     INDEX,
     METHODS,
     AUTO_INDEX,
+    MAX_BODY_SIZE,
+    UPLOAD_PATH,
     BRACE_CLOSE,
     CGI,
     UNKNOWN
@@ -39,7 +41,9 @@ enum ConfigType {
 
 //UTILS
 std::vector<std::string> splitString(const std::string& input, char delimiter);
-short stringToUnsignedLong(const std::string& str);
+unsigned long stringToUnsignedLong(const std::string& str);
+short stringToShort(const std::string& str);
+
 
 template <typename T>
 std::string toString(T value) {

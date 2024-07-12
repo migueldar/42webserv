@@ -4,10 +4,11 @@
 #include "parser.hpp"
 #include <exception>
 #include <string>
+#include "StringWrapper.hpp"
 
 class Request {
 	private:
-		std::string	rawData;
+		stringWrap	rawData;
 
 	public:
 
@@ -69,7 +70,7 @@ class Request {
 		std::string							targetString;
 		std::map<std::string, std::string>	headers;
 		std::string							queryParams;
-		std::string							body;
+		stringWrap							body;
 		ParseState							parsed;
 		HostType							hostType;
 		BodyLengthMeasure					measure;
@@ -78,7 +79,7 @@ class Request {
 
 		Request();
 		~Request();
-		std::string addData(std::string data);
+		stringWrap addData(stringWrap& data);
 		void parseMethod(std::string& method);
 		void parseRequestTarget(std::string& target);
 		void parseVersion(std::string& version);
@@ -86,7 +87,7 @@ class Request {
 		void parseField(std::string fieldLine);
 		void parseFields(std::string fields);
 		void checkFields();
-		std::string parseChunkedBody();
+		stringWrap parseChunkedBody();
 };
 
 std::ostream &operator<<(std::ostream &o, Request const &prt);

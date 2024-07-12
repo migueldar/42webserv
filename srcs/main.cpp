@@ -19,6 +19,7 @@ PollHandler	createPollHandler(std::vector<Listener>& listeners) {
 
 void signalHandler(int a) {
 	(void) a;
+	std::cout << std::endl << "Exiting webserv" << std::endl;
 	exit(0);
 }
 
@@ -27,6 +28,7 @@ int main(int argc, char **argv) {
 	ParserFile				config;
 
 	signal(SIGINT, signalHandler);
+	signal(SIGPIPE, SIG_IGN);
 	if (argc > 2)
 		std::cerr << "Usage: ./webserv [configuration ParserFile]" << std::endl;
 	if (argc == 2)
@@ -46,7 +48,7 @@ int main(int argc, char **argv) {
 			PollHandler				po = createPollHandler(listeners);
 			po.listenMode();
 			while (1)
-				po.pollMode();	
+				po.pollMode();
 		}
 		catch (std::exception &e) {
 			std::cerr << e.what() << std::endl;

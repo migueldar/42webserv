@@ -4,93 +4,56 @@
 #include <sys/types.h>
 #include "webserv.hpp"
 
-std::string Response::getHttpResponse(){
-    return httpResponse;
+std::string Response::getPartHttpResponse() {
+    return httpResponse.popFirst();
 }
 
-Response::Response(std::string port, const Server& server, Request req): header(""), body(""),\
-	httpResponse(""), reconstructPath(req.targetString), locationPath(""), cgiToken(""), port(port),\
-	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(reconstructPath, server)),\
-	server(server), newCgi(NULL), req(req) {secFd.fd = 0;}
+bool Response::done() {
+	return httpResponse.empty();
+}
 
-// Response::Response(const Response& other)
-//     : header(other.header), body(other.body), httpResponse(other.httpResponse), reconstructPath(other.reconstructPath), locationPath(other.locationPath), loc(other.loc), newCgi(NULL), req(other.req), cgiToken(other.cgiToken), port(other.port), status(other.status) {
-//     if (other.newCgi != NULL) {
-//         newCgi = new CgiHandler(*other.newCgi);
-//     }
-// }
+Response::Response(std::string port, const Server& server, Request& req): req(req), header(""),\
+	reconstructPath(req.targetString), locationPath(""), cgiToken(""), port(port),\
+	statusCodeVar(Response::_200), status(START_PREPING_RES), loc(getLocationByRoute(server)),\
+	server(server), newCgi(NULL) {secFd.fd = 0;}
 
-// Response& Response::operator=(const Response& other) {
-//     if (this != &other) {
-//         // Liberar recursos existentes
-//         if (newCgi != NULL) {
-//             delete newCgi;
-//             newCgi = NULL;
-//         }
+Response::~Response() {
+	if (newCgi)
+		delete newCgi;
+}
 
-//         // Copiar los recursos del objeto other
-//         header = other.header;
-//         body = other.body;
-//         httpResponse = other.httpResponse;
-//         reconstructPath = other.reconstructPath;
-//         locationPath = other.locationPath;
-//         req = other.req;
-//         cgiToken = other.cgiToken;
-//         port = other.port;
-//         status = other.status;
-
-//         if (other.newCgi != NULL) {
-//             newCgi = new CgiHandler(*other.newCgi);
-//         } else {
-//             newCgi = NULL;
-//         }
-//     }
-//     return *this;
-// }
-
-Response::~Response() {}
-
-const Location& Response::getLocationByRoute(std::string enterPath, const Server& server) {
+const Location& Response::getLocationByRoute(const Server& server) {
 	static Location locDef;
 
-    if (req.measure != Request::NO_BODY && server.maxBodySize < req.body.size()) {
+    if (req.measure != Request::NO_BODY && server.maxBodySize < req.body.length()) {
 		statusCodeVar = _413;
 		status = ERROR_RESPONSE;
 		return locDef;
 	}
 
-    std::string remainingPath = enterPath;
-    size_t lastSlashPos = remainingPath.size();
-    bool token = 0;
+	if(reconstructPath[reconstructPath.size() - 1] == '/')
+		reconstructPath = reconstructPath.substr(0, reconstructPath.size() - 1);		
+    std::string remainingPath = reconstructPath;
+    size_t lastSlashPos = remainingPath.length();
     while (42) {
-        // BREAKING PATHS BY '/'
-        try {
-            if (server.existsLocationByRoute(remainingPath)){
-                const Location *loc = &server.getLocation(remainingPath);
-                this->locationPath = std::string(remainingPath);
-                if(loc->redirectionUrl != "") {
-                    statusCodeVar = _308;
-					status = ERROR_RESPONSE;
-					token = 0;
-					reconstructPath = loc->redirectionUrl + enterPath.substr(lastSlashPos + !token, enterPath.length());
-                }
-                return *loc;
-            }
-        } catch (const std::out_of_range&) {
-            std::cout << "NOT FOUND LOCATION " << std::endl; 
-			//JUST TO CATH WHEN GET LOCATION STD::MAP "AT" METHOD DOESNT FIND REQUESTED LINE 
-        }
-        if(!token)
-            token = 1;
-        else
-            token = 0;
+        std::cout << "Remaining path: " << remainingPath << std::endl;
+		if (server.existsLocationByRoute(remainingPath)){
+			const Location *loc = &server.getLocation(remainingPath);
+			this->locationPath = remainingPath;
+			if (loc->redirectionUrl != "") {
+				statusCodeVar = _308;
+				status = ERROR_RESPONSE;
+				reconstructPath = loc->redirectionUrl + reconstructPath.substr(lastSlashPos, reconstructPath.length());
+			}
+			return *loc;
+		}
 
-		if(remainingPath == "/")
+		if(remainingPath == "")
 			break;
 
-        std::cout << "Remaining path: " << remainingPath << std::endl;
 		lastSlashPos = remainingPath.rfind('/');
-        remainingPath = remainingPath.substr(0, lastSlashPos + token);
+        remainingPath = remainingPath.substr(0, lastSlashPos);
+
     }
 	statusCodeVar = _404;
 	status = ERROR_RESPONSE;
@@ -109,8 +72,9 @@ const Location& Response::getLocationByRoute(std::string enterPath, const Server
  *
  * @return 0 if can continue to the next stage, -1 if finishes processing, anything else are fds to be imputed into poll
  */
+//1 pollerr, 2 pollhup
 SecondaryFd Response::prepareResponse(int err) {
-    if (err) {
+    if (err == 1) {
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
     }
@@ -118,21 +82,19 @@ SecondaryFd Response::prepareResponse(int err) {
 	std::cout << statusCodeVar << std::endl;
     if (status == START_PREPING_RES) {
         handleStartPrepingRes();
-        if (secFd.fd != 0)
+        if (secFd.fd != 0) 
             return secFd;
     }
     
     if (status == WAITING_FOR_CGI) {
-        // ret = handleWaitingForCgi();
-
-        // if (ret != 0)
-        //     return ret;
+        handleWaitingForCgi(err == 2);
+		if (secFd.fd != 0)
+            return secFd;
     } else if (status == PROCESSING_RES) {
 		handleProcessingRes();
         status = GET_RESPONSE;
     } else if (status == GET_AUTO_INDEX) {
         handleGetAutoIndex();
-        status = GET_RESPONSE;
     }
 
     if (status == GET_RESPONSE) {
@@ -151,55 +113,61 @@ SecondaryFd Response::prepareResponse(int err) {
 
 // TODO change parameters to be more specific
 bool Response::checkCgiTokens(const std::string &localFilePath) {
-    if (req.method != DELETE) {
-        for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
-            size_t lastSlashPos = localFilePath.rfind('/');
-            std::string file = localFilePath.substr(lastSlashPos + 1, localFilePath.size());
-            if (file.find(it->first) != std::string::npos) {
-                req.target.push_back(file);
-                cgiToken = it->first;
-                return true;
-            }
-        }
-    }
+	size_t lastSlashPos = localFilePath.rfind('/');
+	std::string file = localFilePath.substr(lastSlashPos + 1, localFilePath.size());
+
+	for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
+		if (file.find(it->first) != std::string::npos) {
+			//TODO joan check this
+			//req.target.push_back(file);
+			cgiToken = it->first;
+			return true;
+		}
+	}
     return false;
 }
 
-Response::statusCode Response::checkAccess(std::string path, enum methodsEnum method, bool autoIndex) {
+Response::statusCode Response::checkAccess(std::string path, enum methodsEnum method, bool autoIndex, bool& isDir) {
     struct stat fileStat;
-	std::string directory;
 
-	switch (method){
+	switch (method) {
 		case GET:
 			if (stat(path.c_str(), &fileStat) != 0)
 				return Response::_404;
 			if (S_ISDIR(fileStat.st_mode) && !autoIndex)
 				return Response::_404;
+			checkCgiTokens(path);
+			if (S_ISDIR(fileStat.st_mode))  
+				isDir = true;
+			else if (!S_ISREG(fileStat.st_mode))
+				return Response::_403;
 			if (access(path.c_str(), R_OK) == 0)
 				return Response::_200;
 			return Response::_404;
 		case POST:
-			//este check hace mas cosas asi que rompe
-			if (checkCgiTokens(path) && access(path.c_str(), R_OK) == 0)
-				return Response::_200;
-			else
+			if (checkCgiTokens(path)) {
+				if (access(path.c_str(), R_OK) == 0)
+					return Response::_200;
 				return Response::_404;
+			}
 			if (loc.uploadPath == "")
 				return Response::_403;
-			directory = path.substr(0, path.find_last_of("/"));
-			//have to check in the upload path, not here
-			if (stat(directory.c_str(), &fileStat) != 0 || S_ISDIR(fileStat.st_mode))
+			uploadFilePath = loc.root + loc.uploadPath;
+			if (stat(uploadFilePath.c_str(), &fileStat) != 0 || !S_ISDIR(fileStat.st_mode) || access(uploadFilePath.c_str(), W_OK) != 0 || access(uploadFilePath.c_str(), X_OK) != 0)
 				return Response::_404;
+			if (req.headers.count("Content-Type") == 0 || req.headers.at("Content-Type").find("multipart/form-data") == std::string::npos)
+				return Response::_400;
 			return Response::_201;
 		case DELETE:
 			if (stat(path.c_str(), &fileStat) != 0)
 				return Response::_404;
-			if (S_ISDIR(fileStat.st_mode))
+			if (!S_ISREG(fileStat.st_mode))
 				return Response::_404;
 			if (access(path.c_str(), W_OK) == 0)
 				return Response::_200;
 			return Response::_404;
 	}
+	//safeguard
 	return Response::_404;
 }
 
@@ -216,15 +184,19 @@ Response::statusCode Response::checkAccess(std::string path, enum methodsEnum me
  * @return Always returns 0 to continue state machine (indicators for future implementation).
  */
 void Response::handleStartPrepingRes() {
+	
 	if (!loc.methods[req.method]) {
         statusCodeVar = _405;
 		status = ERROR_RESPONSE;
 		return ;
     }
 
+	std::cout << "location path: " << locationPath << std::endl;
+	std::cout << "reconstruct path: " << reconstructPath << std::endl;
+
     // Getting final path for searching in local machine
 	if (locationPath != reconstructPath) {
-        localFilePath = loc.root + reconstructPath.substr(locationPath.size(), reconstructPath.size() - locationPath.size());
+        localFilePath = loc.root + reconstructPath.substr(locationPath.size() + 1);
     } else if (loc.defaultPath != "") {
         localFilePath = loc.root + loc.defaultPath;
     } else {
@@ -234,16 +206,19 @@ void Response::handleStartPrepingRes() {
     std::cout << "localfilePath: " << localFilePath << std::endl;
 	//quiza si el metodo es post ni hay que comprobar nada, o hay comportamiento distinto dependiendo de si va al cgi o no
 	//o si el archivo existe o no
-	statusCodeVar = checkAccess(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0);
+
+	bool isDir = false;
+	statusCodeVar = checkAccess(localFilePath, req.method, loc.defaultPath == "" ? loc.autoindex : 0, isDir);
     // TODO Check access to file and non-default location
-	if (statusCodeVar != Response::_200) {
+	if (statusCodeVar != Response::_200 && statusCodeVar != Response::_201) {
 		status = ERROR_RESPONSE;
 		return ;
 	}
 
-	if (loc.autoindex == true && req.method == GET && loc.defaultPath == "" && localFilePath == loc.root) {
+	if (loc.autoindex == true && req.method == GET && isDir) {
 		status = GET_AUTO_INDEX;
-	} else if (checkCgiTokens(localFilePath)) {
+	} else if (!cgiToken.empty()) {
+		req.body += "EOF";
 		newCgi = new CgiHandler(loc, cgiToken, port, req, req.target, req.queryParams);
 		status = WAITING_FOR_CGI;
 	} else {
@@ -251,19 +226,31 @@ void Response::handleStartPrepingRes() {
 		if (req.method == GET) {
 			secFd.fd = open(localFilePath.c_str(), O_RDONLY);
 			secFd.rw = 0;
+			if (secFd.fd == -1) {
+				status = ERROR_RESPONSE;
+				statusCodeVar = Response::_500;
+				secFd.fd = 0;
+			}
 		} else if (req.method == POST) {
-			//quiza haga falta crear directorios tambien, discutir con joan
-			secFd.fd = open(localFilePath.c_str(), O_APPEND | O_WRONLY);
+			std::string fileName;
+			try {
+				fileContent = parseMultipart(fileName, req.body);
+			} catch (std::exception& _) {
+				status = ERROR_RESPONSE;
+				statusCodeVar = Response::_400;
+				secFd.fd = 0;
+				return ;
+			}
+			secFd.fd = open((uploadFilePath + "/" + fileName).c_str(), O_TRUNC | O_WRONLY | O_CREAT, 0644);
 			secFd.rw = 1;
-		}
-		if (secFd.fd == -1) {
-			status = ERROR_RESPONSE;
-			statusCodeVar = Response::_500; //en caso de darse este error es un 500, ya que ya se ha comprobado el access
-			secFd.fd = 0;
+			if (secFd.fd == -1) {
+				status = ERROR_RESPONSE;
+				statusCodeVar = Response::_403;
+				secFd.fd = 0;
+			}
 		}
 	}
 }
-
 /**
  * @brief Handles waiting for CGI processing to complete.
  *
@@ -273,19 +260,29 @@ void Response::handleStartPrepingRes() {
  *
  * @return File descriptor returned by CGI event handling, or -1 if finished.
  */
-long Response::handleWaitingForCgi() {
-    long fdRet = newCgi->handleCgiEvent();
-    if (fdRet > 0) 
-        return fdRet;
-    status = GET_RESPONSE;
-    if(fdRet == -1){
+void Response::handleWaitingForCgi(int err) {
+	long fdRet = newCgi->handleCgiEvent(err);
+    if (fdRet > 0) {
+		secFd.fd = (int)fdRet;
+		secFd.rw = fdRet >> 32;
+        return ;
+	}
+   
+	if(fdRet == -1) {
         statusCodeVar = Response::_500;
         status = ERROR_RESPONSE;
-    }
-    return 0;
-}
+    } else {
+		body += newCgi->getCgiResponse();
+		status = GET_RESPONSE;
+	}
 
-long Response::handleGetAutoIndex() {
+	delete newCgi;
+	newCgi = NULL;
+	secFd.fd = 0;
+    return ;
+}	
+
+void Response::handleGetAutoIndex() {
     std::ostringstream streamBody;
     streamBody << "<html><head><title>Index of " << localFilePath << "</title></head><body>";
     streamBody << "<h1>Index of " << localFilePath << "</h1>";
@@ -303,13 +300,13 @@ long Response::handleGetAutoIndex() {
         }
         closedir(dir);
     } else {
-        streamBody << "<li>Error: unable to open directory " << localFilePath << "</li>"; //should put error status to true maybe instead of writting the error in the html
+        statusCodeVar = _500;
+		status = ERROR_RESPONSE;
     }
 
     streamBody << "</ul></body></html>";
-    body = streamBody.str();
-    std::cout << body << std::endl;
-    return 0;
+    body += streamBody.str();
+    status = GET_RESPONSE;
 }
 
 void Response::handleProcessingRes() {
@@ -321,15 +318,24 @@ void Response::handleProcessingRes() {
 				status = ERROR_RESPONSE;
 				statusCodeVar = _500;
 			}
+			break;
 		case POST:
+			{
+				long written = writeFile(secFd.fd, fileContent);
+				if (written < 0) {
+					status = ERROR_RESPONSE;
+					statusCodeVar = _500;
+				}
+			}
 			break;
 		case DELETE:
-			std::cout << "handle delete" << std::endl;
 			if (remove(localFilePath.c_str()) != 0) {
         		status = ERROR_RESPONSE;
 				statusCodeVar = _500;
 			}
-			body = "<p> File: " + localFilePath + " removed</p>";
+			else
+				body += "<p> File: " + localFilePath + " removed</p>";
+			break;
 	}
 }
 
@@ -342,13 +348,16 @@ void Response::handleProcessingRes() {
  */
 void Response::handleGetResponse() {
     std::cout << "END PROCESS" << std::endl;
-    if (!cgiToken.empty()) {
-        body = newCgi->getCgiResponse();
-        std::cout << body << std::endl;
-        delete newCgi;
-    }
+	std::string connectionState = "close";
 
-	httpResponse = "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.size()) + "\r\nConnection: keep-alive\r\n\r\n" + body;
+	if (req.headers.count("Connection") == 1 && toLower(req.headers.at("Connection")) == "keep-alive")
+		connectionState = "keep-alive";
+	if (statusCodeVar == Response::_200) {
+		httpResponse += "HTTP/1.1 200 OK\r\nContent-Length: " + toString(body.length()) + "\r\nConnection: " + connectionState + "\r\n\r\n";
+		httpResponse += body;
+	}
+	else if (statusCodeVar == Response::_201)
+		httpResponse += "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: " + connectionState + "\r\n\r\n";//i think we should return location to created source
 }
 
 /**
@@ -368,11 +377,14 @@ void Response::handleBadResponse() {
 			//safeguard, will never run
 			return;
 		case _201:
-			httpResponse = "HTTP/1.1 201 Created\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n"; //SHOULD have location to created file
+			//safeguard, will never run
 			return;
 		case _308:
-			httpResponse = "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + reconstructPath + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n";
+			httpResponse += "HTTP/1.1 308 Permanent Redirect\r\nLocation: " + reconstructPath + "\r\nContent-Length: 0\r\nConnection: keep-alive\r\n\r\n";
 			return;
+		case _400:
+			err = "400 Bad Request";
+			break;
 		case _403:
 			err = "403 Forbidden";
 			break;
@@ -395,7 +407,7 @@ void Response::handleBadResponse() {
 		secFd.fd = open(errPage.c_str(), O_RDONLY);
 		if (secFd.fd > 0)
 		{
-			httpResponse = "HTTP/1.1 " + err + "\r\nConnection: close\r\nContent-Length: ";
+			httpResponse += "HTTP/1.1 " + err + "\r\nConnection: close\r\nContent-Length: ";
 			status = ERROR_RESPONSE_PAGE;
 			return ;
 		}
@@ -404,19 +416,20 @@ void Response::handleBadResponse() {
 	}
 	catch (std::exception& _) {}
 
-    httpResponse = "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
+    httpResponse += "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
 }
 
 void Response::handleBadResponsePage() {
 	std::string err;
 
 	try {
-		std::string page = readFile(secFd.fd);
-		httpResponse += toString(page.size()) + "\r\n\r\n" + page;
+		stringWrap page = readFile(secFd.fd);
+		httpResponse += toString(page.length()) + "\r\n\r\n";
+		httpResponse += page;
 		return ;
 	}
 	catch (std::exception& _) {
 		err = "500 Internal Server Error";
 	}
-    httpResponse = "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
+    httpResponse += "HTTP/1.1 " + err + "\r\nContent-Length: " + toString(err.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + err + "</h1>";
 }
