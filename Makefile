@@ -1,5 +1,5 @@
 NAME := webserv
-SRCS := srcs/main.cpp \
+SRCS := srcs/mymain.cpp \
 		srcs/engine/Connection.cpp \
 		srcs/engine/Listener.cpp \
 		srcs/engine/PollHandler.cpp \

@@ -16,6 +16,7 @@ stringWrap Request::addData(stringWrap& data) {
 	try {
 		if (parsed == NOTHING) {
 			found = rawData.find("\r\n");
+			std::cout << "found " << found << std::endl;
 			if (found != std::string::npos)	{
 				parseRequestLine(rawData.substr(0, found));
 				parsed = REQLINE;
@@ -133,6 +134,7 @@ void Request::parseRequestLine(std::string line) {
 	std::string aux;
 	std::string::const_iterator it = line.begin();
 
+	std::cout << "Line: " << line << std::endl;
 	if (line.length() > 8000)
 		throw URITooLong();
 
@@ -143,7 +145,7 @@ void Request::parseRequestLine(std::string line) {
 	if (it == line.end())
 		throw BadRequest();
 	parseMethod(aux);
-	// std::cout << "method parsed" << std::endl;
+	std::cout << "method parsed" << std::endl;
 
 	aux.clear();
 	it++;
@@ -155,7 +157,7 @@ void Request::parseRequestLine(std::string line) {
 		throw BadRequest();
 	
 	parseRequestTarget(aux);
-	// std::cout << "req target parsed" << std::endl;
+	std::cout << "req target parsed" << std::endl;
 
 	aux.clear();
 	it++;
@@ -164,7 +166,7 @@ void Request::parseRequestLine(std::string line) {
 		it++;
 	}
 	parseVersion(aux);
-	// std::cout << "version parsed" << std::endl;
+	std::cout << "version parsed" << std::endl;
 }
 
 void Request::parseField(std::string fieldLine) {
@@ -248,7 +250,7 @@ stringWrap Request::parseChunkedBody() {
 	size_t		counter = 0;
 	long		len;
 	size_t		found;
-	std::string chunkBody;
+	stringWrap	chunkBody;
 
 	while (1) {
 		found = rawData.find("\r\n", counter);
@@ -261,7 +263,7 @@ stringWrap Request::parseChunkedBody() {
 		if (len == 0)
 			break;
 	
-		chunkBody = rawData.substr(found + 2, len);
+		chunkBody = rawData.subdeque(found + 2, len);
 		if (chunkBody.length() != (size_t) len)
 			return rawData.subdeque(counter);
 		if (rawData[found + 2 + len] != '\r' || rawData[found + 2 + len + 1] != '\n')

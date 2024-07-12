@@ -7,6 +7,13 @@ static char* vectorToPointer(const std::vector<char>& vec) {
 	return ret;
 }
 
+static char* vectorToPointerNull(const std::vector<char>& vec) {
+	char* ret = new char[vec.size() + 1];
+	memcpy(ret, vec.data(), vec.size());
+	ret[vec.size()] = 0;
+	return ret;
+}
+
 static std::vector<char> subVec(const std::vector<char>& vec, size_t begin = 0, size_t size = std::string::npos) {
 	if (size >= vec.size() - begin)
 		return std::vector<char>(vec.begin() + begin, vec.end());
@@ -42,7 +49,7 @@ stringWrap& stringWrap::operator+=(const stringWrap other) {
 	for (std::deque<std::vector<char> >::const_iterator it = other.deq.begin(); it != other.deq.end(); it++) {
 		aux = vectorToPointer(*it);
 		this->addData(aux, it->size());
-		free(aux);
+		delete[] aux;
 	}
 	return *this;
 }
@@ -51,20 +58,25 @@ stringWrap& stringWrap::addData(const char* str, size_t size) {
 	size_t added = 0;
 	if (deq.empty() && size != 0)
 		deq.push_back(std::vector<char>());
-	while (size != 0) {
+	while (added < size) {
 		if (deq.back().size() == MAX_STRING_SIZE)
 			deq.push_back(std::vector<char>());
 		std::vector<char>& last = deq.back();
 		size_t sizeAppend = MAX_STRING_SIZE - last.size();
-		last.insert(last.end(), str + added, str + added + sizeAppend);
+		if (sizeAppend + added >= size)
+			last.insert(last.end(), str + added, str + size);
+		else
+			last.insert(last.end(), str + added, str + added + sizeAppend);
 		added += sizeAppend;
 	}
 	return *this;
 }
 
 char* stringWrap::popFirst(int& len) {
-	if (deq.empty())
-		return "";
+	if (deq.empty()) {
+		len = 0;
+		return NULL;
+	}
 
 	const std::vector<char>& front = deq.front();
 	char* ret = vectorToPointer(front);
@@ -94,9 +106,9 @@ std::string stringWrap::substr(size_t begin, size_t len) const {
 		if (i >= length())
 			break;
 		aux = subVec(deq[i / MAX_STRING_SIZE], i % MAX_STRING_SIZE, begin + len - i);
-		auxStr = vectorToPointer(aux);
+		auxStr = vectorToPointerNull(aux);
 		ret += auxStr;
-		free(auxStr);
+		delete[] auxStr;
 		if (i == begin)
 			i -= i % MAX_STRING_SIZE;
 		i += len >= MAX_STRING_SIZE + i - begin ? MAX_STRING_SIZE : begin + len - i;
@@ -115,7 +127,7 @@ stringWrap stringWrap::subdeque(size_t begin, size_t len) const {
 		aux = subVec(deq[i / MAX_STRING_SIZE], i % MAX_STRING_SIZE, begin + len - i);
 		auxStr = vectorToPointer(aux);
 		ret.addData(auxStr, aux.size());
-		free(auxStr);
+		delete[] auxStr;
 		if (i == begin)
 			i -= i % MAX_STRING_SIZE;
 		i += len >= MAX_STRING_SIZE + i - begin ? MAX_STRING_SIZE : begin + len - i;
@@ -144,7 +156,7 @@ size_t stringWrap::find(std::string toFind, size_t pos) const {
 		aux.insert(aux.end(), deq[i + 1].begin(), deq[i + 1].end());
 		it = std::search(aux.begin(), aux.end(), toFind.begin(), toFind.end());
 		if (it != aux.end())
-			return it - aux.begin() + pos;
+			return it - aux.begin() + i * MAX_STRING_SIZE;
 		i++;
 	}
 	return std::string::npos;
@@ -162,7 +174,7 @@ std::ostream &operator<<(std::ostream &o, const stringWrap &prt) {
 	const std::deque<std::vector<char> >& pr = prt.getDeque();
 
 	for (std::deque<std::vector<char> >::const_iterator it = pr.begin(); it < pr.end(); it++) {
-		for (std::vector<char>::const_iterator itt = it->begin(); itt < it->end();; itt++)
+		for (std::vector<char>::const_iterator itt = it->begin(); itt < it->end(); itt++)
 			o << *itt;
 		o << std::endl;
 	}

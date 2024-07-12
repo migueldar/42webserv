@@ -44,7 +44,7 @@ class Response {
         ~Response();
 
         SecondaryFd prepareResponse(int err);
-        std::string getPartHttpResponse();
+        char* getPartHttpResponse(int &len);
 		bool done();
         const Location& getLocationByRoute(const Server& server);
 

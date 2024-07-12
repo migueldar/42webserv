@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include "webserv.hpp"
 
-std::string Response::getPartHttpResponse() {
-    return httpResponse.popFirst();
+char* Response::getPartHttpResponse(int &len) {
+    return httpResponse.popFirst(len);
 }
 
 bool Response::done() {

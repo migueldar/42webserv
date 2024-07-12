@@ -21,9 +21,9 @@ CgiHandler::CgiHandler(const CgiHandler& other)
     : tokenCGI(other.tokenCGI), port(other.port), req(other.req), uri(other.uri), query_string(other.query_string), loc(other.loc), env(NULL), stages(other.stages), pid(other.pid), hasBeenWaited(other.hasBeenWaited) {
 }
 
-
 long CgiHandler::handleCgiEvent(int err) {
-	std::string aux;
+	char*	aux;
+	int		lenToWrite;
 	enum CGI_STAGES auxStage;
 
 	if(err){
@@ -83,12 +83,14 @@ long CgiHandler::handleCgiEvent(int err) {
         case WRITE_CGI_EXEC:
 			std::cout << "writting pipe: " << infd[1] << std::endl;
 
-			aux = reqbody.popFirst();
-            if (write(infd[1], aux.c_str(), aux.length()) < 0) {
+			aux = reqbody.popFirst(lenToWrite);
+            if (write(infd[1], aux, lenToWrite) < 0) {
                 close(infd[1]);
                 std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
+				free(aux);
                 return -1;
             }
+			free(aux);
             if (reqbody.empty()) {
 				close(infd[1]);
             	stages = READ_CGI_EXEC;
