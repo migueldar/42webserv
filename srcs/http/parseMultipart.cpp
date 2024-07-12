@@ -60,11 +60,15 @@ static std::string getFile(std::map<std::string, std::string>& fields) {
 	if (field.find("filename=") == std::string::npos)
 		throw std::runtime_error("");
 
-	std::string ret = field.substr(field.find("filename=") + 9, field.find(";"));
+	std::string ret = field.substr(field.find("filename=") + 9, field.find(";") - field.find("filename=") - 9);
 	return parsePctEncoding(removeQuotes(ret));
 }
 
-stringWrap parseMultipart(std::string& fileName, stringWrap& body) {
+static std::string getBoundary(std::string& field) {
+	return field.substr(field.find("boundary=") + 9, field.find(";") - field.find("boundary=") - 9);
+}
+
+stringWrap parseMultipart(std::string& fileName, stringWrap& body, std::string& field) {
 	size_t found = body.find("\r\n");
 	stringWrap left;
 	stringWrap ret;
@@ -81,18 +85,12 @@ stringWrap parseMultipart(std::string& fileName, stringWrap& body) {
 	std::map<std::string, std::string> fields = parseFields(left.substr(0, found + 2));
 	left = left.subdeque(found + 4);
 
-	found = left.find("\r\n");
+	found = left.find("\r\n--" + getBoundary(field) + "--\r\n");
 
 	if (found == std::string::npos)
 		throw std::runtime_error("");
 
 	ret = left.subdeque(0, found);
-	left = left.subdeque(found + 2);
-
-	found = left.find("\r\n");
-
-	if (found == std::string::npos)
-		throw std::runtime_error("");
 
 	fileName = getFile(fields);
 	if (fileName.empty())

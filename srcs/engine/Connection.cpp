@@ -75,6 +75,8 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		}
 	
 		data.addData(read_buff, read_res);
+		std::cout << data.length() << std::endl;
+		std::cout << data << std::endl;
 	}
 
 	else if (pollfd.revents & POLLOUT) {
@@ -90,12 +92,11 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 				pollfd.events = POLLIN;
 				startTimerConnection();
 			}
-			std::cout << "RESPONSE: " << httpResponse << std::endl;
 			if (send(sock, httpResponse, lenToWrite, 0) <= 0) {
-				free(httpResponse);
+				delete[] httpResponse;
 				return 1;
 			}
-			free(httpResponse);
+			delete[] httpResponse;
 		} else {
 			std::string httpResponse = "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
 			delete req;

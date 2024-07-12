@@ -234,7 +234,7 @@ void Response::handleStartPrepingRes() {
 		} else if (req.method == POST) {
 			std::string fileName;
 			try {
-				fileContent = parseMultipart(fileName, req.body);
+				fileContent = parseMultipart(fileName, req.body, req.headers.at("Content-Type"));
 			} catch (std::exception& _) {
 				status = ERROR_RESPONSE;
 				statusCodeVar = Response::_400;

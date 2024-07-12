@@ -87,10 +87,10 @@ long CgiHandler::handleCgiEvent(int err) {
             if (write(infd[1], aux, lenToWrite) < 0) {
                 close(infd[1]);
                 std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
-				free(aux);
+				delete[] aux;
                 return -1;
             }
-			free(aux);
+			delete[] aux;
             if (reqbody.empty()) {
 				close(infd[1]);
             	stages = READ_CGI_EXEC;

@@ -13,7 +13,7 @@ stringWrap readFile(int fd) {
 			throw std::runtime_error("corrupted fd");
 		}
 		// std::cout << "readbuf" << read_buff << std::endl;
-		ret += read_buff;
+		ret.addData(read_buff, bytesRead);
 	} while (bytesRead == SIZE_READ);
 
 	close(fd);
@@ -29,6 +29,7 @@ long writeFile(int fd, stringWrap str){
 	while (!str.empty()) {
     	aux = str.popFirst(toWriteLen);
     	long written = write(fd, aux, toWriteLen);
+		delete[] aux;
         if (written < 0) {
 			close(fd);
             return -1;
