@@ -17,7 +17,7 @@ type Test struct {
 }
 
 func runTestParser(file string) (int, error) {
-	cmd := exec.Command("./../webserv", file)
+	cmd := exec.Command("../../webserv", file)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return cmd.ProcessState.ExitCode(), fmt.Errorf("Error ejecutando el programa C++: %v, output %s", err, output)

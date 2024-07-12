@@ -55,15 +55,15 @@ bool Connection::operator==(const Connection& other) const {
 //0 means ok, 1 means remove
 int Connection::handleEvent(struct pollfd& pollfd) {
 	if (pollfd.revents & POLLERR) {
-		std::cout << "pollerr" << std::endl;
+		// std::cout << "pollerr" << std::endl;
 		return 1;
 	}
 	else if (pollfd.revents & POLLHUP) {
-		std::cout << "pollhup" << std::endl;
+		// std::cout << "pollhup" << std::endl;
 		return 1;
 	}
 	else if (pollfd.revents & POLLIN) {
-		std::cout << "pollin" << std::endl;
+		// std::cout << "pollin" << std::endl;
 
 		int read_res;
 		char read_buff[SIZE_READ + 1];
@@ -75,12 +75,10 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		}
 	
 		data.addData(read_buff, read_res);
-		std::cout << data.length() << std::endl;
-		std::cout << data << std::endl;
 	}
 
 	else if (pollfd.revents & POLLOUT) {
-		std::cout << "pollout" << std::endl;
+		// std::cout << "pollout" << std::endl;
 		int lenToWrite;
 		if (res != NULL) {
 			char* httpResponse = res->getPartHttpResponse(lenToWrite);
@@ -104,7 +102,7 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 			pollfd.events = POLLIN;
 			startTimerConnection();
 					
-			std::cout << "RESPONSE: " << httpResponse << std::endl;
+			// std::cout << "RESPONSE: " << httpResponse << std::endl;
 			if (send(sock, httpResponse.c_str(), httpResponse.length(), 0) <= 0)
 				return 1;
 		}
