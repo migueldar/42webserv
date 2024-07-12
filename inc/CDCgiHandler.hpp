@@ -80,6 +80,12 @@ class CgiHandler {
 		char 													**env;
 		stringWrap												reqbody;
 
+		enum CGI_STAGES 										stages;
+		int 													pid;
+		bool 													hasBeenWaited;
+		int 													infd[2];
+		int														outfd[2];
+
 		stringWrap 												response;
 };
 

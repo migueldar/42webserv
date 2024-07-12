@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Subida de Archivos</title>
+</head>
+<body>
+    <h1>UPLOAD:</h1>
+	<form id="uploadForm" method="post" enctype="multipart/form-data" action="/uploadFile">
+        <input name="file" type="file" />
+        <button type="submit">Upload</button>
+    </form>
+
+    <h5><a href="/redirectionToHome">Back</a></h5>
+	<script>
+        window.addEventListener('load', function() {
+            document.getElementById('uploadForm').addEventListener('submit', function() {
+                setTimeout(function() {
+                    location.reload();
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

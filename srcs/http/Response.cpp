@@ -118,8 +118,7 @@ bool Response::checkCgiTokens(const std::string &localFilePath) {
 
 	for (std::map<std::string, std::string>::const_iterator it = loc.cgi.begin(); it != loc.cgi.end(); ++it) {
 		if (file.find(it->first) != std::string::npos) {
-			//TODO joan check this
-			//req.target.push_back(file);
+			req.target.push_back(file);
 			cgiToken = it->first;
 			return true;
 		}
@@ -295,7 +294,7 @@ void Response::handleGetAutoIndex() {
         while ((entry = readdir(dir)) != NULL) {
             std::string fileName = entry->d_name;
             if (fileName != "." && fileName != "..") {
-                streamBody << "<li><a href=\"" << fileName << "\">" << fileName << "</a></li>";
+                streamBody << "<li><a href=\"" << reconstructPath + "/" +fileName << "\">" << fileName << "</a></li>";
             }
         }
         closedir(dir);
