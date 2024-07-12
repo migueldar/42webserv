@@ -117,6 +117,7 @@ void Request::parseRequestTarget(std::string& str) {
 	//check query
 	if (!isQuery(queryString.substr(0, queryString.find('#'))))
 		throw BadRequest();
+	targetString = parsePctEncoding(targetString);
 	queryParams = parsePctEncoding(queryString.substr(0, queryString.find('#')));
 }
 

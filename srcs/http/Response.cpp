@@ -187,6 +187,7 @@ void Response::handleStartPrepingRes() {
 	if (!loc.methods[req.method]) {
         statusCodeVar = _405;
 		status = ERROR_RESPONSE;
+		std::cout << "ENTRO:" << req.method << std::endl;
 		return ;
     }
 
