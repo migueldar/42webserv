@@ -30,6 +30,6 @@
 
 
 #define ONLY_PARSING_CONF 0
-#define CONNECTION_TIMEOUT 10 //in seconds
-#define RESPONSE_PROCESSING_TIMEOUT 10 //in seconds
+#define CONNECTION_TIMEOUT 60 //in seconds
+#define RESPONSE_PROCESSING_TIMEOUT 60 //in seconds
 #endif

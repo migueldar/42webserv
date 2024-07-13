@@ -133,6 +133,7 @@ void Request::parseRequestLine(std::string line) {
 	std::string aux;
 	std::string::const_iterator it = line.begin();
 
+	// std::cout << "Line: " << line << std::endl;
 	if (line.length() > 8000)
 		throw URITooLong();
 
@@ -244,11 +245,11 @@ void Request::checkFields() {
 
 //returns unparsed data
 stringWrap Request::parseChunkedBody() {
-	std::cout << "parseChunked start" << std::endl;
+	// std::cout << "parseChunked start" << std::endl;
 	size_t		counter = 0;
 	long		len;
 	size_t		found;
-	std::string chunkBody;
+	stringWrap	chunkBody;
 
 	while (1) {
 		found = rawData.find("\r\n", counter);
@@ -261,7 +262,7 @@ stringWrap Request::parseChunkedBody() {
 		if (len == 0)
 			break;
 	
-		chunkBody = rawData.substr(found + 2, len);
+		chunkBody = rawData.subdeque(found + 2, len);
 		if (chunkBody.length() != (size_t) len)
 			return rawData.subdeque(counter);
 		if (rawData[found + 2 + len] != '\r' || rawData[found + 2 + len + 1] != '\n')
@@ -275,7 +276,7 @@ stringWrap Request::parseChunkedBody() {
 		return rawData.subdeque(counter);
 	
 	parsed = ALL;
-	std::cout << "parseChunked end" << std::endl << std::endl;
+	// std::cout << "parseChunked end" << std::endl << std::endl;
 	return rawData.subdeque(found + 4);
 }
 

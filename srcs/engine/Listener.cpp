@@ -35,7 +35,7 @@ void Listener::listenMode() const {
 }
 
 const Connection Listener::handleEvent(short revents) const {
-	std::cout << "Handling listener event" << std::endl;
+	// std::cout << "Handling listener event" << std::endl;
 	(void) revents;
 
 	int new_socket = accept(sock, NULL, NULL);

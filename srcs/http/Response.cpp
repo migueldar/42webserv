@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include "webserv.hpp"
 
-std::string Response::getPartHttpResponse() {
-    return httpResponse.popFirst();
+char* Response::getPartHttpResponse(int &len) {
+    return httpResponse.popFirst(len);
 }
 
 bool Response::done() {
@@ -36,7 +36,7 @@ const Location& Response::getLocationByRoute(const Server& server) {
     std::string remainingPath = reconstructPath;
     size_t lastSlashPos = remainingPath.length();
     while (42) {
-        std::cout << "Remaining path: " << remainingPath << std::endl;
+        // std::cout << "Remaining path: " << remainingPath << std::endl;
 		if (server.existsLocationByRoute(remainingPath)){
 			const Location *loc = &server.getLocation(remainingPath);
 			this->locationPath = remainingPath;
@@ -79,7 +79,6 @@ SecondaryFd Response::prepareResponse(int err) {
         status = ERROR_RESPONSE;
     }
 
-	std::cout << statusCodeVar << std::endl;
     if (status == START_PREPING_RES) {
         handleStartPrepingRes();
         if (secFd.fd != 0) 
@@ -187,12 +186,11 @@ void Response::handleStartPrepingRes() {
 	if (!loc.methods[req.method]) {
         statusCodeVar = _405;
 		status = ERROR_RESPONSE;
-		std::cout << "ENTRO:" << req.method << std::endl;
 		return ;
     }
 
-	std::cout << "location path: " << locationPath << std::endl;
-	std::cout << "reconstruct path: " << reconstructPath << std::endl;
+	// std::cout << "location path: " << locationPath << std::endl;
+	// std::cout << "reconstruct path: " << reconstructPath << std::endl;
 
     // Getting final path for searching in local machine
 	if (locationPath != reconstructPath) {
@@ -203,7 +201,7 @@ void Response::handleStartPrepingRes() {
         localFilePath = loc.root;
     }
 
-    std::cout << "localfilePath: " << localFilePath << std::endl;
+    // std::cout << "localfilePath: " << localFilePath << std::endl;
 	//quiza si el metodo es post ni hay que comprobar nada, o hay comportamiento distinto dependiendo de si va al cgi o no
 	//o si el archivo existe o no
 
@@ -234,7 +232,7 @@ void Response::handleStartPrepingRes() {
 		} else if (req.method == POST) {
 			std::string fileName;
 			try {
-				fileContent = parseMultipart(fileName, req.body);
+				fileContent = parseMultipart(fileName, req.body, req.headers.at("Content-Type"));
 			} catch (std::exception& _) {
 				status = ERROR_RESPONSE;
 				statusCodeVar = Response::_400;
@@ -347,7 +345,7 @@ void Response::handleProcessingRes() {
  * Further implementation should handle the remaining response build tasks.
  */
 void Response::handleGetResponse() {
-    std::cout << "END PROCESS" << std::endl;
+    // std::cout << "END PROCESS" << std::endl;
 	std::string connectionState = "close";
 
 	if (req.headers.count("Connection") == 1 && toLower(req.headers.at("Connection")) == "keep-alive")
@@ -403,16 +401,22 @@ void Response::handleBadResponse() {
 	}
 
 	try {
+		struct stat fileStat;
 		std::string errPage = server.getErrPage(err);
 		secFd.fd = open(errPage.c_str(), O_RDONLY);
-		if (secFd.fd > 0)
+
+		if (secFd.fd > 0 && stat(errPage.c_str(), &fileStat) == 0 && S_ISREG(fileStat.st_mode))
 		{
 			httpResponse += "HTTP/1.1 " + err + "\r\nConnection: close\r\nContent-Length: ";
 			status = ERROR_RESPONSE_PAGE;
 			return ;
 		}
-		else
+		else {
+			if (secFd.fd != 0)
+				close(secFd.fd);
+			secFd.fd = 0;
 			err = "500 Internal Server Error";
+		}
 	}
 	catch (std::exception& _) {}
 

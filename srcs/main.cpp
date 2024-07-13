@@ -35,7 +35,6 @@ int main(int argc, char **argv) {
 		configRoute = argv[1];
 	try {
 		config = ParserFile(configRoute);
-		
 	}
 	catch (std::exception &e) {
 		std::cerr << e.what() << std::endl;

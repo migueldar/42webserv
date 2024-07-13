@@ -13,7 +13,7 @@ stringWrap readFile(int fd) {
 			throw std::runtime_error("corrupted fd");
 		}
 		// std::cout << "readbuf" << read_buff << std::endl;
-		ret += read_buff;
+		ret.addData(read_buff, bytesRead);
 	} while (bytesRead == SIZE_READ);
 
 	close(fd);
@@ -22,21 +22,21 @@ stringWrap readFile(int fd) {
 
 
 long writeFile(int fd, stringWrap str){
-    std::string aux;
+    char* aux;
     long ret = 0;
+	int toWriteLen;
 
-    do
-    {
-    	aux = str.popFirst();
-    	long written = write(fd, aux.c_str(), aux.size());
+	while (!str.empty()) {
+    	aux = str.popFirst(toWriteLen);
+    	long written = write(fd, aux, toWriteLen);
+		delete[] aux;
         if (written < 0) {
 			close(fd);
             return -1;
         }
         else
             ret += written;
-    } while (!aux.empty());
-
+	}
 	close(fd);
     return ret;
 }

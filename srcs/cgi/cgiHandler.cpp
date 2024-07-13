@@ -7,7 +7,7 @@ CgiHandler::CgiHandler(const Location &loc, std::string &tokenCGI, std::string &
         (this->*methodMap[x])();
     }
     for (std::map<std::string, std::string>::iterator it = metaVariables.begin(); it != metaVariables.end(); it++){
-        std::cout << it->first << "=" << it->second << std::endl;
+        // std::cout << it->first << "=" << it->second << std::endl;
     }
 
 	reqbody = req.body;
@@ -21,9 +21,9 @@ CgiHandler::CgiHandler(const CgiHandler& other)
     : tokenCGI(other.tokenCGI), port(other.port), req(other.req), uri(other.uri), query_string(other.query_string), loc(other.loc), env(NULL), stages(other.stages), pid(other.pid), hasBeenWaited(other.hasBeenWaited) {
 }
 
-
 long CgiHandler::handleCgiEvent(int err) {
-	std::string aux;
+	char*	aux;
+	int		lenToWrite;
 	enum CGI_STAGES auxStage;
 
 	if(err){
@@ -81,14 +81,16 @@ long CgiHandler::handleCgiEvent(int err) {
             }
             break;
         case WRITE_CGI_EXEC:
-			std::cout << "writting pipe: " << infd[1] << std::endl;
+			// std::cout << "writting pipe: " << infd[1] << std::endl;
 
-			aux = reqbody.popFirst();
-            if (write(infd[1], aux.c_str(), aux.length()) < 0) {
+			aux = reqbody.popFirst(lenToWrite);
+            if (write(infd[1], aux, lenToWrite) < 0) {
                 close(infd[1]);
                 std::cerr << "Error al escribir en el pipe: " << strerror(errno) << std::endl;
+				delete[] aux;
                 return -1;
             }
+			delete[] aux;
             if (reqbody.empty()) {
 				close(infd[1]);
             	stages = READ_CGI_EXEC;
@@ -105,7 +107,7 @@ long CgiHandler::handleCgiEvent(int err) {
 
 			if (read(outfd[0], read_buff, SIZE_READ) >= 0) {
                 response += read_buff;
-				std::cout << "read till now len:" << response.length() << std::endl;
+				// std::cout << "read till now len:" << response.length() << std::endl;
 			}
 			else {
 				perror("Error del script CGI");

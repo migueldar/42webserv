@@ -15,7 +15,7 @@ Server& Server::operator=(const Server& other) {
         routes.clear();
         routes = other.getLocations();
         for (std::map<std::string, Location>::const_iterator it = routes.begin(); it != routes.end(); ++it) {
-            std::cout << "Ruta: " << it->first << ", Root: " << it->second.root << std::endl;
+            // std::cout << "Ruta: " << it->first << ", Root: " << it->second.root << std::endl;
         }
 
         errPages = other.errPages;

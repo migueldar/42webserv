@@ -68,22 +68,20 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 		int read_res;
 		char read_buff[SIZE_READ + 1];
 
-		memset(read_buff, 0, SIZE_READ + 1);
 		read_res = recv(sock, read_buff, SIZE_READ, 0);
 
-		std::cout << read_buff << std::endl;
 		if (read_res <= 0) {
 			return 1;
 		}
 	
-		data += read_buff;
+		data.addData(read_buff, read_res);
 	}
 
 	else if (pollfd.revents & POLLOUT) {
 		std::cout << "pollout" << std::endl;
-		std::string httpResponse;
+		int lenToWrite;
 		if (res != NULL) {
-			httpResponse = res->getPartHttpResponse();
+			char* httpResponse = res->getPartHttpResponse(lenToWrite);
 			if (res->done()) {
 				delete res;
 				res = NULL;
@@ -92,18 +90,21 @@ int Connection::handleEvent(struct pollfd& pollfd) {
 				pollfd.events = POLLIN;
 				startTimerConnection();
 			}
-		}
-		else {
-			httpResponse += "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
+			if (send(sock, httpResponse, lenToWrite, 0) <= 0) {
+				delete[] httpResponse;
+				return 1;
+			}
+			delete[] httpResponse;
+		} else {
+			std::string httpResponse = "HTTP/1.1 " + req->errorStatus + "\r\nContent-Length: " + toString(req->errorStatus.size() + 9) + "\r\nConnection: close\r\n\r\n<h1>" + req->errorStatus + "</h1>";
 			delete req;
 			req = NULL;
 			pollfd.events = POLLIN;
 			startTimerConnection();
-		}
-		
-		std::cout << "RESPONSE: " << httpResponse << std::endl;
-		if (send(sock, httpResponse.c_str(), httpResponse.length(), 0) <= 0){
-			return 1;
+					
+			// std::cout << "RESPONSE: " << httpResponse << std::endl;
+			if (send(sock, httpResponse.c_str(), httpResponse.length(), 0) <= 0)
+				return 1;
 		}
 		return 0;
 	}

@@ -213,21 +213,3 @@ int PollHandler::pollMode() {
 
 	return 1;
 }
-
-// void	PollHandler::tester() {
-// 	for (size_t i = 0; i < listeners.size(); i++)
-// 		std::cout << listeners[i].sock << std::endl;
-// 	for (size_t i = 0; i < connections.size(); i++)
-// 		std::cout << connections[i].sock << std::endl;
-
-// 	std::cout << std::endl;
-
-// 	for (size_t i = 0; i < connections.size() + listeners.size(); i++)
-// 		std::cout << fds[i].fd << " " << fds[i].events << std::endl;
-// }
-
-// PollHandler::PollHandler(PollHandler const& other) {
-// 	std::cout << "PollHandler copy constructor called" << std::endl;
-// 	*this = other;
-// }
-
