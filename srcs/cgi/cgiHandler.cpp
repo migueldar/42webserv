@@ -7,7 +7,7 @@ CgiHandler::CgiHandler(const Location &loc, std::string &tokenCGI, std::string &
         (this->*methodMap[x])();
     }
     for (std::map<std::string, std::string>::iterator it = metaVariables.begin(); it != metaVariables.end(); it++){
-        std::cout << it->first << "=" << it->second << std::endl;
+        // std::cout << it->first << "=" << it->second << std::endl;
     }
 
 	reqbody = req.body;
@@ -81,7 +81,7 @@ long CgiHandler::handleCgiEvent(int err) {
             }
             break;
         case WRITE_CGI_EXEC:
-			std::cout << "writting pipe: " << infd[1] << std::endl;
+			// std::cout << "writting pipe: " << infd[1] << std::endl;
 
 			aux = reqbody.popFirst(lenToWrite);
             if (write(infd[1], aux, lenToWrite) < 0) {
@@ -107,7 +107,7 @@ long CgiHandler::handleCgiEvent(int err) {
 
 			if (read(outfd[0], read_buff, SIZE_READ) >= 0) {
                 response += read_buff;
-				std::cout << "read till now len:" << response.length() << std::endl;
+				// std::cout << "read till now len:" << response.length() << std::endl;
 			}
 			else {
 				perror("Error del script CGI");

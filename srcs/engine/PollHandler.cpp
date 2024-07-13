@@ -7,7 +7,7 @@ PollHandler::~PollHandler() {
 }
 
 void PollHandler::addListener(Listener &l) {
-	// std::cout << "Listener Added" << std::endl;
+	std::cout << "Listener Added" << std::endl;
 	addToFds(l.sock, LISTENER);
 	listeners.push_back(l);
 }
@@ -18,13 +18,13 @@ void PollHandler::listenMode() {
 }
 
 void PollHandler::addConnection(Connection &c) {
-	// std::cout << "Connection Added" << std::endl;
+	std::cout << "Connection Added" << std::endl;
 	addToFds(c.sock, CONNECTION);
 	connections.push_back(c);
 }
 
 void PollHandler::removeConnection(Connection &c) {
-	// std::cout << "Connection Removed" << std::endl;
+	std::cout << "Connection Removed" << std::endl;
 	close(c.sock);
 	removeFromFds(c.sock);
 	removeSecondary(c.secFd);
@@ -33,7 +33,7 @@ void PollHandler::removeConnection(Connection &c) {
 
 void PollHandler::removeSecondary(SecondaryFd &f) {
 	if (f.fd > 0) {
-		// std::cout << "Secondary Removed" << std::endl;
+		std::cout << "Secondary Removed" << std::endl;
 		secFds.erase(std::find(secFds.begin(), secFds.end(), f));
 	}
 }
@@ -136,7 +136,7 @@ int PollHandler::pollMode() {
 	//check listeners
 	std::vector<Connection> toAdd;
 	if (status > 0) {
-		// std::cout << "Checking listeners" << std::endl;
+		std::cout << "Checking listeners" << std::endl;
 		for (std::vector<Listener>::const_iterator it = listeners.begin(); it != listeners.end(); it++) {
 			if (fdsExtra[i].revents) {
 				try {
@@ -151,7 +151,7 @@ int PollHandler::pollMode() {
 	}
 
 	//check connections, also timeouts
-	// std::cout << "Checking connections and timeouts" << std::endl;
+	std::cout << "Checking connections and timeouts" << std::endl;
 	std::vector<Connection*> toRemove;
 	std::vector<SecondaryFd> toAddSecondary;
 	for (std::list<Connection>::iterator it = connections.begin(); it != connections.end(); it++) {
@@ -178,7 +178,7 @@ int PollHandler::pollMode() {
 	//check secondary
 	std::vector<SecondaryFd> toRemoveSecondary;
 	if (status > 0) {
-		// std::cout << "Checking secondary fds" << std::endl;
+		std::cout << "Checking secondary fds" << std::endl;
 		for (std::vector<SecondaryFd>::const_iterator it = secFds.begin(); it != secFds.end(); it++) {
 			if (fdsExtra[i].revents) {
 				Connection& con = findConnection(*it);
@@ -207,27 +207,9 @@ int PollHandler::pollMode() {
 		removeSecondary(*it);
 
 	for (std::vector<SecondaryFd>::iterator it = toAddSecondary.begin(); it != toAddSecondary.end(); it++) {
-		// std::cout << "Secondary added" << std::endl;
+		std::cout << "Secondary added" << std::endl;
 		secFds.push_back(*it);
 	}
 
 	return 1;
 }
-
-// void	PollHandler::tester() {
-// 	for (size_t i = 0; i < listeners.size(); i++)
-// 		std::cout << listeners[i].sock << std::endl;
-// 	for (size_t i = 0; i < connections.size(); i++)
-// 		std::cout << connections[i].sock << std::endl;
-
-// 	std::cout << std::endl;
-
-// 	for (size_t i = 0; i < connections.size() + listeners.size(); i++)
-// 		std::cout << fds[i].fd << " " << fds[i].events << std::endl;
-// }
-
-// PollHandler::PollHandler(PollHandler const& other) {
-// 	std::cout << "PollHandler copy constructor called" << std::endl;
-// 	*this = other;
-// }
-
