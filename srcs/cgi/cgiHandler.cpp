@@ -124,6 +124,7 @@ long CgiHandler::handleCgiEvent(int err) {
 					return (long)outfd[0];
 				}
 			}
+            // fall through
 		case WAITPID_CGI:
 			if (!hasBeenWaited) {
 				hasBeenWaited = true;
